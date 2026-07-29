@@ -1,14 +1,15 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v484 | 29/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v485 | 29/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
 backend, ciclos formativos/asignaturas reales sembrados para los 24
 departamentos, 3 usuarios `superadmin`, cambio de contraseña obligatorio en
-cuentas genéricas. Inventario sembrado con datos de ejemplo (pantalla
-multimedia + pizarra de tiza en las 70 aulas genéricas, ítems propios en
-las 24 aulas de departamento — migración `0016`). Falta Fase 3 (selector de
+cuentas genéricas. Inventario sembrado con datos de ejemplo: pantalla
+multimedia + pizarra de tiza en las 70 aulas genéricas (archivadas bajo el
+departamento compartido `iesjuanbosco`, migraciones `0016`+`0017`) e ítems
+propios en las 24 aulas de departamento. Falta Fase 3 (selector de
 departamento para superadmin en el frontend) — ver
 [Pendiente](#pendiente-próximas-sesiones) al final.
 
@@ -278,7 +279,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v484 actual)
+sw.js                   — Service Worker, VERSION aquí (v485 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -302,6 +303,7 @@ migrations/             — SQL de migraciones D1, ver tabla completa abajo
 | `0014_password_temporal.sql` | Columna `usuarios.password_temporal`, marcada en las 48 cuentas genéricas |
 | `0015_superadmins_departamento.sql` | Departamento de referencia para los 3 superadmin |
 | `0016_aulas_items_seed.sql` | Ítems de ejemplo: pantalla multimedia + pizarra de tiza en las 70 aulas globales, + 3-4 ítems propios de cada especialidad en las 24 aulas de departamento |
+| `0017_pantallas_pizarras_iesjuanbosco.sql` | Reasigna la pantalla multimedia y la pizarra de tiza de las 70 aulas globales (sembradas en `0016` sin departamento) al departamento compartido `iesjuanbosco` |
 
 ---
 
@@ -408,11 +410,14 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   en `.wrangler/cache` (corregido), `desktop.ini` de Google Drive corrompiendo
   `.git/refs` (limpiado, riesgo de que reaparezca — ver Entorno), disco `C:`
   lleno bloqueando escrituras (resuelto por el usuario).
-- **29/07/2026 (v484):** inventario sembrado con datos de ejemplo (migración
-  `0016`) — pantalla multimedia + pizarra de tiza en las 70 aulas globales, y
-  3-4 ítems inventados propios de cada especialidad en las 24 aulas de
-  departamento (osciloscopio en Electricidad/Electrónica, microscopio en
-  Ciencias Naturales, torno mecánico en Fabricación Mecánica, etc.).
+- **29/07/2026 (v484-v485):** inventario sembrado con datos de ejemplo
+  (migración `0016`) — pantalla multimedia + pizarra de tiza en las 70 aulas
+  globales, y 3-4 ítems inventados propios de cada especialidad en las 24
+  aulas de departamento (osciloscopio en Electricidad/Electrónica,
+  microscopio en Ciencias Naturales, torno mecánico en Fabricación Mecánica,
+  etc.). Después (`0017`), la pantalla multimedia y la pizarra de tiza de las
+  70 aulas globales se reasignan del departamento vacío al compartido
+  `iesjuanbosco`.
 - **30/05/2026 (v468):** servidor Apache restaurado tras 24h de caída por un
   script `observed.service` que mataba procesos de alto CPU y tumbaba
   Docker Desktop. Los 8 contenedores (apache, mysql, n8n, influxdb, nodered,
