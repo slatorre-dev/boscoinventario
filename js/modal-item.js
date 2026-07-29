@@ -77,8 +77,17 @@ function checkModalForChanges(){
   }
 }
 
+function renderAulaOptions(){
+  const opt = a=>`<option value="${a.id}">${escHtml(a.name)}</option>`;
+  const globales = AULAS.filter(a=>!a.departamento);
+  const propias = AULAS.filter(a=>a.departamento);
+  if(!globales.length || !propias.length) return AULAS.map(opt).join('');
+  return `<optgroup label="Aulas del centro">${globales.map(opt).join('')}</optgroup>`
+       + `<optgroup label="Aula del departamento">${propias.map(opt).join('')}</optgroup>`;
+}
+
 function fillModalSelects(){
-  document.getElementById('f_aula').innerHTML=AULAS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+  document.getElementById('f_aula').innerHTML=renderAulaOptions();
   document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}" data-alias="${cicloAlias(c)}" data-full="${escHtml(c.icon+' '+c.name)}">${escHtml(c.icon+' '+c.name)}</option>`).join('');
   syncCicloLabels();
   document.getElementById('f_cat').innerHTML=sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('') + '<option value="__new_category__">＋ Añadir categoría...</option>';
@@ -764,7 +773,10 @@ function openModal(id=null, src=null){
   const catSel = document.getElementById('f_cat');
   catSel.value=m?.cat||sortedCatNames()[0]||'Componentes electrónicos';
   catSel.dataset.prev = catSel.value;
-  const itemCiclo = m?.mod ? m.mod.split('__')[0] : (cf?.type==='mod' ? cf.ciclo.id : '');
+  const itemCiclo = m?.mod ? m.mod.split('__')[0]
+    : cf?.type==='mod' ? cf.ciclo.id
+    : (!existing && !src && CICLOS.length===1) ? CICLOS[0].id
+    : '';
   document.getElementById('f_ciclo').value = itemCiclo;
   syncCicloLabels();
   updateModSelect();
