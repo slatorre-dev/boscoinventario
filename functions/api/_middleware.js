@@ -16,12 +16,12 @@ export async function onRequest({ request, env, next, data }) {
   if (u && p) {
     // Método 1: Username + Password (login tradicional)
     user = await env.DB.prepare(
-      'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND password=?'
+      'SELECT usuario, nombre, rol, email, departamento FROM usuarios WHERE usuario=? AND password=?'
     ).bind(u.trim(), p).first();
   } else if (u && t) {
     // Método 2: Username + Session Token (Google OAuth)
     user = await env.DB.prepare(
-      'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND session_token=?'
+      'SELECT usuario, nombre, rol, email, departamento FROM usuarios WHERE usuario=? AND session_token=?'
     ).bind(u.trim(), t).first();
   }
 
@@ -31,6 +31,8 @@ export async function onRequest({ request, env, next, data }) {
 
   // Pasar user via data (Request es inmutable)
   data.user = user;
+  data.departamento = user.departamento || '';
   request.user = user; // compatibilidad
+  request.departamento = user.departamento || ''; // compatibilidad
   return next();
 }

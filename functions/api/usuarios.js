@@ -16,16 +16,25 @@ function moduloId(row) {
   return `${row.cicloId}__${row.modCod}`;
 }
 
-export async function onRequestPost({ request, env }) {
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
+
+export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
-  const user = request.user;
+  const user = data?.user || request.user;
+  const superadmin = isSuperAdmin(user);
+  const dept = user?.departamento || '';
 
   if (action === 'getUsers') {
     const [usuariosRows, ciclosRows] = await Promise.all([
-      env.DB.prepare('SELECT usuario, nombre, rol, email FROM usuarios ORDER BY usuario').all(),
-      env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {})
-        .then(() => env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL').all()),
+      superadmin
+        ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento FROM usuarios ORDER BY usuario').all()
+        : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
+      superadmin
+        ? env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL').all()
+        : env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL AND departamento=?').bind(dept).all(),
     ]);
     const ciclos = ciclosRows?.results || [];
     // Mapear responsable -> lista de modCod
@@ -50,14 +59,21 @@ export async function onRequestPost({ request, env }) {
 
   if (action === 'userAdd') {
     const u = body.usuario;
-    await env.DB.prepare('INSERT INTO usuarios (usuario,password,nombre,rol,email) VALUES (?,?,?,?,?)')
-      .bind(u.usuario.trim(), u.password||'cambiar123', u.nombre.trim(), u.rol.trim(), u.email||'').run();
+    const nuevoDept = superadmin ? (u.departamento || dept || '') : dept;
+    await env.DB.prepare('INSERT INTO usuarios (usuario,password,nombre,rol,email,departamento) VALUES (?,?,?,?,?,?)')
+      .bind(u.usuario.trim(), u.password||'cambiar123', u.nombre.trim(), u.rol.trim(), u.email||'', nuevoDept).run();
     await auditLog(env.DB, user, 'userAdd', `Nuevo usuario: ${u.usuario} (${u.rol})`);
     return Response.json({ ok: true });
   }
 
   if (action === 'userUpdate') {
     const u = body.usuario;
+    if (!superadmin) {
+      const target = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(u.usuario).first();
+      if (!target || (target.departamento || '') !== dept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
     // No degradar a un SuperAdmin: el formulario muestra su rol enmascarado como
     // 'Jefe/a Departamento', así que si en BD ya es superadmin se conserva ese rol.
     const actual = await env.DB.prepare('SELECT rol FROM usuarios WHERE usuario=?').bind(u.usuario).first();
@@ -72,6 +88,12 @@ export async function onRequestPost({ request, env }) {
   if (action === 'userDelete') {
     if (user && body.usuario === user.usuario)
       return Response.json({ ok: false, error: 'No puedes eliminar tu propia cuenta' });
+    if (!superadmin) {
+      const target = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(body.usuario).first();
+      if (!target || (target.departamento || '') !== dept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
     await env.DB.prepare('DELETE FROM usuarios WHERE usuario=?').bind(body.usuario).run();
     await auditLog(env.DB, user, 'userDelete', `Usuario eliminado: ${body.usuario}`);
     return Response.json({ ok: true });
@@ -81,6 +103,12 @@ export async function onRequestPost({ request, env }) {
     const newPassword = String(body.newPassword || body.password || '').trim();
     if (!newPassword || newPassword.length < 4)
       return Response.json({ ok: false, error: 'Contraseña demasiado corta' });
+    if (!superadmin) {
+      const target = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(body.usuario).first();
+      if (!target || (target.departamento || '') !== dept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
     await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
       .bind(newPassword, body.usuario).run();
     await auditLog(env.DB, user, 'userResetPassword', `Contraseña reseteada: ${body.usuario}`);
@@ -93,15 +121,17 @@ export async function onRequestPost({ request, env }) {
     const legacyByCode = modulos.length > 0 && modulos.every(m => !m.includes('__'));
     if (!nombre) return Response.json({ ok: false, error: 'Nombre requerido' });
     await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
-    const rows = await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos').all();
+    const rows = superadmin
+      ? await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos').all()
+      : await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos WHERE departamento=?').bind(dept).all();
     for (const row of rows.results) {
       const id = moduloId(row);
       const esMio = modulos.includes(id) || (legacyByCode && modulos.includes(String(row.modCod)));
       const eraMio = (row.responsable || '').toLowerCase() === nombre.toLowerCase();
       if (esMio && !eraMio) {
-        await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE cicloId=? AND modCod=?').bind(nombre, row.cicloId, row.modCod).run();
+        await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE cicloId=? AND modCod=? AND departamento=?').bind(nombre, row.cicloId, row.modCod, dept).run();
       } else if (!esMio && eraMio) {
-        await env.DB.prepare("UPDATE ciclos SET responsable='' WHERE cicloId=? AND modCod=?").bind(row.cicloId, row.modCod).run();
+        await env.DB.prepare("UPDATE ciclos SET responsable='' WHERE cicloId=? AND modCod=? AND departamento=?").bind(row.cicloId, row.modCod, dept).run();
       }
     }
     await auditLog(env.DB, user, 'userAssignModulos', `Módulos asignados a ${nombre}: ${modulos.join(',')}`);

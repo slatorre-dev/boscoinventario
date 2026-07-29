@@ -92,9 +92,13 @@ export async function onRequestGet({ request, env }) {
   if (action === 'login') {
     if (!u || !p) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
     const user = await env.DB.prepare(
-      'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND password=?'
+      'SELECT usuario, nombre, rol, email, departamento FROM usuarios WHERE usuario=? AND password=?'
     ).bind(u.trim(), p).first();
     if (!user) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+    if (user.departamento) {
+      const dept = await env.DB.prepare('SELECT nombre, icono FROM departamentos WHERE slug=?').bind(user.departamento).first().catch(() => null);
+      if (dept) { user.departamentoNombre = dept.nombre; user.departamentoIcono = dept.icono; }
+    }
     return Response.json({ ok: true, user });
   }
 

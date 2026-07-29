@@ -6,6 +6,10 @@ function normalizeText(value) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
+
 function canReadFullHistory(user, url) {
   const usuario = normalizeText(user?.usuario);
   const loginUsuario = normalizeText(url.searchParams.get('u'));
@@ -66,6 +70,8 @@ export async function onRequest(context) {
   const { request, env, data } = context;
   const url = new URL(request.url);
   const user = data?.user || request.user;
+  const superadmin = isSuperAdmin(user);
+  const dept = user?.departamento || '';
 
   if (request.method === 'GET') {
     try {
@@ -73,6 +79,12 @@ export async function onRequest(context) {
       const itemId = url.searchParams.get('itemId');
 
       if (itemId) {
+        if (!superadmin) {
+          const itemRow = await env.DB.prepare('SELECT departamento FROM inventario WHERE id=?').bind(String(itemId)).first();
+          if (itemRow && (itemRow.departamento || '') !== dept) {
+            return json({ ok: false, error: 'No autorizado' }, { status: 403 });
+          }
+        }
         const result = await env.DB.prepare(`
           SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
                  inventario.item AS itemNombre
@@ -90,14 +102,25 @@ export async function onRequest(context) {
         return json({ ok: false, error: 'No autorizado' }, { status: 403 });
       }
 
-      const result = await env.DB.prepare(`
-        SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
-               inventario.item AS itemNombre
-        FROM log
-        LEFT JOIN inventario ON CAST(log.itemId AS INTEGER) = inventario.id
-        ORDER BY log.id DESC
-        LIMIT 5000
-      `).all();
+      const result = superadmin
+        ? await env.DB.prepare(`
+            SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
+                   inventario.item AS itemNombre
+            FROM log
+            LEFT JOIN inventario ON CAST(log.itemId AS INTEGER) = inventario.id
+            ORDER BY log.id DESC
+            LIMIT 5000
+          `).all()
+        : await env.DB.prepare(`
+            SELECT log.id, log.fecha, log.usuario, log.nombre, log.rol, log.accion, log.itemId, log.resumen,
+                   inventario.item AS itemNombre
+            FROM log
+            LEFT JOIN inventario ON CAST(log.itemId AS INTEGER) = inventario.id
+            LEFT JOIN usuarios ON usuarios.usuario = log.usuario
+            WHERE usuarios.departamento = ?
+            ORDER BY log.id DESC
+            LIMIT 5000
+          `).bind(dept).all();
 
       return json((result.results || []).map(mapLogRow));
     } catch (err) {

@@ -93,6 +93,22 @@ async function validateGoogleToken(token, clientId) {
   return payload;
 }
 
+// Mapeo conocido correo -> departamento (docs/PLAN_MULTIDEPARTAMENTO.md).
+// Los correos @iesjuanbosco.es no listados aquí se crean sin departamento
+// asignado (quedan sin ver inventario hasta que un superadmin se lo asigne).
+const EMAIL_DEPT_MAP = {
+  slatorre: 'electricidadelectronica',
+  ochacon: 'fabricacionmecanica',
+  mcarbonell: 'informatica',
+  cmena: 'comercio',
+  ayera: 'matematicas',
+  pblanco: 'geografiahistoria',
+  jillescas: 'tecnologia',
+  calberca: 'filosofia',
+  rsanchez: 'fisicaquimica',
+  ccarpio: 'cienciasnaturales',
+};
+
 /**
  * Crear usuario automáticamente si no existe
  */
@@ -103,7 +119,7 @@ async function ensureUser(db, email, name) {
 
   // Si el usuario ya existe, devolver los datos existentes
   let user = await db.prepare(
-    'SELECT usuario, nombre, rol, email, google_id, session_token FROM usuarios WHERE email=?'
+    'SELECT usuario, nombre, rol, email, google_id, session_token, departamento FROM usuarios WHERE email=?'
   ).bind(email).first();
 
   if (user) {
@@ -134,12 +150,13 @@ async function ensureUser(db, email, name) {
   // Crear usuario nuevo con rol "profesor" por defecto
   const sessionToken = generateSessionToken();
   const randomPass = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const departamento = EMAIL_DEPT_MAP[baseUsuario.toLowerCase()] || '';
 
   try {
     await db.prepare(`
-      INSERT INTO usuarios (usuario, nombre, email, password, rol, google_id, auth_method, session_token, created_at)
-      VALUES (?, ?, ?, ?, 'profesor', ?, 'google', ?, datetime('now'))
-    `).bind(usuario, name || email, email, randomPass, email, sessionToken).run();
+      INSERT INTO usuarios (usuario, nombre, email, password, rol, google_id, auth_method, session_token, created_at, departamento)
+      VALUES (?, ?, ?, ?, 'profesor', ?, 'google', ?, datetime('now'), ?)
+    `).bind(usuario, name || email, email, randomPass, email, sessionToken, departamento).run();
 
     console.log('Usuario creado exitosamente:', usuario);
 
@@ -150,6 +167,7 @@ async function ensureUser(db, email, name) {
       rol: 'profesor',
       google_id: email,
       session_token: sessionToken,
+      departamento,
     };
   } catch (err) {
     console.error('Error creando usuario:', err.message);
@@ -198,6 +216,11 @@ export async function onRequestPost({ request, env }) {
 
     // 4. Crear o recuperar usuario
     const user = await ensureUser(env.DB, email, googlePayload.name);
+    let departamentoNombre = '';
+    if (user.departamento) {
+      const dept = await env.DB.prepare('SELECT nombre FROM departamentos WHERE slug=?').bind(user.departamento).first().catch(() => null);
+      departamentoNombre = dept?.nombre || '';
+    }
 
     // 5. Devolver SESSION compatible con el cliente
     return Response.json({
@@ -207,6 +230,8 @@ export async function onRequestPost({ request, env }) {
         nombre: user.nombre,
         email: user.email,
         rol: user.rol,
+        departamento: user.departamento || '',
+        departamentoNombre,
         google_id: user.google_id || email,
         auth_method: 'google',
         session_token: user.session_token, // ← Token para uso posterior

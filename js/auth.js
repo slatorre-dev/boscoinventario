@@ -29,7 +29,9 @@ async function doLogin(){
       password: password,
       nombre: res.user.nombre || usuario,
       rol: res.user.rol || 'profesor',
-      email: res.user.email || ''
+      email: res.user.email || '',
+      departamento: res.user.departamento || '',
+      departamentoNombre: res.user.departamentoNombre || ''
     };
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
     document.getElementById('loginUser').value = '';
@@ -87,6 +89,8 @@ async function handleGoogleSignIn(response) {
       nombre: loginData.user.nombre,
       email: loginData.user.email,
       rol: loginData.user.rol,
+      departamento: loginData.user.departamento || '',
+      departamentoNombre: loginData.user.departamentoNombre || '',
       google_id: loginData.user.google_id,
       auth_method: 'google',
       session_token: loginData.user.session_token, // ← Token para requests posteriores
@@ -223,7 +227,7 @@ function showUserChip(){
   document.getElementById('userName').textContent = SESSION.nombre || SESSION.usuario;
   document.getElementById('userChip').style.display = 'flex';
   const deptEl = document.getElementById('brandDept');
-  if(deptEl) deptEl.textContent = (SESSION.rol === 'superadmin') ? '' : (SESSION.nombre || '');
+  if(deptEl) deptEl.textContent = (SESSION.rol === 'superadmin') ? '' : (SESSION.departamentoNombre || '');
   if(typeof applyRoleUI === 'function') applyRoleUI();
   if(typeof showHistorialButton === 'function') showHistorialButton();
 }
@@ -234,7 +238,8 @@ function syncSessionUser(user){
     ...SESSION,
     nombre: user.nombre || SESSION.nombre || SESSION.usuario,
     rol: user.rol || SESSION.rol || 'profesor',
-    email: user.email || SESSION.email || ''
+    email: user.email || SESSION.email || '',
+    departamento: user.departamento || SESSION.departamento || ''
   };
   localStorage.setItem('inv_session', JSON.stringify(SESSION));
 }

@@ -33,11 +33,12 @@ async function auditLog(db, user, accion, itemId, resumen) {
   }
 }
 
-async function getAuditActor(request, env) {
+async function getAuditActor(request, env, data) {
+  if (data?.user?.usuario) return data.user;
   if (request.user?.usuario) return request.user;
   const usuario = new URL(request.url).searchParams.get('u') || '';
   if (!usuario) return {};
-  const row = await env.DB.prepare('SELECT usuario, nombre, rol FROM usuarios WHERE usuario=?')
+  const row = await env.DB.prepare('SELECT usuario, nombre, rol, departamento FROM usuarios WHERE usuario=?')
     .bind(usuario.trim()).first().catch(() => null);
   return row || { usuario: usuario.trim(), nombre: usuario.trim(), rol: '' };
 }
@@ -53,12 +54,20 @@ function itemAuditSummary(prefix, item) {
   return `${prefix}: ${item.item || ''}${parts.length ? ' - ' + parts.join(' - ') : ''}`;
 }
 
-export async function onRequestPost({ request, env }) {
+async function itemDept(db, id) {
+  const row = await db.prepare('SELECT departamento FROM inventario WHERE id=?').bind(id).first();
+  return row?.departamento || '';
+}
+
+export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action, item, id } = body;
-  const user = await getAuditActor(request, env);
+  const user = await getAuditActor(request, env, data);
+  const superadmin = isSuperAdmin(user);
+  const dept = user.departamento || '';
 
   await ensureContainerCols(env.DB);
+  await env.DB.prepare("ALTER TABLE inventario ADD COLUMN departamento TEXT DEFAULT ''").run().catch(() => {});
 
   if (action === 'add') {
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM inventario').first();
@@ -68,14 +77,18 @@ export async function onRequestPost({ request, env }) {
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
     item.tipo_material = item.es_contenedor ? 'inventariable' : (item.tipo_material || 'consumible');
+    item.departamento = superadmin ? (item.departamento || dept || '') : dept;
     const vals = HEADERS_INV.map(h => item[h] ?? null);
-    await env.DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')}) VALUES (${HEADERS_INV.map(()=>'?').join(',')})`)
-      .bind(...vals).run();
+    await env.DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')},departamento) VALUES (${HEADERS_INV.map(()=>'?').join(',')},?)`)
+      .bind(...vals, item.departamento).run();
     await auditLog(env.DB, user, 'add', newId, itemAuditSummary('Anadido', item));
     return Response.json({ ok: true, item });
   }
 
   if (action === 'update') {
+    if (!superadmin && (await itemDept(env.DB, item.id)) !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
     item.tipo_material = item.es_contenedor ? 'inventariable' : (item.tipo_material || 'consumible');
@@ -87,6 +100,9 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'delete') {
+    if (!superadmin && (await itemDept(env.DB, id)) !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
     const old = await env.DB.prepare('SELECT item, ref FROM inventario WHERE id=?').bind(id).first();
     // Desasociar hijos antes de borrar la caja
     await env.DB.prepare('UPDATE inventario SET parent_id=NULL WHERE parent_id=?').bind(id).run();
@@ -100,14 +116,15 @@ export async function onRequestPost({ request, env }) {
     if (!newItems.length) return Response.json({ ok: false, error: 'Sin items' });
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM inventario').first();
     let nextId = (maxRow.m || 0) + 1;
-    const stmt = env.DB.prepare(`INSERT OR REPLACE INTO inventario (${HEADERS_INV.join(',')}) VALUES (${HEADERS_INV.map(()=>'?').join(',')})`);
+    const stmt = env.DB.prepare(`INSERT OR REPLACE INTO inventario (${HEADERS_INV.join(',')},departamento) VALUES (${HEADERS_INV.map(()=>'?').join(',')},?)`);
     const batch = newItems.map(it => {
       if (!it.id) it.id = nextId++;
       if (!it.code) it.code = 'IB-' + String(it.id).padStart(5,'0');
       it.es_contenedor = it.es_contenedor ? 1 : 0;
       it.parent_id = it.parent_id || null;
       it.tipo_material = it.es_contenedor ? 'inventariable' : (it.tipo_material || 'consumible');
-      return stmt.bind(...HEADERS_INV.map(h => it[h] ?? null));
+      const itDept = superadmin ? (it.departamento || dept || '') : dept;
+      return stmt.bind(...HEADERS_INV.map(h => it[h] ?? null), itDept);
     });
     await env.DB.batch(batch);
     await auditLog(env.DB, user, 'bulkImport', '', `Importados ${newItems.length} items`);
@@ -115,7 +132,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'toggleOculto') {
-    if (!isSuperAdmin(user)) return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    if (!superadmin) return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     const val = body.oculto ? 1 : 0;
     await env.DB.prepare('UPDATE inventario SET oculto=? WHERE id=?').bind(val, id).run();
     const row = await env.DB.prepare('SELECT item, ref FROM inventario WHERE id=?').bind(id).first();

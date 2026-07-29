@@ -1,5 +1,14 @@
 const HEADERS_PRES = ['id','itemId','itemNombre','cantidad','aulaOrigen','aulaDestino','profesorId','profesorNombre','gestionadoPor','fechaPrestamo','fechaPrevista','fechaDevolucion','cantidadDevuelta','estado','obs'];
 
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
+
+async function itemDept(db, id) {
+  const row = await db.prepare('SELECT departamento FROM inventario WHERE id=?').bind(id).first();
+  return row?.departamento || '';
+}
+
 async function getGmailAccessToken(env) {
   if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET || !env.GOOGLE_OAUTH_REFRESH_TOKEN) return null;
   const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -55,10 +64,15 @@ export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
   const user = data?.user || request.user;
+  const superadmin = isSuperAdmin(user);
+  const dept = user?.departamento || '';
 
   if (action === 'prestarCaja') {
     // Presta todos los hijos de una caja de una vez
     const { cajaId, profesorId, profesorNombre, aulaDestino, fechaPrevista, obs, gestionadoPor, fechaPrestamo } = body;
+    if (!superadmin && (await itemDept(env.DB, cajaId)) !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
     const hijos = await env.DB.prepare('SELECT * FROM inventario WHERE parent_id=?').bind(cajaId).all();
     if (!hijos.results?.length) return Response.json({ ok: false, error: 'La caja no tiene componentes' });
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();
@@ -85,6 +99,9 @@ export async function onRequestPost({ request, env, data }) {
 
   if (action === 'prestar') {
     const pres = body.prestamo;
+    if (!superadmin && (await itemDept(env.DB, pres.itemId)) !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();
     pres.id = (maxRow.m || 0) + 1;
     pres.estado = 'Activo';
@@ -137,6 +154,9 @@ export async function onRequestPost({ request, env, data }) {
     const { presId, cantidadDevuelta, obs } = body;
     const pres = await env.DB.prepare('SELECT * FROM prestamos WHERE id=?').bind(presId).first();
     if (!pres) return Response.json({ ok: false, error: 'Préstamo no encontrado' });
+    if (!superadmin && (await itemDept(env.DB, pres.itemId)) !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
     const fecha = new Date().toISOString().split('T')[0];
     const estado = cantidadDevuelta >= pres.cantidad ? 'Devuelto' : 'Parcial';
     await env.DB.prepare('UPDATE prestamos SET fechaDevolucion=?, cantidadDevuelta=?, estado=?, obs=? WHERE id=?')

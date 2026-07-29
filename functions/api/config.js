@@ -168,17 +168,18 @@ function normalizeItemCategoryAndTags(item){
   return { cat, tags: tags.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'})).join(', ') };
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
-  const user = request.user;
+  const user = data?.user || request.user;
+  const dept = user?.departamento || '';
 
   if (action === 'aulasSync') {
     const aulas = body.aulas || [];
-    await env.DB.prepare('DELETE FROM aulas').run();
+    await env.DB.prepare('DELETE FROM aulas WHERE departamento=?').bind(dept).run();
     if (aulas.length) {
-      const stmt = env.DB.prepare('INSERT INTO aulas (id,name,icon,desc,th,orden) VALUES (?,?,?,?,?,?)');
-      await env.DB.batch(aulas.map(a => stmt.bind(a.id,a.name,a.icon,a.desc,a.th,a.orden||0)));
+      const stmt = env.DB.prepare('INSERT INTO aulas (id,name,icon,desc,th,orden,departamento) VALUES (?,?,?,?,?,?,?)');
+      await env.DB.batch(aulas.map(a => stmt.bind(a.id,a.name,a.icon,a.desc,a.th,a.orden||0,dept)));
     }
     await auditLog(env.DB, user, 'aulasSync', `Sincronizadas ${aulas.length} aulas`);
     return Response.json({ ok: true });
@@ -197,10 +198,10 @@ export async function onRequestPost({ request, env }) {
         seen.add(key);
         return true;
       });
-    await env.DB.prepare('DELETE FROM categorias').run();
+    await env.DB.prepare('DELETE FROM categorias WHERE departamento=?').bind(dept).run();
     if (cats.length) {
-      const stmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden) VALUES (?,?,?,?,?)');
-      await env.DB.batch(cats.map(c => stmt.bind(c.name,String(c.c||'#6b7280'),String(c.bg||'#f9fafb'),String(c.i||'🏷️'),c.orden||0)));
+      const stmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden,departamento) VALUES (?,?,?,?,?,?)');
+      await env.DB.batch(cats.map(c => stmt.bind(c.name,String(c.c||'#6b7280'),String(c.bg||'#f9fafb'),String(c.i||'🏷️'),c.orden||0,dept)));
     }
     await auditLog(env.DB, user, 'catsSync', `Sincronizadas ${cats.length} categorías`);
     return Response.json({ ok: true });
@@ -208,7 +209,7 @@ export async function onRequestPost({ request, env }) {
 
   if (action === 'normalizeCategoriesTags') {
     await env.DB.prepare("ALTER TABLE inventario ADD COLUMN tags TEXT DEFAULT ''").run().catch(() => {});
-    const inv = await env.DB.prepare('SELECT * FROM inventario').all();
+    const inv = await env.DB.prepare('SELECT * FROM inventario WHERE departamento=?').bind(dept).all();
     const rows = inv.results || [];
     const updates = [];
     for (const item of rows) {
@@ -221,17 +222,17 @@ export async function onRequestPost({ request, env }) {
       const stmt = env.DB.prepare('UPDATE inventario SET cat=?, tags=? WHERE id=?');
       await env.DB.batch(updates.map(u => stmt.bind(u.cat, u.tags, u.id)));
     }
-    await env.DB.prepare('DELETE FROM categorias').run();
-    const catStmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden) VALUES (?,?,?,?,?)');
-    await env.DB.batch(NORMALIZED_CATS.map(c => catStmt.bind(c.name,c.c,c.bg,c.i,c.orden)));
+    await env.DB.prepare('DELETE FROM categorias WHERE departamento=?').bind(dept).run();
+    const catStmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden,departamento) VALUES (?,?,?,?,?,?)');
+    await env.DB.batch(NORMALIZED_CATS.map(c => catStmt.bind(c.name,c.c,c.bg,c.i,c.orden,dept)));
     await auditLog(env.DB, user, 'normalizeCategoriesTags', `Normalizadas categorias y tags en ${updates.length} items`);
-    const items = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    const items = await env.DB.prepare('SELECT * FROM inventario WHERE departamento=? ORDER BY id').bind(dept).all();
     return Response.json({ ok: true, updated: updates.length, cats: NORMALIZED_CATS, items: items.results || [] });
   }
 
   if (action === 'normalizeTagsCanonical') {
     await env.DB.prepare("ALTER TABLE inventario ADD COLUMN tags TEXT DEFAULT ''").run().catch(() => {});
-    const inv = await env.DB.prepare('SELECT id, tags FROM inventario').all();
+    const inv = await env.DB.prepare('SELECT id, tags FROM inventario WHERE departamento=?').bind(dept).all();
     const rows = inv.results || [];
     const updates = [];
     for (const item of rows) {
@@ -244,7 +245,7 @@ export async function onRequestPost({ request, env }) {
       await env.DB.batch(updates.map(u => stmt.bind(u.tags, u.id)));
     }
     await auditLog(env.DB, user, 'normalizeTagsCanonical', `Normalizados tags en ${updates.length} items`);
-    const items = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    const items = await env.DB.prepare('SELECT * FROM inventario WHERE departamento=? ORDER BY id').bind(dept).all();
     return Response.json({ ok: true, updated: updates.length, items: items.results || [] });
   }
 
@@ -252,7 +253,7 @@ export async function onRequestPost({ request, env }) {
     const oldTag = String(body.oldTag || '').trim();
     const newTag = String(body.newTag || '').trim();
     if (!oldTag || !newTag) return Response.json({ ok: false, error: 'Faltan parámetros' });
-    const inv = await env.DB.prepare('SELECT id, tags FROM inventario').all();
+    const inv = await env.DB.prepare('SELECT id, tags FROM inventario WHERE departamento=?').bind(dept).all();
     const rows = inv.results || [];
     const updates = [];
     const oldLower = oldTag.toLowerCase();
@@ -267,14 +268,14 @@ export async function onRequestPost({ request, env }) {
       await env.DB.batch(updates.map(u => stmt.bind(u.tags, u.id)));
     }
     await auditLog(env.DB, user, 'renameTag', `Tag "${oldTag}" → "${newTag}" en ${updates.length} ítems`);
-    const updated = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    const updated = await env.DB.prepare('SELECT * FROM inventario WHERE departamento=? ORDER BY id').bind(dept).all();
     return Response.json({ ok: true, updated: updates.length, items: updated.results || [] });
   }
 
   if (action === 'deleteTag') {
     const tag = String(body.tag || '').trim();
     if (!tag) return Response.json({ ok: false, error: 'Falta parámetro tag' });
-    const inv = await env.DB.prepare('SELECT id, tags FROM inventario').all();
+    const inv = await env.DB.prepare('SELECT id, tags FROM inventario WHERE departamento=?').bind(dept).all();
     const rows = inv.results || [];
     const tagLower = tag.toLowerCase();
     const updates = [];
@@ -288,7 +289,7 @@ export async function onRequestPost({ request, env }) {
       await env.DB.batch(updates.map(u => stmt.bind(u.tags, u.id)));
     }
     await auditLog(env.DB, user, 'deleteTag', `Tag "${tag}" eliminado de ${updates.length} ítems`);
-    const updated = await env.DB.prepare('SELECT * FROM inventario ORDER BY id').all();
+    const updated = await env.DB.prepare('SELECT * FROM inventario WHERE departamento=? ORDER BY id').bind(dept).all();
     return Response.json({ ok: true, updated: updates.length, items: updated.results || [] });
   }
 
@@ -308,21 +309,21 @@ export async function onRequestPost({ request, env }) {
     const ciclos = body.ciclos || [];
     await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
     // Preservar responsables antes de borrar
-    const existentes = await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos').all();
+    const existentes = await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos WHERE departamento=?').bind(dept).all();
     const respMap = {};
     for (const r of (existentes.results || [])) {
       respMap[`${r.cicloId}__${r.modCod}`] = r.responsable || '';
       if (!respMap[String(r.modCod)]) respMap[String(r.modCod)] = r.responsable || '';
     }
-    await env.DB.prepare('DELETE FROM ciclos').run();
+    await env.DB.prepare('DELETE FROM ciclos WHERE departamento=?').bind(dept).run();
     const rows = [];
     ciclos.forEach((c, ci) => (c.modulos||[]).forEach((m, mi) => {
       const modKey = `${c.id}__${m.cod}`;
       rows.push({ cicloId:c.id, cicloNombre:c.name, nivel:c.nivel||'', icon:c.icon||'', th:c.th||'', desc:c.desc||'', modCod:m.cod, modNombre:m.name, modHoras:m.horas||0, cicloOrden:ci, modOrden:mi, responsable: respMap[modKey] || respMap[String(m.cod)] || '' });
     }));
     if (rows.length) {
-      const stmt = env.DB.prepare('INSERT INTO ciclos (cicloId,cicloNombre,nivel,icon,th,desc,modCod,modNombre,modHoras,cicloOrden,modOrden,responsable) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-      await env.DB.batch(rows.map(r => stmt.bind(r.cicloId,r.cicloNombre,r.nivel,r.icon,r.th,r.desc,r.modCod,r.modNombre,r.modHoras,r.cicloOrden,r.modOrden,r.responsable)));
+      const stmt = env.DB.prepare('INSERT INTO ciclos (cicloId,cicloNombre,nivel,icon,th,desc,modCod,modNombre,modHoras,cicloOrden,modOrden,responsable,departamento) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+      await env.DB.batch(rows.map(r => stmt.bind(r.cicloId,r.cicloNombre,r.nivel,r.icon,r.th,r.desc,r.modCod,r.modNombre,r.modHoras,r.cicloOrden,r.modOrden,r.responsable,dept)));
     }
     await auditLog(env.DB, user, 'ciclosSync', `Sincronizados ${ciclos.length} ciclos`);
     return Response.json({ ok: true });
