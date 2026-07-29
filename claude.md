@@ -1,10 +1,14 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v475 | 29/07/2026 | Multi-departamento: Fases 0, 1 y 2 del plan
+**Estado:** v476 | 29/07/2026 | Multi-departamento: Fases 0, 1 y 2 del plan
 implementadas y desplegadas. Repo `slatorre-dev/boscoinventario` en marcha,
-D1 propia (`boscoinventario`) con 24 departamentos, aislamiento real por
-departamento en el backend. Falta Fase 3 (selector de departamento para
-superadmin en el frontend).
+D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
+(`iesjuanbosco`), aislamiento real por departamento en el backend, ciclos
+formativos/asignaturas reales sembrados para todos los departamentos, 3
+usuarios `superadmin`. Falta Fase 3 (selector de departamento para
+superadmin en el frontend) y una tarea suelta: icono del botón de easter
+egg del "juego del departamento" fijo a `dept-electricidad.svg` para todos
+(pendiente de decidir sustituto, ver Pendiente).
 
 Inventario general del **IES El Bosco**: cada departamento gestiona su
 propio inventario (aulas, categorías, ciclos, profesores, préstamos) desde
@@ -116,6 +120,34 @@ lo ya construido:
 - `userAssignModulos` en `usuarios.js`: si lo ejecuta un `superadmin` sin
   departamento propio asignado, solo tocará ciclos con `departamento=''`.
 
+### Ciclos/asignaturas reales sembrados (migraciones `0009`/`0010`/`0011`)
+- Terminología: "Ciclo" → **Ciclo/Departamento**, "Módulo" → **Asignatura/Módulo**
+  en toda la UI (nuevo ítem, ⚙️ Gestionar ciclos, Volt, impresión/QR,
+  breadcrumbs) — un mismo modelo de datos (`ciclos`, ya scoped por
+  departamento) sirve tanto para ciclos formativos de FP como para
+  asignaturas de departamentos académicos. No hizo falta tabla nueva.
+- `0009_ciclos_asignaturas_seed.sql`: 1 "ciclo/departamento" por cada uno de
+  los 15 departamentos académicos (Artes Plásticas, Ciencias Naturales,
+  Economía, Educación Física y Deportiva, Filosofía, Física y Química, FOL,
+  Francés, Geografía e Historia, Inglés, Latín y Griego, Lengua Castellana y
+  Literatura, Matemáticas, Música, Tecnología) con sus asignaturas reales
+  como "módulos" (código autogenerado M01..). Sanidad: 2 ciclos formativos
+  reales (TES, TAPC) con sus módulos oficiales.
+- `0010_ciclos_fp_seed.sql`: ciclos formativos reales del resto de
+  departamentos de FP — Actividades Físicas y Deportivas (TSEAS, TSAF),
+  Administración (GA, AF, AD), Comercio (AC, GVEC), Edificación y Obra Civil
+  (TPE), Electricidad y Electrónica (IT, IEA, MELE, SEA — sustituye a los
+  ciclos hardcodeados de `js/config.js`, que siguen ahí solo como fallback
+  local pre-login), Fabricación Mecánica (MEC, PPFM), Imagen Personal (EB,
+  PCC, EDP), Informática (SMR, ASIR, DAW, DAM + CETI, curso de
+  especialización — `nivel='CE'`).
+- `0011_departamento_generico.sql`: departamento **`iesjuanbosco`** ("IES
+  Juan Bosco") + aula propia + ciclo/asignatura "IES Juan Bosco", para
+  material que no pertenece a ningún departamento concreto. Sin usuario
+  propio todavía (solo gestionable por `superadmin` por ahora).
+- `0012_superadmins_seed.sql`: 2 superadmin más aparte de `Admin`: `Seba`
+  (slatorre@iesjuanbosco.es) y `jillescas` (jillescas@iesjuanbosco.es).
+
 ---
 
 ## Arquitectura de archivos clave
@@ -136,7 +168,9 @@ js/
   auth.js               — Login, badge de departamento (#brandDept)
 
 sw.js                   — Service Worker, VERSION aquí
-migrations/             — SQL de migraciones D1 (0001-0006 esquema/seed original, 0007-0008 multi-departamento)
+migrations/             — SQL de migraciones D1 (0001-0006 esquema/seed original,
+  0007-0008 modelo multi-departamento + aulas, 0009-0011 ciclos/asignaturas
+  reales + departamento genérico, 0012 superadmins)
 ```
 
 ---
@@ -208,7 +242,7 @@ Detalle completo en [`docs/BACKEND_APRENDIZAJE_INTENCIONES.md`](docs/BACKEND_APR
 Movido a [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) (todas las sesiones
 desde v317 + tabla de versionado completa). Últimas sesiones, resumen:
 
-- **29/07/2026 (v469-v475):** sesión larga de migración a multi-departamento.
+- **29/07/2026 (v469-v476):** sesión larga de migración a multi-departamento.
   1) Repo subido y sincronizado en `slatorre-dev/boscoinventario` (origin
      reapuntado, remoto viejo `slatorre` intacto). 2) Creada D1 propia
      `boscoinventario` (independiente de cualquier base anterior), 7
@@ -220,8 +254,20 @@ desde v317 + tabla de versionado completa). Últimas sesiones, resumen:
      departamento implementado (Fase 1+2, ver sección arriba): tabla
      `departamentos`, columna `departamento` en las tablas clave, scoping en
      todos los endpoints backend. 6) Seed de 94 aulas (70 globales + 24
-     propias de departamento). Pendiente: Fase 3 (selector de departamento
-     para superadmin en frontend) y scoping de `docs.js`/`backup.js`.
+     propias de departamento). 7) Renombrada la UI "Ciclo"→"Ciclo/Departamento"
+     y "Módulo"→"Asignatura/Módulo"; sembradas asignaturas/ciclos formativos
+     reales de los 24 departamentos (~540 filas en `ciclos`, migraciones
+     0009/0010). 8) Departamento genérico `iesjuanbosco` ("IES Juan Bosco")
+     para material sin departamento concreto (migración 0011). 9) 2
+     superadmin más: `Seba` y `jillescas` (migración 0012). Documentación
+     (`claude.md`, `docs/CONTEXT.md`, `docs/ARCHITECTURE.md`,
+     `docs/PLAN_MULTIDEPARTAMENTO.md`) reescrita para reflejar todo esto y
+     quitar las referencias al proyecto antiguo de un solo departamento.
+     Pendiente: Fase 3 (selector de departamento para superadmin en
+     frontend), scoping de `docs.js`/`backup.js`, e icono del botón de
+     easter egg del juego del departamento (hoy fijo a
+     `icons/dept-electricidad.svg` para todos, pendiente de decidir
+     sustituto — ver Pendiente).
 - **30/05/2026 (v468):** servidor Apache restaurado tras 24h de caída por un
   script `observed.service` que mataba procesos de alto CPU y tumbaba
   Docker Desktop. Los 8 contenedores (apache, mysql, n8n, influxdb, nodered,
@@ -238,15 +284,24 @@ Backlog corto en [`docs/ROADMAP.md`](docs/ROADMAP.md), seguridad en
 [`docs/PLAN_MULTIDEPARTAMENTO.md`](docs/PLAN_MULTIDEPARTAMENTO.md). Próximos
 pasos concretos:
 
-1. **Fase 3 del plan multi-departamento**: selector de departamento para
+1. **Icono del botón de easter egg** (`btnDeptGame`, "juego del
+   departamento"): ya es dinámico por departamento (emoji de
+   `departamentos.icono`, migración `0013`, mostrado vía `#deptGameIcon` en
+   `js/auth.js`/`showUserChip()`). Falta el "icono principal" — el usuario
+   quiere sustituir el fallback (hoy sigue siendo `icons/dept-electricidad.svg`,
+   usado cuando no hay departamento, ej. `superadmin`) por una imagen que
+   pegó en el chat; pendiente de que la guarde como archivo en el repo
+   (no hay forma de extraer bytes de una imagen pegada en la conversación).
+2. **Fase 3 del plan multi-departamento**: selector de departamento para
    `superadmin` en el frontend; campo departamento en alta de
    usuarios/profesores desde la UI.
-2. Scoping por departamento de `docs.js` (documentos adjuntos) y `backup.js`.
-3. Repartir credenciales (`departamentoXXX`/`profe1XXX`) a cada jefe/a de
+3. Scoping por departamento de `docs.js` (documentos adjuntos) y `backup.js`.
+4. Repartir credenciales (`departamentoXXX`/`profe1XXX`) a cada jefe/a de
    departamento real y comprobar que ven solo su propio inventario.
-4. Seguridad crítica pendiente desde antes de la migración multi-departamento
+5. Seguridad crítica pendiente desde antes de la migración multi-departamento
    (sin relación con lo anterior): credenciales en query params, contraseñas
    sin hash — ver `docs/SECURITY.md`.
+6. Ver más ideas de usabilidad sugeridas en [`docs/IDEAS.md`](docs/IDEAS.md).
 
 ---
 

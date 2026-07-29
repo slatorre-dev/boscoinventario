@@ -217,9 +217,11 @@ export async function onRequestPost({ request, env }) {
     // 4. Crear o recuperar usuario
     const user = await ensureUser(env.DB, email, googlePayload.name);
     let departamentoNombre = '';
+    let departamentoIcono = '';
     if (user.departamento) {
-      const dept = await env.DB.prepare('SELECT nombre FROM departamentos WHERE slug=?').bind(user.departamento).first().catch(() => null);
+      const dept = await env.DB.prepare('SELECT nombre, icono FROM departamentos WHERE slug=?').bind(user.departamento).first().catch(() => null);
       departamentoNombre = dept?.nombre || '';
+      departamentoIcono = dept?.icono || '';
     }
 
     // 5. Devolver SESSION compatible con el cliente
@@ -232,6 +234,7 @@ export async function onRequestPost({ request, env }) {
         rol: user.rol,
         departamento: user.departamento || '',
         departamentoNombre,
+        departamentoIcono,
         google_id: user.google_id || email,
         auth_method: 'google',
         session_token: user.session_token, // ← Token para uso posterior

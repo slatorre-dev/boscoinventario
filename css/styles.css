@@ -75,6 +75,7 @@ body{
 .tbtn:hover{background:var(--surface2)}
 .dept-game-btn{width:38px;height:38px;padding:4px;justify-content:center}
 .dept-game-btn img{width:28px;height:28px;display:block}
+.dept-game-icon{display:flex;align-items:center;justify-content:center;width:28px;height:28px;font-size:20px;line-height:1}
 .tbtn-dept{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tbtn-dept:hover{background:#1d4ed8;border-color:#1d4ed8}
 .tbtn-reload{padding:6px 10px;border-color:transparent;background:none;color:var(--muted);font-size:16px}

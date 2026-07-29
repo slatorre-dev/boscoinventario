@@ -59,36 +59,49 @@ Profesores solo ven y editan items de su aula.
 
 ## Inventario General del Instituto
 
-### Módulo Multi-Departamento
-Actualmente la app gestiona el inventario de un solo departamento (Electricidad/FP). La idea es extenderla para que el **instituto completo** pueda inventariar todos sus departamentos desde una misma instancia.
+### Módulo Multi-Departamento — ✅ implementado (29/07/2026)
+Hecho: tabla `departamentos`, columna `departamento` en tablas clave,
+scoping backend completo, un ciclo/departamento con sus asignaturas/módulos
+por cada uno de los 24 departamentos + 1 genérico. Detalle completo en
+[PLAN_MULTIDEPARTAMENTO.md](PLAN_MULTIDEPARTAMENTO.md) y `claude.md`.
+Queda pendiente la Fase 3 (frontend): selector de departamento para
+`superadmin`, y las ideas de usabilidad de la siguiente sección.
 
-**Casos de uso:**
-- Jefatura de estudios ve el inventario global de todos los departamentos
-- Cada jefe de departamento gestiona solo el suyo
-- Inventario compartido (sala de actos, biblioteca, aulas comunes)
-- Coordinación de recursos entre departamentos ("¿alguien tiene un proyector libre?")
+### Multi-departamento — mejoras de usabilidad pendientes
 
-**Enfoque técnico:**
-- Nueva columna `departamento_id` en tabla `items`
-- Nueva tabla `departamentos` (id, nombre, color, responsable_id)
-- Roles extendidos: `superadmin_instituto` > `admin_departamento` > `jefe` > `profesor` > `alumno`
-- Filtro global por departamento en la UI (selector en navbar o home)
-- Cada departamento tiene su propia vista pero comparten la misma base D1
-- Opción: instancias D1 separadas por departamento (más aislamiento, más coste)
+**Preseleccionar Ciclo/Departamento cuando solo hay uno**
+La mayoría de departamentos académicos (Matemáticas, Filosofía...) solo
+tienen un "ciclo/departamento" propio en la lista filtrada. Si el select
+de Ciclo/Departamento en "Nuevo ítem" solo tiene una opción real (aparte
+de "Sin asignar"), preseleccionarla automáticamente — ahorra un clic en
+la mayoría de altas de ítem.
+**Prioridad:** Media
 
-**Ventajas del enfoque single-D1:**
-- Sin coste adicional de infraestructura
-- Búsquedas cruzadas entre departamentos
-- Un solo deploy de Cloudflare Pages
+**Agrupar aulas globales vs. propias en el desplegable**
+El select de Aula mezcla las 70 aulas globales del centro con la aula
+propia del departamento. Usar `<optgroup>` ("Aulas del centro" / "Aula del
+departamento") ayuda a distinguirlas de un vistazo.
+**Prioridad:** Media
 
-**Pasos de implementación:**
-1. Migración D1: añadir tabla `departamentos` + columna `departamento_id` en `items` y `usuarios`
-2. Backend: filtrar todos los endpoints por `departamento_id` del usuario autenticado
-3. Frontend: selector de departamento en home/navbar para superadmin
-4. Panel de superadmin con stats globales del instituto
-5. Importación masiva por departamento (CSV/Excel)
+**Forzar cambio de contraseña en el primer login de cuentas genéricas**
+Las 48 cuentas `departamentoXXX`/`profe1XXX` tienen usuario=contraseña.
+Detectar ese patrón (o un flag `password_temporal`) y redirigir a cambiar
+contraseña antes de dejar usar el resto de la app.
+**Prioridad:** Alta — es la recomendación de seguridad ya anotada en
+PLAN_MULTIDEPARTAMENTO.md, pero también mejora la percepción de "esta es
+mi cuenta" para cada jefe/a de departamento.
 
-**Prioridad:** Alta — alto impacto institucional
+**Selector de departamento para superadmin con contexto persistente**
+Parte de la Fase 3 ya planificada: que al elegir un departamento desde el
+selector, quede fijado en `localStorage` (como aula/paginación) para no
+tener que re-seleccionarlo en cada sesión.
+**Prioridad:** Media
+
+**Estado vacío por departamento**
+Todos los departamentos arrancan con 0 ítems. Un estado vacío tipo
+"Añade tu primer ítem" con CTA directo (en vez de tabla vacía) ayuda en
+el primer uso real de cada jefe/a de departamento.
+**Prioridad:** Media-Alta
 
 ---
 
@@ -242,5 +255,5 @@ CSV o PDF con items problemáticos agrupados por aula/categoría.
 
 ## Estado
 
-- **Última actualización:** 26/05/2026
-- **Versión actual:** v415
+- **Última actualización:** 29/07/2026
+- **Versión actual:** v476

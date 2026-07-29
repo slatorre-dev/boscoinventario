@@ -31,7 +31,8 @@ async function doLogin(){
       rol: res.user.rol || 'profesor',
       email: res.user.email || '',
       departamento: res.user.departamento || '',
-      departamentoNombre: res.user.departamentoNombre || ''
+      departamentoNombre: res.user.departamentoNombre || '',
+      departamentoIcono: res.user.departamentoIcono || ''
     };
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
     document.getElementById('loginUser').value = '';
@@ -91,6 +92,7 @@ async function handleGoogleSignIn(response) {
       rol: loginData.user.rol,
       departamento: loginData.user.departamento || '',
       departamentoNombre: loginData.user.departamentoNombre || '',
+      departamentoIcono: loginData.user.departamentoIcono || '',
       google_id: loginData.user.google_id,
       auth_method: 'google',
       session_token: loginData.user.session_token, // ← Token para requests posteriores
@@ -228,6 +230,11 @@ function showUserChip(){
   document.getElementById('userChip').style.display = 'flex';
   const deptEl = document.getElementById('brandDept');
   if(deptEl) deptEl.textContent = (SESSION.rol === 'superadmin') ? '' : (SESSION.departamentoNombre || '');
+  const deptIconEl = document.getElementById('deptGameIcon');
+  if(deptIconEl){
+    if(SESSION.departamentoIcono) deptIconEl.textContent = SESSION.departamentoIcono;
+    else deptIconEl.innerHTML = '<img src="icons/dept-electricidad.svg" alt="">';
+  }
   if(typeof applyRoleUI === 'function') applyRoleUI();
   if(typeof showHistorialButton === 'function') showHistorialButton();
 }

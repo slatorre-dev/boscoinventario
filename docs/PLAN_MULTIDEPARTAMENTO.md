@@ -25,6 +25,17 @@ Todo esto está corregido — ver detalle técnico completo en
 [`claude.md`](../claude.md#multi-departamento--estado-de-implementación-29072026)
 y en las migraciones `0007_departamentos.sql` / `0008_aulas_seed.sql`.
 
+Además, ya se sembraron datos reales (no solo estructura vacía):
+`0009`/`0010` — asignaturas de los 15 departamentos académicos + ciclos
+formativos reales de todos los departamentos de FP (incluida Electricidad y
+Electrónica, sustituyendo a los datos de ejemplo hardcodeados en
+`js/config.js`); `0011` — departamento genérico `iesjuanbosco` ("IES Juan
+Bosco") para material sin departamento concreto; `0012` — 2 superadmin
+adicionales (`Seba`, `jillescas`); `0013` — icono (emoji) propio por
+departamento en la tabla `departamentos`, usado también en el botón del
+"juego del departamento" del topbar (antes fijo a un icono de Electricidad
+para todos).
+
 ## Departamentos del centro
 
 Lista de partida (número de ítems ya cargados entre paréntesis; los que
