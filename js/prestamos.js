@@ -261,7 +261,7 @@ function onPresItemChange(val){
   prestarItemId = item.id;
   _fillPrestarInfo(item);
   document.getElementById('pres_aulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
-    AULAS.filter(a=>a.id!==item.aula).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+    renderAulaOptions(AULAS.filter(a=>a.id!==item.aula));
   document.getElementById('pres_cant').max = item.qty;
   document.getElementById('pres_cant').value = 1;
 }
@@ -303,7 +303,7 @@ function openPrestar(itemId){
     selector.style.display = 'none';
     _fillPrestarInfo(item);
     document.getElementById('pres_aulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
-      AULAS.filter(a=>a.id!==item.aula).map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+      renderAulaOptions(AULAS.filter(a=>a.id!==item.aula));
     document.getElementById('pres_cant').value = 1;
     document.getElementById('pres_cant').max = item.qty;
   } else {
@@ -311,7 +311,7 @@ function openPrestar(itemId){
     selector.style.display = '';
     // Filtro de aulas
     document.getElementById('pres_filtAula').innerHTML = '<option value="">Todas las aulas</option>' +
-      AULAS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+      renderAulaOptions();
     document.getElementById('pres_filtQ').value = '';
     // Lista de ítems (todos con stock, ordenados)
     const disponibles = items.filter(x=>Number(x.qty)>0).sort((a,b)=>String(a.item||'').localeCompare(String(b.item||'')));
@@ -377,7 +377,7 @@ function openPrestarCaja(cajaId){
   }
 
   document.getElementById('prestarCajaAulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
-    AULAS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+    renderAulaOptions();
 
   const f = new Date(); f.setDate(f.getDate()+7);
   document.getElementById('prestarCajaFecha').value = f.toISOString().split('T')[0];

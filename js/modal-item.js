@@ -77,11 +77,12 @@ function checkModalForChanges(){
   }
 }
 
-function renderAulaOptions(){
+function renderAulaOptions(list){
+  const rows = list || AULAS;
   const opt = a=>`<option value="${a.id}">${escHtml(a.name)}</option>`;
-  const globales = AULAS.filter(a=>!a.departamento);
-  const propias = AULAS.filter(a=>a.departamento);
-  if(!globales.length || !propias.length) return AULAS.map(opt).join('');
+  const globales = rows.filter(a=>!a.departamento);
+  const propias = rows.filter(a=>a.departamento);
+  if(!globales.length || !propias.length) return rows.map(opt).join('');
   return `<optgroup label="Aulas del centro">${globales.map(opt).join('')}</optgroup>`
        + `<optgroup label="Aula del departamento">${propias.map(opt).join('')}</optgroup>`;
 }
