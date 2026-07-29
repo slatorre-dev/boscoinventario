@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v486 | 29/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v487 | 29/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
@@ -99,6 +99,11 @@ llevan ese flag.
 Login con Google (`@iesjuanbosco.es`) también funciona; mapa de 10 correos
 conocidos → departamento en `functions/api/oauth/login-google.js`
 (`EMAIL_DEPT_MAP`). Correos no mapeados se crean sin departamento asignado.
+Botón propio (`chooseGoogleAccount()` en `js/auth.js`, no el widget
+declarativo `g_id_signin`) que fuerza `disableAutoSelect()` + `prompt()`
+antes de cada intento — si no, GIS reutiliza en silencio la última cuenta
+de Google "activa" del navegador en vez de dejar elegir entre varias
+cuentas simultáneas (v487).
 
 ---
 
@@ -277,7 +282,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v486 actual)
+sw.js                   — Service Worker, VERSION aquí (v487 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -427,6 +432,16 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   del SVG anterior) se desbordaba sin esa regla. Verificado visualmente con
   Playwright (instalado temporalmente fuera del repo por los problemas de
   escritura conocidos en Google Drive, ver Entorno).
+- **29/07/2026 (v487):** login con Google no dejaba elegir entre varias
+  cuentas activas del navegador (se quedaba con la primera, no la de
+  `iesjuanbosco`). Causa: el widget declarativo `g_id_signin` reutiliza en
+  silencio la sesión de Google "activa" si el navegador tiene varias
+  cuentas simultáneas — falta forzar `disableAutoSelect()` antes de
+  `prompt()`, algo que solo se puede hacer con la API JS, no con atributos
+  `data-*`. Sustituido el botón declarativo por uno propio
+  (`chooseGoogleAccount()` en `js/auth.js`) que llama a
+  `disableAutoSelect()` + `prompt()` en cada clic, con aviso si Google no
+  llega a mostrar el selector (cookies de terceros bloqueadas, etc.).
 - **30/05/2026 (v468):** servidor Apache restaurado tras 24h de caída por un
   script `observed.service` que mataba procesos de alto CPU y tumbaba
   Docker Desktop. Los 8 contenedores (apache, mysql, n8n, influxdb, nodered,

@@ -2134,19 +2134,16 @@ body{overflow-x:hidden}
   margin: 12px 0 16px;
 }
 
-.google-signin-btn div {
+.google-account-btn {
+  background: #fff !important;
+  color: #3c4043 !important;
+  border: 1px solid var(--border) !important;
   display: flex;
+  align-items: center;
   justify-content: center;
 }
-
-/* Ajustar tamaño del botón de Google */
-.g_id_signin {
-  width: 100% !important;
-}
-
-.g_id_signin > div {
-  display: flex;
-  justify-content: center;
+.google-account-btn:hover {
+  background: #f8f9fa !important;
 }
 
 /* ── Filtros activos como chips ── */

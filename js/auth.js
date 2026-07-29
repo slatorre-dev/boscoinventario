@@ -112,6 +112,26 @@ async function doForcePasswordChange(){
 // ═════════════════════════════════════════════════════════
 // GOOGLE SIGN-IN
 // ═════════════════════════════════════════════════════════
+// Fuerza el selector de cuentas de Google: sin disableAutoSelect() previo,
+// GIS reutiliza silenciosamente la última cuenta usada en el navegador si
+// solo hay una marcada como "activa", en vez de dejar elegir entre varias.
+function chooseGoogleAccount() {
+  if (typeof google === 'undefined' || !google.accounts?.id) {
+    const errorEl = document.getElementById('loginError');
+    errorEl.textContent = 'Google Sign-In no está disponible. Recarga la página.';
+    errorEl.classList.add('show');
+    return;
+  }
+  google.accounts.id.disableAutoSelect();
+  google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      const errorEl = document.getElementById('loginError');
+      errorEl.textContent = 'No se pudo abrir el selector de cuentas de Google. Comprueba que las cookies de terceros no estén bloqueadas, o recarga la página e inténtalo de nuevo.';
+      errorEl.classList.add('show');
+    }
+  });
+}
+
 async function handleGoogleSignIn(response) {
   console.log('Google Sign-In response:', response);
   
@@ -124,11 +144,11 @@ async function handleGoogleSignIn(response) {
     return;
   }
 
+  const btn = document.querySelector('.google-account-btn');
+  const originalHTML = btn?.innerHTML;
+
   try {
     errorEl.classList.remove('show');
-    
-    const btn = document.querySelector('.g_id_signin');
-    const originalHTML = btn?.innerHTML;
     if (btn) btn.innerHTML = '<span style="font-size:14px">Comprobando...</span>';
 
     // Enviar token al backend
@@ -178,9 +198,8 @@ async function handleGoogleSignIn(response) {
     console.error('Error en Google Sign-In:', err);
     errorEl.textContent = err.message || 'Error al procesar login de Google';
     errorEl.classList.add('show');
-    
-    const btn = document.querySelector('.g_id_signin');
-    if (btn) btn.innerHTML = '<span style="font-size:14px">Sign in with Google</span>';
+
+    if (btn) btn.innerHTML = originalHTML;
   }
 }
 
