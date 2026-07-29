@@ -5,7 +5,10 @@ let aulasEditing = [];
 
 function openAulasModal(){
   if(!requirePerm('config.manage')) return;
-  aulasEditing = JSON.parse(JSON.stringify(AULAS)); // copia profunda
+  // Solo el aula propia del departamento se gestiona aquí — las aulas
+  // globales del centro y la compartida "IES Juan Bosco" no son editables
+  // desde cada departamento (evita duplicarlas al guardar).
+  aulasEditing = JSON.parse(JSON.stringify(AULAS.filter(a=>a.departamento && a.departamento!=='iesjuanbosco'))); // copia profunda
   renderAulasList();
   document.getElementById('mAulas').classList.add('open');
 }

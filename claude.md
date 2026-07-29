@@ -113,6 +113,33 @@ lo ya construido:
   que hacerlo por SQL directo (`UPDATE usuarios SET departamento=? WHERE
   usuario=?`).
 
+### Departamento "IES Juan Bosco" como bolsa compartida (29/07/2026)
+- `GENERIC_DEPT = 'iesjuanbosco'` (constante duplicada en `list.js`, `meta.js`,
+  `item.js`, `prestar.js`, `historial.js`): cualquier jefe/a departamento o
+  profesor (no solo superadmin) puede ver, crear, editar y eliminar ítems con
+  `departamento='iesjuanbosco'`, y hacer préstamos/devoluciones sobre ellos —
+  se suma a su propio departamento en todos los filtros, no lo sustituye.
+- Al crear un ítem, `item.js` deriva el departamento a partir del
+  Ciclo/Departamento elegido (`resolveItemDept()`): si el usuario selecciona
+  el ciclo "IES Juan Bosco", el ítem se archiva ahí; si no, en su propio
+  departamento. No hay checkbox nuevo en el formulario — se reutiliza el
+  desplegable de Ciclo/Departamento ya existente.
+- `js/modal-ciclos.js` y `js/modal-aulas.js` excluyen el ciclo/aula
+  compartidos de sus listas editables (si no, "Guardar" los duplicaría bajo
+  el departamento del usuario que edita).
+- `config.js` (`aulasSync`/`catsSync`/`ciclosSync`) bloquea explícitamente a
+  `superadmin` con 403 siempre, tenga o no un `departamento` propio asignado
+  — porque `meta.js`/`list.js` le siguen devolviendo TODAS las aulas/ciclos
+  sin filtrar (ve todo el centro), así que su `AULAS`/`CICLOS` en el
+  frontend no está scoped a un solo departamento y sincronizar corrompería
+  varios a la vez. Pendiente de resolverse con el selector de departamento
+  de la Fase 3.
+- Los 3 superadmin tienen ahora un `departamento` "de referencia" (migración
+  `0015`, no les restringe nada — `isSuperAdmin()` sigue viendo todo): `Admin`
+  → `iesjuanbosco`, `Seba` → `electricidadelectronica`, `jillescas` →
+  `tecnologia`. Sirve para el badge junto al logo y como base para cuando
+  exista selector de departamento propio en Fase 3.
+
 ### Gaps conocidos (no cubiertos, a valorar)
 - `functions/api/docs.js` (documentos adjuntos en Drive) y `functions/api/backup.js`
   (backup completo) **no** filtran por departamento — quedan pendientes.

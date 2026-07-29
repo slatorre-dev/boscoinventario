@@ -6,6 +6,8 @@ function normalizeText(value) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
+
 function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
@@ -81,7 +83,8 @@ export async function onRequest(context) {
       if (itemId) {
         if (!superadmin) {
           const itemRow = await env.DB.prepare('SELECT departamento FROM inventario WHERE id=?').bind(String(itemId)).first();
-          if (itemRow && (itemRow.departamento || '') !== dept) {
+          const itemRowDept = itemRow?.departamento || '';
+          if (itemRow && itemRowDept !== dept && itemRowDept !== GENERIC_DEPT) {
             return json({ ok: false, error: 'No autorizado' }, { status: 403 });
           }
         }

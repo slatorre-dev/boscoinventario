@@ -50,6 +50,8 @@ function mergeUbicaciones(savedRows, inventoryRows) {
   return rows.concat(missing);
 }
 
+const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
+
 function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
@@ -63,20 +65,20 @@ export async function onRequestGet({ request, env, data }) {
   const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows] = await Promise.all([
     superadmin
       ? env.DB.prepare('SELECT * FROM aulas ORDER BY orden').all()
-      : env.DB.prepare("SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL ORDER BY orden").bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${GENERIC_DEPT}' ORDER BY orden`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all()
       : env.DB.prepare("SELECT * FROM categorias WHERE departamento=? ORDER BY orden").bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT DISTINCT cat FROM inventario WHERE cat IS NOT NULL AND trim(cat) != '' ORDER BY cat").all()
-      : env.DB.prepare("SELECT DISTINCT cat FROM inventario WHERE cat IS NOT NULL AND trim(cat) != '' AND departamento=? ORDER BY cat").bind(dept).all(),
+      : env.DB.prepare(`SELECT DISTINCT cat FROM inventario WHERE cat IS NOT NULL AND trim(cat) != '' AND (departamento=? OR departamento='${GENERIC_DEPT}') ORDER BY cat`).bind(dept).all(),
     env.DB.prepare('SELECT * FROM ubicaciones ORDER BY orden, name').all().catch(() => ({ results: [] })),
     superadmin
       ? env.DB.prepare("SELECT DISTINCT loc FROM inventario WHERE loc IS NOT NULL AND trim(loc) != '' ORDER BY loc").all()
-      : env.DB.prepare("SELECT DISTINCT loc FROM inventario WHERE loc IS NOT NULL AND trim(loc) != '' AND departamento=? ORDER BY loc").bind(dept).all(),
+      : env.DB.prepare(`SELECT DISTINCT loc FROM inventario WHERE loc IS NOT NULL AND trim(loc) != '' AND (departamento=? OR departamento='${GENERIC_DEPT}') ORDER BY loc`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM ciclos ORDER BY cicloOrden, modOrden').all()
-      : env.DB.prepare('SELECT * FROM ciclos WHERE departamento=? ORDER BY cicloOrden, modOrden').bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${GENERIC_DEPT}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
   ]);
 
   const cicloMap = {}, cicloOrder = [];

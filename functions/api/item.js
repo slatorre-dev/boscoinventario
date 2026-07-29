@@ -1,8 +1,19 @@
 const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id','tipo_material','oculto'];
 const FIELDS_UPD  = HEADERS_INV.filter(h => h !== 'id');
 
+const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
+
 function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
+
+// Deriva el departamento de un ítem a partir del ciclo/asignatura elegido:
+// si el usuario selecciona el ciclo "IES Juan Bosco", el ítem se archiva ahí
+// (bolsa compartida) en vez de en el departamento propio del usuario.
+function resolveItemDept(item, ownDept, superadmin){
+  if (superadmin) return item.departamento || ownDept || '';
+  const modCiclo = String(item.mod || '').split('__')[0];
+  return modCiclo === GENERIC_DEPT ? GENERIC_DEPT : ownDept;
 }
 
 async function ensureContainerCols(db) {
@@ -77,7 +88,7 @@ export async function onRequestPost({ request, env, data }) {
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
     item.tipo_material = item.es_contenedor ? 'inventariable' : (item.tipo_material || 'consumible');
-    item.departamento = superadmin ? (item.departamento || dept || '') : dept;
+    item.departamento = resolveItemDept(item, dept, superadmin);
     const vals = HEADERS_INV.map(h => item[h] ?? null);
     await env.DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')},departamento) VALUES (${HEADERS_INV.map(()=>'?').join(',')},?)`)
       .bind(...vals, item.departamento).run();
@@ -86,8 +97,11 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   if (action === 'update') {
-    if (!superadmin && (await itemDept(env.DB, item.id)) !== dept) {
-      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    if (!superadmin) {
+      const currentDept = await itemDept(env.DB, item.id);
+      if (currentDept !== dept && currentDept !== GENERIC_DEPT) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
     }
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
@@ -100,8 +114,11 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   if (action === 'delete') {
-    if (!superadmin && (await itemDept(env.DB, id)) !== dept) {
-      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    if (!superadmin) {
+      const currentDept = await itemDept(env.DB, id);
+      if (currentDept !== dept && currentDept !== GENERIC_DEPT) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
     }
     const old = await env.DB.prepare('SELECT item, ref FROM inventario WHERE id=?').bind(id).first();
     // Desasociar hijos antes de borrar la caja
@@ -123,7 +140,7 @@ export async function onRequestPost({ request, env, data }) {
       it.es_contenedor = it.es_contenedor ? 1 : 0;
       it.parent_id = it.parent_id || null;
       it.tipo_material = it.es_contenedor ? 'inventariable' : (it.tipo_material || 'consumible');
-      const itDept = superadmin ? (it.departamento || dept || '') : dept;
+      const itDept = resolveItemDept(it, dept, superadmin);
       return stmt.bind(...HEADERS_INV.map(h => it[h] ?? null), itDept);
     });
     await env.DB.batch(batch);

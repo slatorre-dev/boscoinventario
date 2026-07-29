@@ -11,7 +11,9 @@ let cicloAddingNew = false;
 
 function openCiclosModal(){
   if(!requirePerm('config.manage')) return;
-  ciclosEditing  = JSON.parse(JSON.stringify(CICLOS));
+  // "IES Juan Bosco" es un ciclo compartido entre departamentos — no se
+  // gestiona desde aquí (evita duplicarlo bajo el departamento propio al guardar).
+  ciclosEditing  = JSON.parse(JSON.stringify(CICLOS.filter(c=>c.id!=='iesjuanbosco')));
   cicloExpandIdx = null;
   cicloAddingNew = false;
   _renderCiclos();

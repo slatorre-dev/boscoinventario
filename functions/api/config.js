@@ -168,11 +168,27 @@ function normalizeItemCategoryAndTags(item){
   return { cat, tags: tags.sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'})).join(', ') };
 }
 
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
+
+const SYNC_ACTIONS_NEED_DEPT = new Set(['aulasSync', 'catsSync', 'ciclosSync']);
+
 export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
   const user = data?.user || request.user;
   const dept = user?.departamento || '';
+
+  if (isSuperAdmin(user) && SYNC_ACTIONS_NEED_DEPT.has(action)) {
+    // Aunque un superadmin tenga un departamento "propio" asignado (para
+    // el badge y futuro uso), meta.js/list.js le siguen devolviendo TODAS
+    // las aulas/ciclos sin filtrar (así ve todo el centro) — su AULAS/CICLOS
+    // en el frontend no está scoped a un solo departamento. Sincronizar
+    // desde aquí mezclaría/corrompería datos de varios departamentos.
+    // Pendiente de resolverse con el selector de departamento (Fase 3).
+    return Response.json({ ok: false, error: 'Superadmin no puede gestionar aulas/categorías/ciclos directamente todavía — hazlo con un usuario del departamento correspondiente.' }, { status: 403 });
+  }
 
   if (action === 'aulasSync') {
     const aulas = body.aulas || [];

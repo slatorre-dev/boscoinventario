@@ -1,5 +1,7 @@
 const HEADERS_PRES = ['id','itemId','itemNombre','cantidad','aulaOrigen','aulaDestino','profesorId','profesorNombre','gestionadoPor','fechaPrestamo','fechaPrevista','fechaDevolucion','cantidadDevuelta','estado','obs'];
 
+const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
+
 function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
@@ -7,6 +9,10 @@ function isSuperAdmin(user){
 async function itemDept(db, id) {
   const row = await db.prepare('SELECT departamento FROM inventario WHERE id=?').bind(id).first();
   return row?.departamento || '';
+}
+
+function ownsItemDept(itemDeptValue, ownDept){
+  return itemDeptValue === ownDept || itemDeptValue === GENERIC_DEPT;
 }
 
 async function getGmailAccessToken(env) {
@@ -70,7 +76,7 @@ export async function onRequestPost({ request, env, data }) {
   if (action === 'prestarCaja') {
     // Presta todos los hijos de una caja de una vez
     const { cajaId, profesorId, profesorNombre, aulaDestino, fechaPrevista, obs, gestionadoPor, fechaPrestamo } = body;
-    if (!superadmin && (await itemDept(env.DB, cajaId)) !== dept) {
+    if (!superadmin && !ownsItemDept(await itemDept(env.DB, cajaId), dept)) {
       return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     }
     const hijos = await env.DB.prepare('SELECT * FROM inventario WHERE parent_id=?').bind(cajaId).all();
@@ -99,7 +105,7 @@ export async function onRequestPost({ request, env, data }) {
 
   if (action === 'prestar') {
     const pres = body.prestamo;
-    if (!superadmin && (await itemDept(env.DB, pres.itemId)) !== dept) {
+    if (!superadmin && !ownsItemDept(await itemDept(env.DB, pres.itemId), dept)) {
       return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     }
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();
@@ -154,7 +160,7 @@ export async function onRequestPost({ request, env, data }) {
     const { presId, cantidadDevuelta, obs } = body;
     const pres = await env.DB.prepare('SELECT * FROM prestamos WHERE id=?').bind(presId).first();
     if (!pres) return Response.json({ ok: false, error: 'Préstamo no encontrado' });
-    if (!superadmin && (await itemDept(env.DB, pres.itemId)) !== dept) {
+    if (!superadmin && !ownsItemDept(await itemDept(env.DB, pres.itemId), dept)) {
       return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     }
     const fecha = new Date().toISOString().split('T')[0];

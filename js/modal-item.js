@@ -774,9 +774,10 @@ function openModal(id=null, src=null){
   const catSel = document.getElementById('f_cat');
   catSel.value=m?.cat||sortedCatNames()[0]||'Componentes electrónicos';
   catSel.dataset.prev = catSel.value;
+  const ownCiclos = CICLOS.filter(c=>c.id!=='iesjuanbosco');
   const itemCiclo = m?.mod ? m.mod.split('__')[0]
     : cf?.type==='mod' ? cf.ciclo.id
-    : (!existing && !src && CICLOS.length===1) ? CICLOS[0].id
+    : (!existing && !src && ownCiclos.length===1) ? ownCiclos[0].id
     : '';
   document.getElementById('f_ciclo').value = itemCiclo;
   syncCicloLabels();

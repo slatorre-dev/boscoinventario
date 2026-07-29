@@ -1,5 +1,7 @@
 const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','es_contenedor','parent_id','tipo_material','oculto'];
 
+const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
+
 function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
@@ -134,7 +136,7 @@ export async function onRequestGet({ request, env, data }) {
 
   const itemsQuery = superadmin
     ? 'SELECT * FROM inventario ORDER BY id'
-    : 'SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND departamento=? ORDER BY id';
+    : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${GENERIC_DEPT}') ORDER BY id`;
 
   const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows] = await Promise.all([
     superadmin ? env.DB.prepare(itemsQuery).all() : env.DB.prepare(itemsQuery).bind(dept).all(),
@@ -146,16 +148,16 @@ export async function onRequestGet({ request, env, data }) {
       : env.DB.prepare("SELECT usuario, nombre, email FROM usuarios WHERE nombre != '' AND departamento=? ORDER BY nombre").bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM prestamos ORDER BY id').all()
-      : env.DB.prepare('SELECT p.* FROM prestamos p JOIN inventario i ON i.id=p.itemId WHERE i.departamento=? ORDER BY p.id').bind(dept).all(),
+      : env.DB.prepare(`SELECT p.* FROM prestamos p JOIN inventario i ON i.id=p.itemId WHERE i.departamento=? OR i.departamento='${GENERIC_DEPT}' ORDER BY p.id`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM aulas ORDER BY orden').all()
-      : env.DB.prepare("SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL ORDER BY orden").bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${GENERIC_DEPT}' ORDER BY orden`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all()
       : env.DB.prepare('SELECT * FROM categorias WHERE departamento=? ORDER BY orden').bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM ciclos ORDER BY cicloOrden, modOrden').all()
-      : env.DB.prepare('SELECT * FROM ciclos WHERE departamento=? ORDER BY cicloOrden, modOrden').bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${GENERIC_DEPT}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
   ]);
 
   const cicloMap = {}, cicloOrder = [];

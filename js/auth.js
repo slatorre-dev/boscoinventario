@@ -289,7 +289,7 @@ function showUserChip(){
   document.getElementById('userName').textContent = SESSION.nombre || SESSION.usuario;
   document.getElementById('userChip').style.display = 'flex';
   const deptEl = document.getElementById('brandDept');
-  if(deptEl) deptEl.textContent = (SESSION.rol === 'superadmin') ? '' : (SESSION.departamentoNombre || '');
+  if(deptEl) deptEl.textContent = SESSION.departamentoNombre || '';
   const deptIconEl = document.getElementById('deptGameIcon');
   if(deptIconEl){
     if(SESSION.departamentoIcono) deptIconEl.textContent = SESSION.departamentoIcono;
