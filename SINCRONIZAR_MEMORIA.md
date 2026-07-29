@@ -19,7 +19,7 @@ sin necesidad de copiar nada manualmente.
 ### 1. Clonar o actualizar el repo
 
 ```powershell
-git clone https://github.com/sebantonio/SQLInventarioElecFP
+git clone https://github.com/slatorre-dev/boscoinventario
 # — o si ya existe —
 git pull origin main
 ```
@@ -32,7 +32,7 @@ Ajusta `TU_USUARIO` y `RUTA_COMPLETA_AL_REPO`:
 
 ```powershell
 # Carpeta del proyecto en Claude (ajusta TU_USUARIO)
-$proj = "C:\Users\TU_USUARIO\.claude\projects\d--OneDrive---Consejer-a-de-Educaci-n--Cultura-y-Deportes-Castilla-La-Mancha-Github-SQLInventarioElecFP"
+$proj = "C:\Users\TU_USUARIO\.claude\projects\d--OneDrive---Consejer-a-de-Educaci-n--Cultura-y-Deportes-Castilla-La-Mancha-Github-boscoinventario"
 
 # Ruta al repo clonado (ajusta según dónde lo hayas clonado)
 $repoMemory = "RUTA_COMPLETA_AL_REPO\.claude\memory"
@@ -56,9 +56,9 @@ Get-Item "$proj\memory" | Select-Object LinkType, Target
 ## Ejemplo con rutas reales (IES El Bosco, OneDrive)
 
 ```powershell
-$proj = "C:\Users\slatorre\.claude\projects\d--OneDrive---Consejer-a-de-Educaci-n--Cultura-y-Deportes-Castilla-La-Mancha-Github-SQLInventarioElecFP"
+$proj = "C:\Users\slatorre\.claude\projects\d--OneDrive---Consejer-a-de-Educaci-n--Cultura-y-Deportes-Castilla-La-Mancha-Github-boscoinventario"
 
-$repoMemory = "D:\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\Github\SQLInventarioElecFP\.claude\memory"
+$repoMemory = "D:\OneDrive - Consejería de Educación, Cultura y Deportes Castilla La-Mancha\Github\boscoinventario\.claude\memory"
 
 New-Item -ItemType Directory -Force $proj
 New-Item -ItemType Junction -Path "$proj\memory" -Target $repoMemory
@@ -79,7 +79,7 @@ New-Item -ItemType Junction -Path "$proj\memory" -Target $repoMemory
 ## Estructura resultante
 
 ```
-SQLInventarioElecFP/
+boscoinventario/
 ├── README.md
 ├── CLAUDE.md
 ├── SINCRONIZAR_MEMORIA.md   ← este archivo
