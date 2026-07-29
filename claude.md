@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v468 | 29/07/2026 | Rebranding en curso a `boscoinventario`, expansión multi-departamento planificada, servidor Apache restaurado (docker-desktop stable, inventario-node pendiente)
+**Estado:** v468 | 29/07/2026 | Repo subido a `slatorre-dev/boscoinventario` y Cloudflare Pages sincronizado — listo para empezar Fase 0 del plan multi-departamento. Servidor Apache restaurado (docker-desktop stable, inventario-node pendiente)
 
 Inventario general del **IES El Bosco**. Nació como el inventario de un solo
 departamento y está pasando a ser el inventario de todo el centro, con cada
@@ -17,8 +17,8 @@ resumen operativo para trabajar sesión a sesión. Ver sección
 ## Contexto Actual
 
 ### Modo de Operación
-- Base de datos: **Cloudflare D1 remota** (no local, ID: `5e996989-1972-481e-a43a-136e25380906`, nombre técnico heredado `inventario-departamento`)
-- Deployment: Git push → Cloudflare Pages auto-deploya (repo `slatorre-dev/boscoinventario`, sitio `boscoinventario.pages.dev` — sincronización pendiente de que termine la subida manual)
+- Base de datos: **Cloudflare D1 remota** (no local, base `boscoinventario`, ID: `78646c8d-fcbf-456d-ab82-2428ba64c0b3`) — nueva e independiente, sin datos migrados del proyecto antiguo (arranque limpio)
+- Deployment: Git push → Cloudflare Pages auto-deploya (repo `slatorre-dev/boscoinventario`, sitio `boscoinventario.pages.dev` — sincronizado)
 - Frontend: Vanilla JS + HTML5 + CSS3 (sin frameworks)
 - Backend: Cloudflare Workers serverless (`functions/api/`)
 
@@ -34,8 +34,8 @@ resumen operativo para trabajar sesión a sesión. Ver sección
 - **Terminal:** PowerShell en VS Code
 - **Node TLS (red corporativa):** `$env:NODE_TLS_REJECT_UNAUTHORIZED="0"` antes de comandos wrangler
 - **Wrangler:** `npx wrangler` (instalado global en npm)
-- **Git remotes:** `origin` → slatorre-dev/boscoinventario (principal; subida manual en curso, repo anterior era sebantonio/SQLInventarioElecFP)
-- **D1 backup:** `npx wrangler d1 export inventario-departamento --remote --output backup_FECHA.sql`
+- **Git remotes:** `origin` → slatorre-dev/boscoinventario (principal); `slatorre` → slatorre-dev/SQLInventarioElecFP (repo anterior, otro proyecto, no tocar)
+- **D1 backup:** `npx wrangler d1 export boscoinventario --remote --output backup_FECHA.sql`
 
 ---
 

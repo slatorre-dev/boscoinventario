@@ -161,9 +161,9 @@ wrangler login
 ### Crear D1 y aplicar schema
 
 ```bash
-wrangler d1 create inventario-departamento
+wrangler d1 create boscoinventario
 # copiar database_id a wrangler.toml
-wrangler d1 execute inventario-departamento --file=migrations/0001_schema.sql
+wrangler d1 execute boscoinventario --file=migrations/0001_schema.sql
 ```
 
 ### Configurar Cloudflare Pages
@@ -177,7 +177,7 @@ Settings -> Environment variables -> secretos Google (ver docs/API.md)
 ### Crear usuario inicial
 
 ```bash
-wrangler d1 execute inventario-departamento --command="INSERT INTO usuarios (usuario,password,nombre,rol,email) VALUES ('Admin','Admin','Administrador','superadmin','')"
+wrangler d1 execute boscoinventario --command="INSERT INTO usuarios (usuario,password,nombre,rol,email) VALUES ('Admin','Admin','Administrador','superadmin','')"
 ```
 
 Cambiar esa contraseña después.

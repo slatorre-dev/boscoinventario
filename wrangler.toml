@@ -1,7 +1,7 @@
-name = "sql-inventario-elec-fp"
+name = "boscoinventario"
 compatibility_date = "2024-01-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "inventario-departamento"
-database_id = "5e996989-1972-481e-a43a-136e25380906"
+database_name = "boscoinventario"
+database_id = "78646c8d-fcbf-456d-ab82-2428ba64c0b3"
