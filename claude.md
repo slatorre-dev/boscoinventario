@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v487 | 29/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v488 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
@@ -99,11 +99,18 @@ llevan ese flag.
 Login con Google (`@iesjuanbosco.es`) también funciona; mapa de 10 correos
 conocidos → departamento en `functions/api/oauth/login-google.js`
 (`EMAIL_DEPT_MAP`). Correos no mapeados se crean sin departamento asignado.
-Botón propio (`chooseGoogleAccount()` en `js/auth.js`, no el widget
-declarativo `g_id_signin`) que fuerza `disableAutoSelect()` + `prompt()`
-antes de cada intento — si no, GIS reutiliza en silencio la última cuenta
-de Google "activa" del navegador en vez de dejar elegir entre varias
-cuentas simultáneas (v487).
+Botón de Google renderizado por JS (`initGoogleButton()` en `js/auth.js`,
+via `google.accounts.id.renderButton()` en `#googleBtnContainer`, ya no el
+`<div class="g_id_signin">` declarativo) con `disableAutoSelect()` previo —
+si no, GIS reutiliza en silencio la última cuenta de Google "activa" del
+navegador en vez de dejar elegir entre varias cuentas simultáneas (v487,
+v488). v487 probó forzar el selector con `prompt()` manual, pero eso
+disparó `origin_mismatch` en Google (error 400): el Client ID
+`374986567801-...` estaba autorizado en Google Cloud Console solo para el
+dominio del proyecto original (`inventarioelecfp`), no para
+`boscoinventario.pages.dev` — se corrigió añadiendo el dominio nuevo a
+"Authorized JavaScript origins" del OAuth Client ID, y v488 volvió al
+enfoque `renderButton()` (más estándar, sin depender de `prompt()`).
 
 ---
 
@@ -282,7 +289,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v487 actual)
+sw.js                   — Service Worker, VERSION aquí (v488 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -432,16 +439,21 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   del SVG anterior) se desbordaba sin esa regla. Verificado visualmente con
   Playwright (instalado temporalmente fuera del repo por los problemas de
   escritura conocidos en Google Drive, ver Entorno).
-- **29/07/2026 (v487):** login con Google no dejaba elegir entre varias
-  cuentas activas del navegador (se quedaba con la primera, no la de
-  `iesjuanbosco`). Causa: el widget declarativo `g_id_signin` reutiliza en
-  silencio la sesión de Google "activa" si el navegador tiene varias
-  cuentas simultáneas — falta forzar `disableAutoSelect()` antes de
-  `prompt()`, algo que solo se puede hacer con la API JS, no con atributos
-  `data-*`. Sustituido el botón declarativo por uno propio
-  (`chooseGoogleAccount()` en `js/auth.js`) que llama a
-  `disableAutoSelect()` + `prompt()` en cada clic, con aviso si Google no
-  llega a mostrar el selector (cookies de terceros bloqueadas, etc.).
+- **29-30/07/2026 (v487-v488):** login con Google no dejaba elegir entre
+  varias cuentas activas del navegador (se quedaba con la primera, no la
+  de `iesjuanbosco`). Causa raíz: el widget declarativo `g_id_signin`
+  reutiliza en silencio la sesión de Google "activa" si el navegador tiene
+  varias cuentas simultáneas — hace falta `disableAutoSelect()` antes de
+  renderizar/pedir el login. v487 probó forzar esto con un botón propio que
+  llamaba a `disableAutoSelect()` + `prompt()` manual en cada clic, pero
+  `prompt()` disparó `origin_mismatch` (error 400 de Google): el Client ID
+  OAuth solo tenía autorizado el dominio del proyecto original
+  (`inventarioelecfp`) en Google Cloud Console, no `boscoinventario.pages.dev`
+  — pendiente desde la migración de repo, nunca antes se había completado
+  un login de Google en el dominio nuevo. Corregido añadiendo el dominio a
+  "Authorized JavaScript origins" del Client ID. v488 volvió a un enfoque
+  más estándar: `google.accounts.id.renderButton()` en vez de `prompt()`,
+  con `disableAutoSelect()` llamado una vez al cargar la página.
 - **30/05/2026 (v468):** servidor Apache restaurado tras 24h de caída por un
   script `observed.service` que mataba procesos de alto CPU y tumbaba
   Docker Desktop. Los 8 contenedores (apache, mysql, n8n, influxdb, nodered,

@@ -112,25 +112,23 @@ async function doForcePasswordChange(){
 // ═════════════════════════════════════════════════════════
 // GOOGLE SIGN-IN
 // ═════════════════════════════════════════════════════════
-// Fuerza el selector de cuentas de Google: sin disableAutoSelect() previo,
-// GIS reutiliza silenciosamente la última cuenta usada en el navegador si
-// solo hay una marcada como "activa", en vez de dejar elegir entre varias.
-function chooseGoogleAccount() {
-  if (typeof google === 'undefined' || !google.accounts?.id) {
-    const errorEl = document.getElementById('loginError');
-    errorEl.textContent = 'Google Sign-In no está disponible. Recarga la página.';
-    errorEl.classList.add('show');
-    return;
-  }
+// disableAutoSelect() antes de renderButton(): sin esto, GIS reutiliza en
+// silencio la última cuenta de Google usada en el navegador en vez de
+// dejar elegir entre varias cuentas activas simultáneamente.
+function initGoogleButton() {
+  if (typeof google === 'undefined' || !google.accounts?.id) return;
   google.accounts.id.disableAutoSelect();
-  google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      const errorEl = document.getElementById('loginError');
-      errorEl.textContent = 'No se pudo abrir el selector de cuentas de Google. Comprueba que las cookies de terceros no estén bloqueadas, o recarga la página e inténtalo de nuevo.';
-      errorEl.classList.add('show');
-    }
-  });
+  const container = document.getElementById('googleBtnContainer');
+  if (container) {
+    google.accounts.id.renderButton(container, {
+      type: 'standard',
+      size: 'large',
+      theme: 'outline',
+      width: 300,
+    });
+  }
 }
+window.addEventListener('load', initGoogleButton);
 
 async function handleGoogleSignIn(response) {
   console.log('Google Sign-In response:', response);
@@ -144,12 +142,8 @@ async function handleGoogleSignIn(response) {
     return;
   }
 
-  const btn = document.querySelector('.google-account-btn');
-  const originalHTML = btn?.innerHTML;
-
   try {
     errorEl.classList.remove('show');
-    if (btn) btn.innerHTML = '<span style="font-size:14px">Comprobando...</span>';
 
     // Enviar token al backend
     const loginRes = await fetch('/api/oauth/login-google', {
@@ -192,14 +186,10 @@ async function handleGoogleSignIn(response) {
     _showOverlay();
     loadData();
 
-    if (btn) btn.innerHTML = originalHTML;
-
   } catch(err) {
     console.error('Error en Google Sign-In:', err);
     errorEl.textContent = err.message || 'Error al procesar login de Google';
     errorEl.classList.add('show');
-
-    if (btn) btn.innerHTML = originalHTML;
   }
 }
 

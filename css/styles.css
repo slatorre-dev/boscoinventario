@@ -2134,16 +2134,9 @@ body{overflow-x:hidden}
   margin: 12px 0 16px;
 }
 
-.google-account-btn {
-  background: #fff !important;
-  color: #3c4043 !important;
-  border: 1px solid var(--border) !important;
+#googleBtnContainer {
   display: flex;
-  align-items: center;
   justify-content: center;
-}
-.google-account-btn:hover {
-  background: #f8f9fa !important;
 }
 
 /* ── Filtros activos como chips ── */
