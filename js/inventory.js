@@ -503,8 +503,8 @@ function toggleConsumibleTagGroup(encodedCatKey, encodedTagKey){
 
 let _lastInvRenderMode = null;
 let _invPage = 1;
-let _pageSize = 25;
-let _pageSizeUserSet = false;
+let _pageSize = Number(localStorage.getItem('inv_page_size')) || 25;
+let _pageSizeUserSet = !!localStorage.getItem('inv_page_size');
 let _pageSig = '';
 function renderInvKeepPage(){ const p=_invPage; _pageSig=''; renderInv(); _invPage=Math.min(p,Math.max(1,Math.ceil(getFiltered().length/_pageSize)||1)); renderInv(); }
 function isTouchLike(){
@@ -1155,7 +1155,7 @@ window.addEventListener('resize',()=>{
 });
 function sort(k){if(sk===k)sa=!sa;else{sk=k;sa=true}renderInv()}
 function goInvPage(page){_invPage=page;renderInv();document.querySelector('#pS .srow')?.scrollIntoView({block:'start'})}
-function setPageSize(v){_pageSize=Number(v)||25;_pageSizeUserSet=true;_invPage=1;renderInv()}
+function setPageSize(v){_pageSize=Number(v)||25;_pageSizeUserSet=true;_invPage=1;localStorage.setItem('inv_page_size',String(_pageSize));renderInv()}
 
 let _delItemId = null;
 function openDelModal(itemId){
