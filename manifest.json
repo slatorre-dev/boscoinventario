@@ -1,7 +1,7 @@
 {
-  "name": "Inventario Taller FP — IES Juan Bosco",
-  "short_name": "Inventario FP",
-  "description": "Gestión de inventario del departamento de Electricidad y Electrónica",
+  "name": "Inventario IES Juan Bosco",
+  "short_name": "Inventario",
+  "description": "Gestión de inventario del IES Juan Bosco",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f4f6fb",
