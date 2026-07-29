@@ -136,10 +136,10 @@ Pasar la cámara del móvil por el taller para generar/actualizar el inventario 
 
 ## UX y Usabilidad
 
-### Búsqueda con Historial de Términos Recientes
-Últimas 5 búsquedas en localStorage, mostrar al hacer foco en el campo de búsqueda.
-
-**Prioridad:** Media
+### Búsqueda con Historial de Términos Recientes — ✅ implementado (29/07/2026)
+Últimas 5 búsquedas del campo de filtro del inventario (`#srch`) guardadas en
+`localStorage` (`inv_recent_searches`), mostradas vía `<datalist>` nativo al
+enfocar el campo — sin dropdown propio que mantener.
 
 ### Aulas Ordenadas por Uso Reciente
 Contador de visitas en localStorage, las aulas más usadas aparecen primero en home.

@@ -1,4 +1,27 @@
 // ═════════════════════════════════════════════════════════
+// HISTORIAL DE BÚSQUEDAS RECIENTES (inventario)
+// ═════════════════════════════════════════════════════════
+const RECENT_SEARCH_KEY = 'inv_recent_searches';
+function getRecentSearches(){
+  try { return JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY) || '[]'); } catch(e) { return []; }
+}
+function renderSearchHistory(){
+  const dl = document.getElementById('srchHistoryList');
+  if(!dl) return;
+  dl.innerHTML = getRecentSearches().map(q=>`<option value="${String(q).replace(/"/g,'&quot;')}"></option>`).join('');
+}
+function saveRecentSearch(q){
+  q = String(q||'').trim();
+  if(q.length<2) return;
+  let list = getRecentSearches().filter(x=>x.toLowerCase()!==q.toLowerCase());
+  list.unshift(q);
+  list = list.slice(0,5);
+  localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(list));
+  renderSearchHistory();
+}
+document.addEventListener('DOMContentLoaded', renderSearchHistory);
+
+// ═════════════════════════════════════════════════════════
 // BÚSQUEDA GLOBAL
 // ═════════════════════════════════════════════════════════
 let gsIdx=-1;

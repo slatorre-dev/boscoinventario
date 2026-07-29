@@ -416,7 +416,8 @@
       <div class="print-header-meta" id="printMeta"></div>
     </div>
     <div class="toolbar">
-      <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor..." oninput="renderInv()"></div>
+      <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" list="srchHistoryList" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor..." oninput="renderInv()" onchange="saveRecentSearch(this.value)"></div>
+      <datalist id="srchHistoryList"></datalist>
       <div id="invFilters">
         <div style="display:flex;gap:4px;align-items:center">
           <select id="fCat" onchange="renderInv()"><option value="">Todas las categorías</option></select>
