@@ -1,4 +1,4 @@
-# Ideas de Mejoras — SQLInventarioElecFP
+# Ideas de Mejoras — Bosco Inventario
 
 Registro de ideas pendientes para futuras sesiones. Las ya implementadas se han eliminado de esta lista.
 

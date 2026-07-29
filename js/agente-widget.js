@@ -1626,8 +1626,8 @@
       '<label class="ag-label" style="margin-top:6px">Ubicación</label>' +
       '<input class="ag-input-field ag-new-item-loc" placeholder="Ej: Armario metálico, Estantería A3...">' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
-        '<div style="flex:1"><label class="ag-label">Ciclo</label>' + selectCiclo + '</div>' +
-        '<div style="flex:1"><label class="ag-label">Módulo</label>' + selectMod + '</div>' +
+        '<div style="flex:1"><label class="ag-label">Ciclo/Departamento</label>' + selectCiclo + '</div>' +
+        '<div style="flex:1"><label class="ag-label">Asignatura/Módulo</label>' + selectMod + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">' +
         '<label class="ag-label" style="margin:0">Foto (opcional)</label>' +

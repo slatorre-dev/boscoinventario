@@ -281,7 +281,7 @@
     <div class="choice-grid" id="gCats"></div>
     <div style="height:20px"></div>
     <div class="sec-label">
-      Por ciclo formativo
+      Por ciclo/departamento
       <button class="mini-btn" data-perm="config.manage" onclick="openCiclosModal()">⚙️ Gestionar ciclos</button>
     </div>
     <div class="choice-grid" id="gCiclos"></div>
@@ -488,12 +488,12 @@
           </div>
         </div>
         <div class="ciclo-mod-row full">
-          <div><label class="fl">Ciclo</label>
+          <div><label class="fl">Ciclo/Departamento</label>
             <select class="fi-w" id="f_ciclo" onchange="updateModSelect()">
               <option value="">Sin asignar</option>
             </select>
           </div>
-          <div><label class="fl">Módulo</label>
+          <div><label class="fl">Asignatura/Módulo</label>
             <select class="fi-w" id="f_mod"><option value="">Sin asignar</option></select>
           </div>
         </div>
@@ -1275,10 +1275,10 @@
 <!-- MODAL GESTIÓN DE CICLOS Y MÓDULOS -->
 <div class="mbg" id="mCiclos" onclick="if(event.target===this)closeCiclosModal()">
   <div class="modal" style="max-width:680px">
-    <div class="mh"><div class="mt">⚙️ Gestionar ciclos y módulos</div><button class="mx" onclick="closeCiclosModal()">✕</button></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Añade, edita o elimina ciclos formativos y sus módulos. El ciclo "Departamento" no se puede eliminar.</p>
+    <div class="mh"><div class="mt">⚙️ Gestionar ciclos/departamentos y asignaturas</div><button class="mx" onclick="closeCiclosModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Añade, edita o elimina ciclos formativos (o cursos/departamentos) y sus módulos/asignaturas. El ciclo "Departamento" no se puede eliminar.</p>
     <div id="ciclosList"></div>
-    <button class="add-aula-btn" onclick="showNewCicloForm()">＋ Nuevo ciclo</button>
+    <button class="add-aula-btn" onclick="showNewCicloForm()">＋ Nuevo ciclo/departamento</button>
     <div class="mf" style="margin-top:18px">
       <div></div>
       <div class="mf-right">

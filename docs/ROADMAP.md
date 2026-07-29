@@ -1,4 +1,4 @@
-# 🚀 Roadmap - SQLInventarioElecFP
+# 🚀 Roadmap - Bosco Inventario
 
 Plan de mejoras priorizadas por impacto y complejidad.
 

@@ -1,4 +1,4 @@
-# Desarrollo — SQLInventarioElecFP
+# Desarrollo — Bosco Inventario
 
 Registro de desarrollo y mejoras implementadas en la aplicación.
 

@@ -1,24 +1,29 @@
-# Plan de acción: de un departamento a todo el centro
+# Plan de acción: inventario de todo el centro
 
-**Estado:** planificado, sin implementar. **Fecha:** 29/07/2026.
+**Estado:** Fases 0, 1 y 2 implementadas y desplegadas (29/07/2026). Fase 3
+pendiente.
 
-Bosco Inventario nació como el inventario del departamento de Electricidad y
-Electrónica del IES El Bosco. El objetivo ahora es convertirlo en el
-inventario general de todo el centro, con cada departamento gestionando el
-suyo desde la misma aplicación.
+Bosco Inventario es el inventario general de todo el IES El Bosco, con cada
+departamento gestionando el suyo propio desde la misma aplicación, aislado
+del resto. Solo el rol `superadmin` puede ver todos los departamentos.
 
 ---
 
-## Diagnóstico de partida
+## Diagnóstico de partida (ya resuelto, Fases 0-2)
 
-El esquema actual (`migrations/0001_schema.sql`) es mono-departamento de facto:
+El esquema original (`migrations/0001_schema.sql`) era mono-departamento de
+facto — diagnóstico con el que se arrancó este plan:
 
-- `inventario`, `aulas`, `categorias`, `ciclos` no tienen columna `departamento`.
-- `profesores.departamento` existe pero no se usa para filtrar nada.
-- `usuarios` no tiene `departamento` — el rol (`jefe/a departamento`,
-  `profesor/a`, `consulta`, `superadmin`) es global, no por departamento.
-- La marca y los textos de la app mencionan explícitamente "Electricidad y
-  Electrónica" en varios archivos (ver [[rebranding]] más abajo).
+- `inventario`, `aulas`, `categorias`, `ciclos` no tenían columna `departamento`.
+- `profesores.departamento` existía pero no se usaba para filtrar nada.
+- `usuarios` no tenía `departamento` — el rol (`jefe/a departamento`,
+  `profesor/a`, `consulta`, `superadmin`) era global, no por departamento.
+- La marca y los textos de la app mencionaban explícitamente "Electricidad y
+  Electrónica".
+
+Todo esto está corregido — ver detalle técnico completo en
+[`claude.md`](../claude.md#multi-departamento--estado-de-implementación-29072026)
+y en las migraciones `0007_departamentos.sql` / `0008_aulas_seed.sql`.
 
 ## Departamentos del centro
 
@@ -54,12 +59,15 @@ Un profesor/a pertenece a un departamento identificado por su correo
 | rsanchez@iesjuanbosco.es | Física y Química |
 | ccarpio@iesjuanbosco.es | Ciencias Naturales |
 
-Para departamentos sin nombre concreto todavía, se crean cuentas genéricas:
-usuario `departamentoXXX`, contraseña `departamentoXXX`, correo
-`departamentoXXX@iesjuanbosco.es` (ej. `departamentoeconomia`,
-`departamentomusica`).
+Para departamentos sin nombre concreto todavía, se crearon cuentas genéricas
+(hecho, migraciones `0005_departamentos_seed.sql` / `0006_profesores_seed.sql`):
+usuario `departamento<slug>` (rol `jefe/a departamento`) y `profe1<slug>`
+(rol `profesor`), contraseña = usuario, correo
+`<usuario>@iesjuanbosco.es` (ej. `departamentomusica`, `profe1musica`). El
+`<slug>` de cada departamento está en la tabla `departamentos` y coincide
+con el usado en `migrations/0007_departamentos.sql`.
 
-> ⚠️ Usuario = contraseña en las cuentas genéricas es débil para ~24 cuentas
+> ⚠️ Usuario = contraseña en las cuentas genéricas es débil para ~48 cuentas
 > activas. Recomendado: forzar cambio de contraseña en el primer login. Ver
 > [[docs/SECURITY.md]] — pendiente, no implementado aún.
 
@@ -73,49 +81,56 @@ usuario `departamentoXXX`, contraseña `departamentoXXX`, correo
 
 ## Fases de implementación
 
-### Fase 0 — Rebranding
-Pendiente de que termine la subida manual del repo a
-`slatorre-dev/boscoinventario` para no pisar ese trabajo. Cuando esté listo:
-- Renombrar menciones a `SQLInventarioElecFP`/`ELECFP` → `boscoinventario`.
-- Quitar mención específica a "Electricidad y Electrónica" del título,
-  `manifest.json` (name/short_name/description), meta tags.
-- Archivos afectados detectados: `index.html`, `js/config.js`,
-  `manifest.json`, `README.md`, `migration.sql`, `backup.json`, y sus copias
-  en `migracionApache/`.
-- Subir `VERSION` en `sw.js`.
+### Fase 0 — Rebranding ✅ hecho
+- Quitada la mención específica a "Electricidad y Electrónica" del título,
+  `manifest.json` (name/short_name/description), meta tags, pantalla de
+  login y carga — ahora dicen "Inventario IES Juan Bosco".
+- Badge de departamento junto al logo, dinámico según el usuario logueado.
+- `VERSION` de `sw.js` subida en cada paso (v474/v475).
+- No se tocó `js/config.js` (aulas/ciclos de ejemplo hardcodeados, son solo
+  fallback hasta que llegan datos de D1) ni `js/docs-dpto.js` (hub de
+  documentación con links a SharePoint de un departamento concreto) — quedan
+  pendientes si se quiere genericizar también.
 
-### Fase 1 — Modelo de datos
-- Tabla nueva `departamentos` (slug, nombre, icono, color, orden) — seed con
-  los ~24 de la lista.
-- Columna `departamento` (slug) en: `usuarios`, `aulas`, `inventario`
-  (desnormalizada para filtrar rápido), `categorias`, `ciclos`/`modulos`.
-- Migración: los datos actuales se backfillean como
-  `electricidad-electronica`.
+### Fase 1 — Modelo de datos ✅ hecho
+- Tabla `departamentos` (slug, nombre, icono, color, orden) — 24 filas seed,
+  ver `migrations/0007_departamentos.sql`.
+- Columna `departamento` (slug) en `usuarios`, `aulas`, `inventario`,
+  `ciclos`. `categorias` y `ciclos` recreadas con PK compuesta incluyendo
+  `departamento` (evita colisión de nombres de categoría/código de ciclo
+  entre departamentos distintos).
+- Como la base `boscoinventario` arrancó vacía (sin datos del departamento
+  de Electricidad y Electrónica ni de ningún otro proyecto previo), no hizo
+  falta backfill de datos reales — solo de los 49 usuarios de seed (ver
+  Fase 2).
 
-### Fase 2 — Auth y scoping
+### Fase 2 — Auth y scoping ✅ hecho
 - `_middleware.js` añade `data.departamento` resuelto desde `usuarios` tras
   validar credenciales.
-- Cada handler (`item.js`, `list.js`, `prestar.js`, `historial.js`, `config.js`...)
-  filtra por `data.departamento`, salvo `superadmin`.
-- Alta de usuarios nominales y cuentas genéricas por departamento.
+- Cada handler (`item.js`, `list.js`, `meta.js`, `prestar.js`,
+  `historial.js`, `config.js`, `usuarios.js`, `profesores.js`) filtra o
+  verifica propiedad por `data.departamento`, salvo rol `superadmin`.
+- Login con Google (`oauth/login-google.js`) mapea los 10 correos conocidos
+  del centro a su departamento; el resto se crea sin departamento asignado.
+- Detalle línea a línea en `claude.md`, sección "Multi-departamento".
 
-### Fase 3 — Frontend
-- `js/config.js`: CICLOS/AULAS/CATS ya se sobreescriben con datos D1 al
-  login — solo falta que esas queries lleguen filtradas por `departamento`.
-- Topbar/home muestran el nombre del departamento del usuario logueado.
-- Selector de departamento visible solo para `superadmin`.
-- Estado vacío amigable para los departamentos con 0 ítems.
+### Fase 3 — Frontend (pendiente)
+- Selector de departamento visible solo para `superadmin` (hoy ve todos los
+  datos globalmente pero sin poder aislar la vista a uno en concreto).
+- Campo "departamento" en el formulario de alta de usuarios/profesores desde
+  la UI, para que `superadmin` pueda asignarlo sin tocar SQL directo.
+- Estado vacío amigable para los departamentos con 0 ítems (todos, de
+  momento — la base arrancó limpia).
 
-### Fase 4 — Rollout por oleadas
-1. Departamentos con datos reales ya cargados (Electricidad y Electrónica,
-   Fabricación Mecánica, Ciencias Naturales, Economía, FOL, Matemáticas,
-   Sanidad, Administración, Edificación y Obra Civil, Latín y Griego,
-   Act. Físicas, Imagen Personal, Informática) — verificar que sus ítems
-   migran con el `departamento` correcto.
-2. Resto de departamentos (0 ítems) — cuenta creada y estructura vacía lista.
-3. Comunicar credenciales a cada jefe/a de departamento.
+### Fase 4 — Rollout por oleadas (pendiente, tras Fase 3)
+1. Comunicar credenciales (`departamento<slug>` / `profe1<slug>`) a cada
+   jefe/a de departamento real.
+2. Confirmar que cada uno ve solo su propio inventario, aulas, categorías y
+   préstamos — no los de otro departamento.
+3. Dar de alta usuarios nominales (correo real) sustituyendo a las cuentas
+   genéricas donde corresponda.
 
 ## Siguiente paso concreto
-Cuando el usuario confirme que `slatorre-dev/boscoinventario` está subido y
-sincronizado con Cloudflare Pages (`boscoinventario.pages.dev`) y que todo
-funciona igual que antes, se empieza por la Fase 0.
+Empezar por la Fase 3: construir el selector de departamento para
+`superadmin` en el frontend, y el campo de asignación de departamento en las
+pantallas de alta de usuarios/profesores.

@@ -1,4 +1,4 @@
-# 🔒 Security - SQLInventarioElecFP
+# 🔒 Security - Bosco Inventario
 
 Documento de seguridad: vulnerabilidades conocidas, recomendaciones y mejores prácticas.
 
@@ -514,7 +514,7 @@ console.log(localStorage);
 # ¿Hay URL con password? ✗
 
 # 3. Revisar BD
-wrangler d1 execute inventario-departamento --command \
+wrangler d1 execute boscoinventario --remote --command \
   "SELECT * FROM usuarios LIMIT 1;"
 # ¿Password es plain text? ✗
 

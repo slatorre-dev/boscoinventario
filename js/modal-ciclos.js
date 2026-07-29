@@ -35,11 +35,11 @@ function _renderCiclos(){
           <span class="ciclo-name-inp"><input value="${c.name.replace(/"/g,'&quot;')}"
             onclick="event.stopPropagation()"
             onchange="ciclosEditing[${i}].name=this.value"
-            placeholder="Nombre del ciclo"></span>
-          <span class="ciclo-nmods">${c.modulos.length} mód.</span>
+            placeholder="Nombre del ciclo/departamento"></span>
+          <span class="ciclo-nmods">${c.modulos.length} asig./mód.</span>
           <span class="expand-arrow">${expanded?'▲':'▼'}</span>
           ${isDpto ? '<span style="width:28px"></span>' :
-            `<button class="del-btn" onclick="event.stopPropagation();removeCicloRow(${i})" title="Eliminar ciclo">🗑</button>`}
+            `<button class="del-btn" onclick="event.stopPropagation();removeCicloRow(${i})" title="Eliminar ciclo/departamento">🗑</button>`}
         </div>
         ${expanded ? _renderMods(c, i) : ''}
       </div>`;
@@ -52,7 +52,7 @@ function _renderMods(c, ci){
   return `
     <div class="ciclo-mods">
       <div class="mods-hdr">
-        <span>Código</span><span>Nombre módulo</span><span>Horas</span><span></span>
+        <span>Código</span><span>Nombre asignatura/módulo</span><span>Horas</span><span></span>
       </div>
       ${c.modulos.map((m, mi) => `
         <div class="mod-row">
@@ -61,13 +61,13 @@ function _renderMods(c, ci){
             placeholder="0000">
           <input class="mod-name" value="${m.name.replace(/"/g,'&quot;')}"
             onchange="ciclosEditing[${ci}].modulos[${mi}].name=this.value"
-            placeholder="Nombre módulo">
+            placeholder="Nombre asignatura/módulo">
           <input class="mod-horas" type="number" min="0" value="${m.horas}"
             onchange="ciclosEditing[${ci}].modulos[${mi}].horas=Number(this.value)||0"
             placeholder="0">
-          <button class="del-btn" onclick="removeModuloRow(${ci},${mi})" title="Eliminar módulo">🗑</button>
+          <button class="del-btn" onclick="removeModuloRow(${ci},${mi})" title="Eliminar asignatura/módulo">🗑</button>
         </div>`).join('')}
-      <button class="add-aula-btn" style="margin-top:8px" onclick="addModuloRow(${ci})">＋ Añadir módulo</button>
+      <button class="add-aula-btn" style="margin-top:8px" onclick="addModuloRow(${ci})">＋ Añadir asignatura/módulo</button>
     </div>`;
 }
 
@@ -76,26 +76,29 @@ function _renderNewForm(){
     <div class="ciclo-block new-ciclo-form">
       <div class="ncf-grid">
         <div>
-          <label class="ncf-lbl">Grado</label>
+          <label class="ncf-lbl">Nivel</label>
           <select id="ncNivel" class="sinput">
             <option value="CFGM">Grado Medio (CFGM)</option>
             <option value="CFGS">Grado Superior (CFGS)</option>
+            <option value="ESO">ESO</option>
+            <option value="Bachillerato">Bachillerato</option>
+            <option value="Otro">Otro</option>
           </select>
         </div>
         <div>
-          <label class="ncf-lbl">Nombre del ciclo</label>
-          <input id="ncNombre" class="sinput" placeholder="Ej: Instalaciones Eléctricas">
+          <label class="ncf-lbl">Nombre del ciclo/departamento</label>
+          <input id="ncNombre" class="sinput" placeholder="Ej: Instalaciones Eléctricas / Matemáticas">
         </div>
       </div>
-      <div class="ncf-sep">Primer módulo (obligatorio)</div>
+      <div class="ncf-sep">Primera asignatura/módulo (obligatorio)</div>
       <div class="ncf-mods">
         <div>
           <label class="ncf-lbl">Código</label>
           <input id="ncModCod" class="sinput" placeholder="0000">
         </div>
         <div>
-          <label class="ncf-lbl">Nombre módulo</label>
-          <input id="ncModNombre" class="sinput" placeholder="Nombre del módulo">
+          <label class="ncf-lbl">Nombre asignatura/módulo</label>
+          <input id="ncModNombre" class="sinput" placeholder="Nombre de la asignatura/módulo">
         </div>
         <div>
           <label class="ncf-lbl">Horas</label>
@@ -104,7 +107,7 @@ function _renderNewForm(){
       </div>
       <div class="ncf-btns">
         <button class="btn" onclick="cancelNewCiclo()">Cancelar</button>
-        <button class="btn btn-p" onclick="confirmAddCiclo()">＋ Añadir ciclo</button>
+        <button class="btn btn-p" onclick="confirmAddCiclo()">＋ Añadir ciclo/departamento</button>
       </div>
     </div>`;
 }

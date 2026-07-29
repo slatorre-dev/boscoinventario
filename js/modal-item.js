@@ -361,7 +361,7 @@ const QR_SIMPLE_FIELDS = [
   { key:'loc',  label:'Ubicación',  default:false },
   { key:'qty',  label:'Stock',      default:false },
   { key:'ref',  label:'Referencia', default:false },
-  { key:'mod',  label:'Módulo',     default:false },
+  { key:'mod',  label:'Asignatura/Módulo', default:false },
 ];
 const QR_SIMPLE_KEY = 'inv_qr_simple_fields';
 const QR_SIMPLE_TIPO_KEY = 'inv_qr_simple_tipo';
@@ -942,8 +942,8 @@ function printBulkItemQrs(){
 async function saveItem(){
   const name=document.getElementById('f_item').value.trim();
   if(!name){toast('El nombre es obligatorio','err');return}
-  if(!document.getElementById('f_ciclo').value){toast('El ciclo es obligatorio','err');return}
-  if(!document.getElementById('f_mod').value){toast('El módulo es obligatorio','err');return}
+  if(!document.getElementById('f_ciclo').value){toast('El ciclo/departamento es obligatorio','err');return}
+  if(!document.getElementById('f_mod').value){toast('La asignatura/módulo es obligatoria','err');return}
   const refRaw = document.getElementById('f_ref').value.trim();
   const v={
     code: eid ? itemCode(items.find(x=>x.id===eid) || eid) : '',

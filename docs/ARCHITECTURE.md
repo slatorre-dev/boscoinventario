@@ -1,4 +1,4 @@
-# 🏗️ Arquitectura - SQLInventarioElecFP
+# 🏗️ Arquitectura - Bosco Inventario
 
 Documento técnico que explica cómo funciona la aplicación internamente.
 
@@ -21,7 +21,12 @@ Documento técnico que explica cómo funciona la aplicación internamente.
 
 ## Visión General
 
-SQLInventarioElecFP es una aplicación web **PWA (Progressive Web App)** para gestionar inventario de equipos electrónicos en un departamento educativo.
+Bosco Inventario es una aplicación web **PWA (Progressive Web App)** para
+gestionar el inventario de todo el IES El Bosco. Cada departamento del
+centro gestiona su propio inventario, aulas, categorías, ciclos y préstamos
+desde la misma app, aislado del resto por una columna `departamento` en las
+tablas clave — ver [PLAN_MULTIDEPARTAMENTO.md](PLAN_MULTIDEPARTAMENTO.md)
+para el detalle de esa arquitectura multi-tenant.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -169,30 +174,67 @@ Request → _middleware.js → Valida auth → Valida permisos → Endpoint
 
 ### 3. Base de Datos (D1)
 
-#### Tablas Principales
+#### Tablas Principales (esquema real, tras multi-departamento)
 
 ```sql
--- Tabla principal de inventario
+-- Inventario de ítems (columnas reales de inventario, ver 0001_schema.sql)
 inventario (
-  id, ref, item, qty, qty_min, tipo_material,
-  aula_id, ubicacion, categoria, ciclo_id, modulo_id,
-  tags, estado, utilidad, proveedor, fecha,
-  observations, es_contenedor, parent_id,
-  mant_solicitado, mant_fecha, mant_estado, mant_responsable, mant_nota,
-  fecha_creacion, fecha_modificacion, modificado_por, foto, estado_acceso
+  id, ref, aula, mod, item, qty, min, cat, loc, est, util,
+  fecha, mant, mantFecha, mantNota, mantResp, mantEstado,
+  mantSolicitante, mantSolicitanteEmail, foto, obs, code,
+  es_contenedor, parent_id, tipo_material, proveedor, tags, oculto,
+  departamento          -- añadida en 0007_departamentos.sql
 )
 
--- Usuarios (sin tabla visible en codigo, presume se está en config)
-usuarios (usuario, password, rol)
+usuarios (
+  usuario PRIMARY KEY, password, nombre, rol, email,
+  departamento,         -- slug del departamento (añadida en 0007)
+  google_id, auth_method, session_token   -- añadidas en 0004_google_oauth.sql
+)
 
--- Historial de cambios (si existe)
-historial (id, usuario, accion, tabla, fecha, cambios)
+aulas (id PRIMARY KEY, name, icon, desc, th, orden, departamento)
+-- departamento='' significa aula global (compartida por todo el centro)
+
+categorias (name, c, bg, i, orden, departamento, PRIMARY KEY(name, departamento))
+-- PK compuesta: dos departamentos pueden tener una categoría con el mismo nombre
+
+ciclos (
+  cicloId, cicloNombre, nivel, icon, th, desc,
+  modCod, modNombre, modHoras, cicloOrden, modOrden, responsable,
+  departamento, PRIMARY KEY(cicloId, modCod, departamento)
+)
+
+departamentos (slug PRIMARY KEY, nombre, icono, color, orden)  -- 0007_departamentos.sql, 24 filas
+
+profesores (id PRIMARY KEY, nombre, departamento, email)
+-- departamento aquí SÍ se usa para scoping (antes era solo decorativo)
+
+prestamos (id, itemId, itemNombre, cantidad, aulaOrigen, aulaDestino,
+  profesorId, profesorNombre, gestionadoPor, fechaPrestamo, fechaPrevista,
+  fechaDevolucion, cantidadDevuelta, estado, obs)
+-- sin columna departamento propia: se filtra vía JOIN a inventario.departamento
+
+log (id, fecha, usuario, nombre, rol, accion, itemId, resumen)
+-- sin columna departamento: se filtra vía JOIN usuario -> usuarios.departamento
+
+ubicaciones (name PRIMARY KEY, orden)     -- global, no scoped por departamento
+reset_tokens (token PRIMARY KEY, usuario, expires)
+intent_learning (...)                     -- ver BACKEND_APRENDIZAJE_INTENCIONES.md
 ```
+
+**Tablas sin scoping por departamento (gap conocido):** los documentos
+adjuntos (`documentos`, gestionados desde `functions/api/docs.js`) y el
+backup completo (`functions/api/backup.js`) no filtran por departamento
+todavía.
 
 #### Migrations
 - `0001_schema.sql` - Schema inicial
 - `0002_historial.sql` - Tabla historial
 - `0003_superadmin.sql` - Usuario admin inicial
+- `0004_google_oauth.sql` - Columnas para Google Sign-In
+- `0005_departamentos_seed.sql` / `0006_profesores_seed.sql` - usuarios de ejemplo por departamento
+- `0007_departamentos.sql` - tabla `departamentos` + columna `departamento` en tablas clave + recompone PK de `categorias`/`ciclos`
+- `0008_aulas_seed.sql` - 70 aulas globales + 24 aulas propias de departamento
 
 ---
 
@@ -330,31 +372,37 @@ fetch('/api/item', {
 
 ```javascript
 // En functions/api/*.js
-export async function onRequestGet({ request, env }) {
-  const db = env.DB;  // D1 binding from wrangler.toml
-  
+export async function onRequestGet({ request, env, data }) {
+  const db = env.DB;              // D1 binding from wrangler.toml
+  const dept = data.departamento; // resuelto por _middleware.js
+
   const { results } = await db.prepare(
-    `SELECT * FROM inventario WHERE id = ?`
-  ).bind(id).all();
-  
+    `SELECT * FROM inventario WHERE id = ? AND departamento = ?`
+  ).bind(id, dept).all();
+
   return Response.json(results);
 }
 ```
 
+Patrón real usado en todos los handlers: si `isSuperAdmin(data.user)` es
+`true` se consulta sin filtrar; si no, se añade `WHERE departamento = ?`
+(o se verifica ownership antes de un `UPDATE`/`DELETE`). Ver
+`functions/api/list.js` e `item.js` como referencia.
+
 ### Queries Principales
 
 ```sql
--- Listar todos los ítems
-SELECT * FROM inventario ORDER BY fecha_creacion DESC;
+-- Listar los ítems de un departamento
+SELECT * FROM inventario WHERE departamento = ? ORDER BY id;
 
--- Buscar por categoría
-SELECT * FROM inventario WHERE categoria = 'Audio' LIMIT 100;
+-- Buscar por categoría dentro del propio departamento
+SELECT * FROM inventario WHERE cat = 'Herramientas' AND departamento = ? LIMIT 100;
 
--- Contar por estado
-SELECT estado, COUNT(*) as total FROM inventario GROUP BY estado;
+-- Contar por estado (propio departamento)
+SELECT est, COUNT(*) as total FROM inventario WHERE departamento = ? GROUP BY est;
 
--- Historial de cambios
-SELECT * FROM historial WHERE tabla = 'inventario' AND id_item = ? ORDER BY fecha DESC;
+-- Historial de cambios de un ítem
+SELECT * FROM log WHERE itemId = ? ORDER BY id DESC;
 ```
 
 ---

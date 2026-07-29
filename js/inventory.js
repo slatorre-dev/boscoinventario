@@ -1311,7 +1311,7 @@ const PRINT_COLS = [
   { key:'ref',       label:'Referencia',    default:true  },
   { key:'item',      label:'Nombre',        default:true  },
   { key:'aula',      label:'Aula',          default:true  },
-  { key:'mod',       label:'Módulo',        default:false },
+  { key:'mod',       label:'Asignatura/Módulo', default:false },
   { key:'qty',       label:'Cantidad',      default:true  },
   { key:'min',       label:'Mínimo',        default:false },
   { key:'cat',       label:'Categoría',     default:true  },

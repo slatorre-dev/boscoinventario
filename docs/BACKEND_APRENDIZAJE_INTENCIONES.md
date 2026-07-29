@@ -1,7 +1,7 @@
 # Backend de aprendizaje de intenciones (Volt)
 
 Fecha: 2026-05-24  
-Proyecto: SQLInventarioElecFP
+Proyecto: Bosco Inventario
 
 ## Objetivo
 

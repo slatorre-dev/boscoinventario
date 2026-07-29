@@ -1,4 +1,4 @@
-# 📡 API Reference - SQLInventarioElecFP
+# 📡 API Reference - Bosco Inventario
 
 Documentación completa de todos los endpoints REST disponibles.
 
@@ -15,6 +15,17 @@ Documentación completa de todos los endpoints REST disponibles.
 7. [IA (Proxy)](#ia-proxy)
 8. [Códigos de Error](#códigos-de-error)
 9. [Ejemplos CURL](#ejemplos-curl)
+
+---
+
+## Multi-departamento (scoping)
+
+Todos los endpoints salvo `rol=superadmin` filtran automáticamente por el
+departamento del usuario autenticado (resuelto en `_middleware.js` desde la
+tabla `usuarios`) — no hace falta ni se debe enviar el departamento como
+parámetro. `superadmin` ve todos los departamentos sin filtrar. Detalle
+técnico completo en [ARCHITECTURE.md](ARCHITECTURE.md) y
+[PLAN_MULTIDEPARTAMENTO.md](PLAN_MULTIDEPARTAMENTO.md).
 
 ---
 
