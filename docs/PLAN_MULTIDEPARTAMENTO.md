@@ -78,9 +78,20 @@ usuario `departamento<slug>` (rol `jefe/a departamento`) y `profe1<slug>`
 `<slug>` de cada departamento está en la tabla `departamentos` y coincide
 con el usado en `migrations/0007_departamentos.sql`.
 
-> ⚠️ Usuario = contraseña en las cuentas genéricas es débil para ~48 cuentas
-> activas. Recomendado: forzar cambio de contraseña en el primer login. Ver
-> [[docs/SECURITY.md]] — pendiente, no implementado aún.
+> ⚠️ Usuario = contraseña en las cuentas genéricas — ✅ mitigado
+> (29/07/2026): columna `usuarios.password_temporal` (migración `0014`)
+> marcada en las 48 cuentas, fuerza cambio de contraseña obligatorio en el
+> primer login (`#pForcePassword`, ver `claude.md`). El resto de deuda de
+> seguridad (credenciales en query params, sin hash) sigue pendiente — ver
+> [[docs/SECURITY.md]].
+
+Además, se creó un departamento genérico compartido `iesjuanbosco` ("IES
+Juan Bosco", migración `0011`) para material sin departamento concreto —
+**cualquier** jefe/a de departamento puede archivar ítems ahí (no solo
+superadmin), eligiéndolo como Ciclo/Departamento al crear el ítem. Y los 3
+superadmin tienen un departamento de referencia asignado (migración `0015`):
+`Admin`→`iesjuanbosco`, `Seba`→`electricidadelectronica`,
+`jillescas`→`tecnologia` (no les restringe nada, solo alimenta el badge).
 
 ## Decisiones de arquitectura (confirmadas con el usuario, 29/07/2026)
 
