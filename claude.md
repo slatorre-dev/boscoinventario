@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v485 | 29/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v486 | 29/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
@@ -116,11 +116,11 @@ lo ya construido:
   referencia — ver tabla de usuarios).
 - Icono del botón de easter egg ("juego del departamento", `#deptGameIcon`)
   ahora es dinámico: emoji propio de `departamentos.icono` por usuario
-  (migración `0013`). Sigue pendiente sustituir el icono de **fallback**
-  (usado cuando no hay departamento, hoy `icons/dept-electricidad.svg`) por
-  una imagen que el usuario quiere pegar — no se ha podido aplicar aún
-  porque no hay forma de extraer bytes de una imagen pegada en el chat; hace
-  falta que la guarde como archivo en el repo y me diga la ruta.
+  (migración `0013`). Icono de **fallback** (cuando no hay departamento)
+  sustituido por `icons/imagenbosco.png` — misma imagen usada también en el
+  favicon, el logo de la barra superior y el logo de la pantalla de login
+  (antes todos usaban `favicon.svg` / `icons/dept-electricidad.svg`, resto
+  del proyecto original de un solo departamento).
 
 ### Fase 1 — Modelo de datos ✅ hecho
 - Tabla `departamentos` (slug, nombre, icono, color, orden) — 24 filas seed
@@ -250,8 +250,6 @@ lo ya construido:
 - `ubicaciones` (sitios sugeridos) se mantiene global, no por departamento.
 - `userAssignModulos` en `usuarios.js`: si lo ejecuta un `superadmin`, solo
   tocará ciclos con `departamento` igual al suyo propio (o `''` si no tiene).
-- Icono de fallback del botón de easter egg pendiente de una imagen que el
-  usuario tiene que guardar como archivo (ver Fase 0 arriba).
 
 ---
 
@@ -279,7 +277,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v485 actual)
+sw.js                   — Service Worker, VERSION aquí (v486 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -418,6 +416,17 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   etc.). Después (`0017`), la pantalla multimedia y la pizarra de tiza de las
   70 aulas globales se reasignan del departamento vacío al compartido
   `iesjuanbosco`.
+- **29/07/2026 (v486):** rebranding visual con la imagen `icons/imagenbosco.png`
+  aportada por el usuario — sustituye al logo azul genérico (`favicon.svg`) y
+  al fallback `icons/dept-electricidad.svg` (resto del proyecto original de
+  un solo departamento) en: favicon, icono PWA (manifest.json), logo de la
+  barra superior, logo de la pantalla de login, e icono de fallback del botón
+  de easter egg. Requirió añadir reglas CSS (`.brand-logo .logo-img`,
+  `.dept-game-icon img`) con `object-fit:cover` — los contenedores solo
+  fijaban su propio tamaño, no el de la imagen hija, y el PNG (a diferencia
+  del SVG anterior) se desbordaba sin esa regla. Verificado visualmente con
+  Playwright (instalado temporalmente fuera del repo por los problemas de
+  escritura conocidos en Google Drive, ver Entorno).
 - **30/05/2026 (v468):** servidor Apache restaurado tras 24h de caída por un
   script `observed.service` que mataba procesos de alto CPU y tumbaba
   Docker Desktop. Los 8 contenedores (apache, mysql, n8n, influxdb, nodered,
@@ -434,10 +443,9 @@ Backlog corto en [`docs/ROADMAP.md`](docs/ROADMAP.md), ideas de usabilidad en
 plan multi-departamento en [`docs/PLAN_MULTIDEPARTAMENTO.md`](docs/PLAN_MULTIDEPARTAMENTO.md).
 Próximos pasos concretos:
 
-1. **Icono de fallback** del botón de easter egg — pendiente de que el
-   usuario guarde como archivo la imagen que pegó en el chat y me diga la
-   ruta (hoy sigue siendo `icons/dept-electricidad.svg` cuando no hay
-   departamento).
+1. ~~Icono de fallback del botón de easter egg~~ ✅ hecho (v486):
+   sustituido por `icons/imagenbosco.png`, junto con favicon, logo de la
+   barra superior y logo del login.
 2. **Fase 3 del plan multi-departamento**: selector de departamento para
    `superadmin` en el frontend (con persistencia en `localStorage`); campo
    departamento en alta de usuarios/profesores desde la UI. Esto también

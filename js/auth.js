@@ -293,7 +293,7 @@ function showUserChip(){
   const deptIconEl = document.getElementById('deptGameIcon');
   if(deptIconEl){
     if(SESSION.departamentoIcono) deptIconEl.textContent = SESSION.departamentoIcono;
-    else deptIconEl.innerHTML = '<img src="icons/dept-electricidad.svg" alt="">';
+    else deptIconEl.innerHTML = '<img src="icons/imagenbosco.png" alt="">';
   }
   if(typeof applyRoleUI === 'function') applyRoleUI();
   if(typeof showHistorialButton === 'function') showHistorialButton();

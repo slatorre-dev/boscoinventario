@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v485';
+const VERSION = 'v486';
 const CACHE_SHELL   = 'inventario-fp-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-fp-runtime-' + VERSION;
 
@@ -42,11 +42,8 @@ const SHELL = [
   './js/modal-historial.js',
   './js/dept-game.js',
   './js/agente-widget.js',
-  './favicon.svg',
   './icons/qr-code.svg',
-  './icons/dept-electricidad.svg',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
+  './icons/imagenbosco.png',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap'
 ];
 
