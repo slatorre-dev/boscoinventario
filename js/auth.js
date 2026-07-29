@@ -32,11 +32,21 @@ async function doLogin(){
       email: res.user.email || '',
       departamento: res.user.departamento || '',
       departamentoNombre: res.user.departamentoNombre || '',
-      departamentoIcono: res.user.departamentoIcono || ''
+      departamentoIcono: res.user.departamentoIcono || '',
+      passwordTemporal: !!res.user.password_temporal
     };
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
     document.getElementById('loginUser').value = '';
     document.getElementById('loginPass').value = '';
+
+    if(SESSION.passwordTemporal){
+      document.getElementById('forcePass1').value = '';
+      document.getElementById('forcePass2').value = '';
+      document.getElementById('forcePassError').classList.remove('show');
+      show('pForcePassword');
+      return;
+    }
+
     showUserChip();
     _showOverlay();
     loadData();
@@ -46,6 +56,56 @@ async function doLogin(){
     errorEl.classList.add('show');
   } finally {
     btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+
+// ═════════════════════════════════════════════════════════
+// CAMBIO DE CONTRASEÑA OBLIGATORIO (primer login, cuentas genéricas)
+// ═════════════════════════════════════════════════════════
+async function doForcePasswordChange(){
+  const n1 = document.getElementById('forcePass1').value;
+  const n2 = document.getElementById('forcePass2').value;
+  const errorEl = document.getElementById('forcePassError');
+  const btn = document.getElementById('forcePassBtn');
+
+  errorEl.classList.remove('show');
+  if(!n1 || !n2){
+    errorEl.textContent = 'Rellena los dos campos';
+    errorEl.classList.add('show');
+    return;
+  }
+  if(n1 !== n2){
+    errorEl.textContent = 'Las contraseñas no coinciden';
+    errorEl.classList.add('show');
+    return;
+  }
+  if(n1.length < 4){
+    errorEl.textContent = 'La contraseña debe tener al menos 4 caracteres';
+    errorEl.classList.add('show');
+    return;
+  }
+  if(n1 === SESSION.usuario){
+    errorEl.textContent = 'La nueva contraseña no puede ser igual al usuario';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Cambiando...';
+  try {
+    const res = await apiPost({ action: 'changePassword', oldPassword: SESSION.password, newPassword: n1 });
+    if(!res.ok) throw new Error(res.error || 'Error al cambiar contraseña');
+    SESSION.password = n1;
+    SESSION.passwordTemporal = false;
+    localStorage.setItem('inv_session', JSON.stringify(SESSION));
+    showUserChip();
+    _showOverlay();
+    loadData();
+  } catch(err) {
+    console.error(err);
+    errorEl.textContent = err.message || 'Error de conexión';
+    errorEl.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Cambiar contraseña y continuar';
   }
 }
 
@@ -267,6 +327,7 @@ function _hideOverlay(){
 
 async function loadData(){
   if(!SESSION){ _hideOverlay(); show('pLogin'); setConn('','Sin sesión'); return; }
+  if(SESSION.passwordTemporal){ _hideOverlay(); show('pForcePassword'); return; }
   itemsLoaded = false;
   showUserChip();
   show('pH');

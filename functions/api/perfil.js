@@ -48,7 +48,7 @@ export async function onRequestPost({ request, env }) {
         return Response.json({ ok: false, error: 'La contraseña actual no es correcta' });
       }
 
-      await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
+      await env.DB.prepare('UPDATE usuarios SET password=?, password_temporal=0 WHERE usuario=?')
         .bind(body.newPassword, user.usuario).run();
       await auditLog(env.DB, user, 'changePassword', 'Contraseña cambiada');
       return Response.json({ ok: true });

@@ -83,13 +83,15 @@ propia del departamento. Usar `<optgroup>` ("Aulas del centro" / "Aula del
 departamento") ayuda a distinguirlas de un vistazo.
 **Prioridad:** Media
 
-**Forzar cambio de contraseña en el primer login de cuentas genéricas**
-Las 48 cuentas `departamentoXXX`/`profe1XXX` tienen usuario=contraseña.
-Detectar ese patrón (o un flag `password_temporal`) y redirigir a cambiar
-contraseña antes de dejar usar el resto de la app.
-**Prioridad:** Alta — es la recomendación de seguridad ya anotada en
-PLAN_MULTIDEPARTAMENTO.md, pero también mejora la percepción de "esta es
-mi cuenta" para cada jefe/a de departamento.
+**Forzar cambio de contraseña en el primer login de cuentas genéricas — ✅ implementado (29/07/2026)**
+Columna `usuarios.password_temporal` (migración `0014`), marcada en las 48
+cuentas `departamentoXXX`/`profe1XXX`. Al hacer login con el flag activo,
+el frontend muestra `#pForcePassword` (pantalla obligatoria, sin opción de
+saltarla) en vez de cargar el inventario; reutiliza el endpoint existente
+`POST /api/perfil action=changePassword`, que además limpia el flag. Si se
+cierra la pestaña sin cambiarla, `loadData()` vuelve a mostrar la pantalla
+obligatoria en el siguiente acceso (comprobación en el arranque, no solo en
+el momento del login).
 
 **Selector de departamento para superadmin con contexto persistente**
 Parte de la Fase 3 ya planificada: que al elegir un departamento desde el
