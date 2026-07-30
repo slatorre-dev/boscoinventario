@@ -366,9 +366,11 @@ body{
 .home-sec>summary{cursor:pointer;list-style:none;border-radius:8px;padding:6px 8px;margin:0 -8px;transition:background .15s}
 .home-sec>summary::-webkit-details-marker{display:none}
 .home-sec>summary:hover{background:var(--accent-l)}
-.home-sec>summary:hover .sec-label-arrow{color:var(--accent)}
-.sec-label-arrow{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;font-size:13px;font-weight:900;color:var(--accent);background:var(--accent-l);border-radius:6px;transition:transform .2s,background .15s,color .15s;margin-left:-2px}
-.home-sec[open]>summary .sec-label-arrow{transform:rotate(180deg)}
+.home-sec>summary:hover .sec-toggle-pill{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sec-toggle-pill{display:inline-flex;align-items:center;font-size:11px;font-weight:800;letter-spacing:.02em;text-transform:none;color:var(--accent);background:var(--white);border:1.5px solid var(--accent);border-radius:20px;padding:4px 10px;transition:all .15s}
+.sec-toggle-pill .stp-closed{display:none}
+.home-sec:not([open])>summary .sec-toggle-pill .stp-open{display:none}
+.home-sec:not([open])>summary .sec-toggle-pill .stp-closed{display:inline}
 
 /* Historial Page */
 .hp-controls{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center}
