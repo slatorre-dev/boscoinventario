@@ -260,39 +260,31 @@
 <!-- ══ HOME ══ -->
 <div class="page" id="pH">
   <div class="home-hero">
-    <canvas id="heroCanvas" aria-hidden="true"></canvas>
-    <div class="home-hero-inner">
-      <div>
-        <div class="hero-tag"><span class="dot"></span> Inventario en vivo</div>
-        <h1>Sala<span class="accent-slash">/</span>Aula<span class="accent-slash">/</span>Ítem</h1>
-        <p>Busca por nombre, referencia o ubicación, o entra directamente por aula, categoría o ciclo.</p>
-      </div>
-      <div class="hero-meta" id="heroMeta"></div>
-      <div class="hero-actions">
-        <div class="gsearch-wrap" id="gsWrap">
-          <span class="gsearch-ico">🔍</span>
-          <input class="gsearch" id="gsInput" type="text" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor…" autocomplete="off"
-            oninput="globalSearch(this.value)" onfocus="globalSearch(this.value)"
-            onkeydown="gsKey(event)">
-          <button class="gsearch-clear" id="gsClear" onclick="gsClear()" title="Limpiar">✕</button>
-          <button class="gsearch-qr" id="gsQr" onclick="openQrScanner()" title="Escanear QR" style="display:none">
-            <svg style="width:20px;height:20px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#fff" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M0.9472 0.9472h30.1056v30.1056H0.9472Z"/>
-              <path fill="currentColor" d="M5.9648 5.9648h2.5088v2.5088H5.9648Zm0 17.5616h2.5088v2.5088H5.9648Zm17.5616-17.5616h2.5088v2.5088h-2.5088Z"/>
-              <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
-            </svg>
-          </button>
-          <div class="gsr" id="gsResults" role="listbox"></div>
-        </div>
-        <div class="action-strip" style="gap:10px;margin-top:14px">
-          <button class="btn btn-p icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem rápido</span></button>
-          <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
-          <button class="btn btn-d icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
-          <a class="btn icon-btn" href="javascript:void(0)" onclick="goDocsDpto()" style="display:inline-flex;padding:11px 24px;font-size:14px;border-color:#0891b2;color:#0891b2;text-decoration:none">📂 <span class="btn-text">Documentación</span></a>
-          <button class="btn icon-btn" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="goMaintenance()">🛠️ <span class="btn-text">Mantenimiento</span></button>
-          <button class="btn icon-btn" id="btnGoHistorial" style="display:none;padding:11px 24px;font-size:14px;border-color:#6366f1;color:#6366f1" onclick="goHistorialPage()">📋 <span class="btn-text">Historial</span></button>
-        </div>
-      </div>
+    <h1>¿Qué deseas consultar?</h1>
+    <h2>Acciones rápidas</h2>
+    <p>Selecciona un aula o un ciclo formativo para ver su inventario</p>
+    <div class="action-strip" style="justify-content:center;gap:10px;margin-top:18px">
+      <button class="btn btn-p icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem rápido</span></button>
+      <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn btn-d icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
+      <a class="btn icon-btn" href="javascript:void(0)" onclick="goDocsDpto()" style="display:inline-flex;padding:11px 24px;font-size:14px;border-color:#0891b2;color:#0891b2;text-decoration:none">📂 <span class="btn-text">Documentación</span></a>
+      <button class="btn icon-btn" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="goMaintenance()">🛠️ <span class="btn-text">Mantenimiento</span></button>
+      <button class="btn icon-btn" id="btnGoHistorial" style="display:none;padding:11px 24px;font-size:14px;border-color:#6366f1;color:#6366f1" onclick="goHistorialPage()">📋 <span class="btn-text">Historial</span></button>
+    </div>
+    <div class="gsearch-wrap" id="gsWrap">
+      <span class="gsearch-ico">🔍</span>
+      <input class="gsearch" id="gsInput" type="text" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor…" autocomplete="off"
+        oninput="globalSearch(this.value)" onfocus="globalSearch(this.value)"
+        onkeydown="gsKey(event)">
+      <button class="gsearch-clear" id="gsClear" onclick="gsClear()" title="Limpiar">✕</button>
+      <button class="gsearch-qr" id="gsQr" onclick="openQrScanner()" title="Escanear QR" style="display:none">
+        <svg style="width:20px;height:20px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#fff" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M0.9472 0.9472h30.1056v30.1056H0.9472Z"/>
+          <path fill="currentColor" d="M5.9648 5.9648h2.5088v2.5088H5.9648Zm0 17.5616h2.5088v2.5088H5.9648Zm17.5616-17.5616h2.5088v2.5088h-2.5088Z"/>
+          <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
+        </svg>
+      </button>
+      <div class="gsr" id="gsResults" role="listbox"></div>
     </div>
   </div>
   <div class="home-body">
