@@ -13,7 +13,7 @@
 
   // ── Config ────────────────────────────────────────────────────────────────
   var API_BASE = '';          // vacío = mismo dominio (relativo)
-  var AI_ENDPOINT = '/proxy/ai';  // Pages Function — el token vive en el servidor
+  var AI_ENDPOINT = '/api/proxy-ai';  // Pages Function — el token vive en el servidor, requiere sesión (ver _middleware.js)
   var MODEL = 'gpt-4o-mini';     // GitHub Models: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct...
   var AGENTE_NOMBRE = 'Volt';    // Nombre del agente IA
   var LEARN_KEY = 'volt_intent_examples_v1';
@@ -114,7 +114,11 @@
       messages: [{ role: 'system', content: systemMsg }].concat(messages)
     };
 
-    return fetch(AI_ENDPOINT, {
+    var creds = getCreds();
+    var aiUrl = new URL(API_BASE + AI_ENDPOINT, window.location.origin);
+    applyCredsToUrl(aiUrl, creds);
+
+    return fetch(aiUrl.toString(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

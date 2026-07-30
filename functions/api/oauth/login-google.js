@@ -23,15 +23,54 @@ async function getGoogleJwks() {
   }
 
   try {
-    const res = await fetch('https://www.googleapis.com/oauth2/v1/certs');
+    // Endpoint JWK (claves RSA en formato n/e), no el /certs antiguo (X.509).
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/certs');
     if (!res.ok) throw new Error('No se pudo obtener JWKS de Google');
-    jwksCache = await res.json();
+    const data = await res.json();
+    jwksCache = data.keys || [];
     jwksCacheTime = now;
     return jwksCache;
   } catch (err) {
     console.error('Error obteniendo JWKS:', err.message);
     throw err;
   }
+}
+
+function base64UrlToUint8Array(base64url) {
+  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = base64.length % 4 === 0 ? '' : '='.repeat(4 - (base64.length % 4));
+  const binary = atob(base64 + pad);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+/**
+ * Verifica la firma RS256 de un JWT contra las claves públicas (JWKS) de Google.
+ * Cloudflare Workers expone Web Crypto (crypto.subtle) — no hace falta ninguna librería.
+ */
+async function verifyGoogleSignature(headerB64, payloadB64, signatureB64, header) {
+  if (header.alg !== 'RS256') {
+    throw new Error('JWT inválido: algoritmo de firma no soportado');
+  }
+
+  const keys = await getGoogleJwks();
+  const jwk = keys.find((k) => k.kid === header.kid);
+  if (!jwk) throw new Error('JWT inválido: clave de firma (kid) no encontrada en JWKS de Google');
+
+  const publicKey = await crypto.subtle.importKey(
+    'jwk',
+    { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: 'RS256', ext: true },
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+
+  const signature = base64UrlToUint8Array(signatureB64);
+  const signedData = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+
+  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', publicKey, signature, signedData);
+  if (!valid) throw new Error('JWT inválido: firma no verificada');
 }
 
 /**
@@ -82,10 +121,12 @@ async function validateGoogleToken(token, clientId) {
     throw new Error('Token no emitido por Google');
   }
 
-  // En producción, se debería validar la firma. Por ahora, confiamos en HTTPS.
-  // Para una validación completa, se necesitaría verificar la firma usando las claves de JWKS.
-  // En Cloudflare Workers, hay limitaciones con criptografía de alto nivel.
-  console.log('Google token validado (estructura correcta, no caducado, aud válido)', {
+  // Verificar la firma RS256 contra las claves públicas de Google (JWKS) —
+  // sin esto, cualquiera puede fabricar un JWT con aud/iss/exp válidos y
+  // un email arbitrario, sin que Google lo haya emitido nunca.
+  await verifyGoogleSignature(headerB64, payloadB64, signatureB64, header);
+
+  console.log('Google token validado (firma RS256 verificada, no caducado, aud válido)', {
     email: payload.email,
     name: payload.name,
   });

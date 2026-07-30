@@ -429,39 +429,34 @@ Response (200):
 
 ## IA (Proxy)
 
-### POST /proxy/ai
+### POST /api/proxy-ai
 
-Envía prompt al modelo IA y recibe respuesta con streaming.
+Envía prompt al modelo IA y recibe respuesta con streaming. Vivía en
+`/proxy/ai` (fuera de `/api/*`, sin ninguna autenticación — cualquiera podía
+gastar el `GITHUB_TOKEN` del servidor). Movido a `/api/proxy-ai` para que
+`functions/api/_middleware.js` lo proteja igual que el resto de endpoints
+(requiere `?u=&p=` o `?u=&t=` válidos).
 
 ```http
-POST /proxy/ai
+POST /api/proxy-ai?u=usuario&p=password
 Content-Type: application/json
 
 Body:
 {
-  "prompt": "¿Cuántos multímetros hay disponibles?",
-  "context": "user_id:123",
-  "stream": true
+  "model": "gpt-4o-mini",
+  "stream": true,
+  "messages": [{"role":"system","content":"..."},{"role":"user","content":"¿Cuántos multímetros hay disponibles?"}]
 }
 
-Response (200 - Streaming):
-data: {"content": "Hay ", "type": "text"}
-data: {"content": "5 multímetros disponibles", "type": "text"}
-data: {"content": null, "type": "end"}
+Response (200 - Streaming, formato OpenAI):
+data: {"choices":[{"delta":{"content":"Hay "}}]}
+data: {"choices":[{"delta":{"content":"5 multímetros disponibles"}}]}
+data: [DONE]
 ```
-
-**Parámetros Body:**
-| Parámetro | Tipo | Descripción |
-|-----------|------|-------------|
-| prompt | string | Pregunta al modelo |
-| context | string | Contexto (opcional) |
-| stream | boolean | Respuesta en streaming (default: true) |
 
 **Modelo Usado:**
 - `gpt-4o-mini` (GitHub Models)
 - Gratis con GitHub Copilot
-
-**⚠️ Seguridad:** No enviar credenciales de usuario en el prompt
 
 ---
 

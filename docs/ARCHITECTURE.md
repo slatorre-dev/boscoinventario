@@ -164,8 +164,9 @@ Request → _middleware.js → Valida auth → Valida permisos → Endpoint
 - **Función:** Exportar toda la BD como JSON
 - **⚠️ Riesgo:** Incluye contraseñas en plain text
 
-#### functions/proxy/ai.js
-- **Endpoint:** `/proxy/ai`
+#### functions/api/proxy-ai.js
+- **Endpoint:** `/api/proxy-ai` (antes `/proxy/ai`, movido para quedar bajo la
+  protección de `_middleware.js` — vivía sin ninguna autenticación)
 - **Función:** Proxy a GitHub Models API
 - **Modelo:** gpt-4o-mini (gratis con GitHub Copilot)
 - **Streaming:** Respuestas en tiempo real
@@ -450,9 +451,9 @@ GET /api/config
 ### IA (Proxy)
 
 ```
-POST /proxy/ai
-Body: { prompt: "...", history: [...] }
-→ Streaming response con chunks
+POST /api/proxy-ai?u=usuario&p=password
+Body: { model: "gpt-4o-mini", stream: true, messages: [...] }
+→ Streaming response con chunks (formato OpenAI)
 ```
 
 Ver **API.md** para documentación completa.
@@ -504,7 +505,7 @@ if (detectarIntencionAnadirItem(query)) {
 
 // 3. Streaming de respuesta
 async function streamAI(prompt) {
-  const response = await fetch('/proxy/ai', { method: 'POST', body: JSON.stringify({prompt}) });
+  const response = await fetch('/api/proxy-ai?u=' + u + '&p=' + p, { method: 'POST', body: JSON.stringify({prompt}) });
   const reader = response.body.getReader();
   while (true) {
     const { value, done } = await reader.read();
