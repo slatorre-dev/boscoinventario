@@ -29,8 +29,20 @@ function showRegister() {
   document.getElementById('registerOk').classList.remove('show');
   document.getElementById('registerNombre').value = '';
   document.getElementById('registerEmail').value = '';
+  document.getElementById('registerUserHint').textContent = '';
   if (!_registerDeptsLoaded) loadRegisterDepartments();
   document.getElementById('registerNombre').focus();
+}
+
+// Previsualiza el usuario/login que se generará del email — mismo cálculo
+// que el backend (parte local del email, sanitizada). Si ya existe, el
+// backend añade un sufijo numérico; aquí solo se muestra la base.
+function _updateRegisterUserHint() {
+  const email = document.getElementById('registerEmail').value.trim();
+  const hint = document.getElementById('registerUserHint');
+  const userPart = email.split('@')[0] || '';
+  const usuario = userPart.replace(/[^a-z0-9._-]/gi, '').toLowerCase();
+  hint.textContent = usuario ? `Tu usuario será: ${usuario}` : '';
 }
 
 async function loadRegisterDepartments() {
