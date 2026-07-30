@@ -1245,12 +1245,22 @@
       <button class="btn" style="font-size:12px" onclick="exportUsuariosCSV()">📤 Exportar CSV</button>
       <span style="font-size:11px;color:var(--muted)">Columnas: <code>usuario,nombre,email,rol,password,departamento</code> (departamento solo aplica si eres superadmin)</span>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
-      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: usuario,asignatura">
-        📚 Importar módulos CSV
-        <input type="file" accept=".csv,.txt" style="display:none" onchange="importModulosCSV(this)">
-      </label>
-      <span style="font-size:11px;color:var(--muted)">Columnas: <code>usuario,asignatura</code> — una fila por asignación. Busca la asignatura por nombre (tolera errores) dentro del departamento de cada usuario.</span>
+    <div style="background:var(--surface2,#f1f5f9);border-radius:10px;padding:10px 14px;margin-top:8px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: usuario,asignatura">
+          📚 Importar módulos CSV
+          <input type="file" accept=".csv,.txt" style="display:none" onchange="importModulosCSV(this)">
+        </label>
+        <button class="btn" style="font-size:12px" onclick="downloadModulosCSVPlantilla()">📄 Descargar plantilla</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5">
+        Dos columnas: <code>usuario,asignatura</code> — una fila por cada asignatura que imparte un profesor (si imparte 3, van 3 filas con el mismo usuario). El nombre de la asignatura no tiene que ser exacto, tolera pequeñas diferencias, pero debe existir en el departamento de ese usuario.
+        <br><strong>Ejemplo:</strong>
+        <pre style="background:var(--white);border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin:4px 0 0;overflow-x:auto">usuario,asignatura
+profe1electricidadelectronica,Electrotecnia
+profe1electricidadelectronica,Automatismos industriales
+departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
+      </div>
     </div>
     <div class="mf" style="margin-top:18px">
       <div></div>

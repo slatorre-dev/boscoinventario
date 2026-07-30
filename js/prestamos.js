@@ -975,6 +975,28 @@ function exportUsuariosCSV(){
   toast('CSV exportado', 'ok');
 }
 
+// Genera una plantilla real a partir de los usuarios y asignaturas ya
+// cargados en el modal — una fila de ejemplo por usuario (o dos si
+// tiene módulos propios asignados), para que quede claro el formato
+// exacto sin tener que inventarse datos.
+function downloadModulosCSVPlantilla(){
+  if(!_usuariosEditing.length){ toast('Abre primero la lista de usuarios', 'err'); return; }
+  const asignaturasDisponibles = (CICLOS || []).flatMap(c => c.id==='departamento' ? [] : c.modulos.map(m => m.name));
+
+  const rows = [];
+  _usuariosEditing.filter(u => u.usuario).slice(0, 3).forEach((u, i) => {
+    const ejemplo1 = asignaturasDisponibles[i % Math.max(asignaturasDisponibles.length,1)] || 'Nombre de la asignatura';
+    const ejemplo2 = asignaturasDisponibles[(i+1) % Math.max(asignaturasDisponibles.length,1)] || 'Otra asignatura';
+    rows.push(`${u.usuario},${ejemplo1}`);
+    if(ejemplo2 !== ejemplo1) rows.push(`${u.usuario},${ejemplo2}`);
+  });
+  if(!rows.length) rows.push('usuario_ejemplo,Nombre de la asignatura');
+
+  const csv = '﻿usuario,asignatura\n' + rows.join('\n');
+  downloadText('plantilla-modulos.csv', 'text/csv;charset=utf-8', csv);
+  toast('Plantilla descargada', 'ok');
+}
+
 function importModulosCSV(input){
   const file = input.files[0];
   if(!file) return;
