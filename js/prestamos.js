@@ -596,6 +596,13 @@ function importProfesoresCSV(input){
   reader.readAsText(file, 'utf-8');
 }
 
+function exportProfesoresCSV(){
+  const h = 'Nombre,Departamento,Email,Origen';
+  const rows = profEditing.map(p => [p.nombre, p.departamento, p.email, p.source==='usuarios'?'Usuario app':'Profesor/a'].map(csvCell).join(','));
+  downloadText('profesores.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));
+  toast('CSV exportado', 'ok');
+}
+
 function removeProfRow(idx){
   const p = profEditing[idx];
   if(p.source === 'usuarios'){
@@ -954,6 +961,18 @@ function importUsuariosCSV(input) {
     toast(msg, importados > 0 ? 'ok' : 'warn');
   };
   reader.readAsText(file, 'utf-8');
+}
+
+function exportUsuariosCSV(){
+  const h = 'Usuario,Nombre,Email,Rol,Departamento,Módulos asignados';
+  const rows = _usuariosEditing.map(u => [
+    u.usuario, u.nombre, u.email,
+    (u.rol||'').toLowerCase().trim()==='superadmin' ? 'Jefe/a Departamento' : u.rol,
+    u.departamento || '',
+    (u._modulos||[]).length
+  ].map(csvCell).join(','));
+  downloadText('usuarios.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));
+  toast('CSV exportado', 'ok');
 }
 
 async function saveUsuarios(){

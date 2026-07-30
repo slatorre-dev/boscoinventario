@@ -23,13 +23,21 @@ function goProfile() {
 
   const isSuperAdmin = String(SESSION.rol||'').trim().toLowerCase() === 'superadmin';
   const deptWrap = document.getElementById('profDeptWrap');
+  const deptReadonlyWrap = document.getElementById('profDeptReadonlyWrap');
   if(isSuperAdmin && typeof DEPARTAMENTOS !== 'undefined' && DEPARTAMENTOS.length){
     deptWrap.style.display = '';
+    deptReadonlyWrap.style.display = 'none';
     const sel = document.getElementById('profDept');
     sel.innerHTML = DEPARTAMENTOS.map(d=>`<option value="${escHtml(d.slug)}">${escHtml(d.icono||'')} ${escHtml(d.nombre)}</option>`).join('');
     sel.value = SESSION.departamento || '';
   } else {
     deptWrap.style.display = 'none';
+    if(SESSION.departamentoNombre){
+      deptReadonlyWrap.style.display = '';
+      document.getElementById('profDeptReadonly').textContent = `${SESSION.departamentoIcono||''} ${SESSION.departamentoNombre}`.trim();
+    } else {
+      deptReadonlyWrap.style.display = 'none';
+    }
   }
 
   document.getElementById('profPassOld').value = '';

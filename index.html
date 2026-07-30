@@ -113,6 +113,10 @@
           <label class="fl">Rol</label>
           <div class="profile-readonly" id="profRol"></div>
         </div>
+        <div id="profDeptReadonlyWrap" style="display:none">
+          <label class="fl">Departamento</label>
+          <div class="profile-readonly" id="profDeptReadonly"></div>
+        </div>
         <div class="full">
           <label class="fl">Nombre completo</label>
           <input class="fi-w" type="text" id="profNombre" placeholder="Tu nombre completo" autocomplete="name">
@@ -1181,6 +1185,7 @@
         📥 Importar CSV
         <input type="file" accept=".csv,.txt" style="display:none" onchange="importProfesoresCSV(this)">
       </label>
+      <button class="btn" style="font-size:12px" onclick="exportProfesoresCSV()">📤 Exportar CSV</button>
       <span style="font-size:11px;color:var(--muted)">Columnas: <code>nombre,departamento,email</code></span>
     </div>
     <div class="mf" style="margin-top:18px">
@@ -1213,6 +1218,7 @@
         📥 Importar CSV
         <input type="file" accept=".csv,.txt" style="display:none" onchange="importUsuariosCSV(this)">
       </label>
+      <button class="btn" style="font-size:12px" onclick="exportUsuariosCSV()">📤 Exportar CSV</button>
       <span style="font-size:11px;color:var(--muted)">Columnas: <code>usuario,nombre,email,rol,password,departamento</code> (departamento solo aplica si eres superadmin)</span>
     </div>
     <div class="mf" style="margin-top:18px">
