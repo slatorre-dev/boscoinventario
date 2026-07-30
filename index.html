@@ -372,14 +372,23 @@
     <div class="stats-strip" id="presStats"></div>
     <div class="pres-tabs">
       <button class="pres-tab active" id="ptActivos" onclick="setPresTab('activos')">🟡 Activos</button>
-      <button class="pres-tab" id="ptVencidos" onclick="setPresTab('vencidos')">🔴 Vencidos</button>
-      <button class="pres-tab" id="ptDevueltos" onclick="setPresTab('devueltos')">✅ Historial</button>
-      <button class="pres-tab" id="ptProfesor" onclick="setPresTab('profesor')">👤 Por profesor/a</button>
-      <button class="pres-tab" id="ptAula" onclick="setPresTab('aula')">🏫 Por aula</button>
-      <button class="pres-tab" id="ptMaterial" onclick="setPresTab('material')">📦 Por material</button>
+      <button class="pres-tab" id="ptHistorial" onclick="setPresTab('historial')">✅ Historial</button>
+      <label class="pres-venc-toggle" id="presVencToggleWrap">
+        <input type="checkbox" id="presVencToggle" onchange="togglePresVencidos()">
+        🔴 Solo vencidos
+      </label>
     </div>
     <div class="toolbar">
       <div class="sbox"><span class="si">🔍</span><input type="text" id="presSearch" placeholder="Buscar por ítem o profesor..." oninput="renderPrestamos()"></div>
+      <label class="pres-group-select">
+        <span>Agrupar por</span>
+        <select id="presGroupBy" onchange="setPresGroupBy(this.value)">
+          <option value="">Sin agrupar</option>
+          <option value="profesor">Profesor/a</option>
+          <option value="aula">Aula</option>
+          <option value="material">Material</option>
+        </select>
+      </label>
       <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn icon-btn" data-perm="profesores.manage" onclick="openProfModal()">👥 <span class="btn-text">Gestionar profesores</span></button>
       <button class="btn icon-btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 <span class="btn-text">Gestionar usuarios</span></button>

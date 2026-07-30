@@ -14,6 +14,8 @@ let _groupView = localStorage.getItem('inv_group_view') !== 'false';
 let sk = 'item', sa = true;
 let eid = null;
 let currentPresTab = 'activos';
+let currentPresGroupBy = localStorage.getItem('pres_group_by') || '';
+let currentPresOnlyVencidos = false;
 let prestarItemId = null;
 let devolverPresId = null;
 let itemsLoaded = false;

@@ -64,13 +64,24 @@ function goPrestamos(tab){
   document.getElementById('presMeta').textContent = `${prestamos.length} préstamo${prestamos.length!==1?'s':''} registrado${prestamos.length!==1?'s':''} en total`;
 
   // Tabs
-  ['activos','vencidos','devueltos','profesor','aula','material'].forEach(t=>{
+  ['activos','historial'].forEach(t=>{
     document.getElementById('pt'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', currentPresTab===t);
   });
 
-  // El buscador solo tiene sentido en las tabs de lista, ocultarlo en las vistas agrupadas
-  const isGrouped = ['profesor','aula','material'].includes(currentPresTab);
-  document.querySelector('#pPres .toolbar').style.display = isGrouped ? 'none' : '';
+  // El toggle "solo vencidos" y el select de agrupar solo tienen sentido en la tab Activos
+  const vencWrap = document.getElementById('presVencToggleWrap');
+  if(vencWrap) vencWrap.style.display = currentPresTab==='activos' ? '' : 'none';
+  const vencCheckbox = document.getElementById('presVencToggle');
+  if(vencCheckbox) vencCheckbox.checked = currentPresOnlyVencidos;
+
+  const groupSelect = document.getElementById('presGroupBy');
+  if(groupSelect) groupSelect.value = currentPresGroupBy;
+  const groupWrap = groupSelect ? groupSelect.closest('.pres-group-select') : null;
+  if(groupWrap) groupWrap.style.display = currentPresTab==='activos' ? '' : 'none';
+
+  // El buscador solo tiene sentido en las vistas de lista, ocultarlo en las vistas agrupadas
+  const isGrouped = currentPresTab==='activos' && !!currentPresGroupBy;
+  document.querySelector('#pPres .sbox').style.display = isGrouped ? 'none' : '';
 
   show('pPres');
   renderPrestamos();
@@ -79,6 +90,19 @@ function goPrestamos(tab){
 function setPresTab(tab){
   currentPresTab = tab;
   goPrestamos(tab);
+}
+
+function togglePresVencidos(){
+  currentPresOnlyVencidos = document.getElementById('presVencToggle').checked;
+  renderPrestamos();
+}
+
+function setPresGroupBy(val){
+  currentPresGroupBy = val;
+  localStorage.setItem('pres_group_by', val);
+  const isGrouped = currentPresTab==='activos' && !!val;
+  document.querySelector('#pPres .sbox').style.display = isGrouped ? 'none' : '';
+  renderPrestamos();
 }
 
 function _presCardHtml(p){
@@ -192,33 +216,34 @@ function _renderGrouped(groupKey){
 
 function renderPrestamos(){
   updatePresVencBadge();
-  if(currentPresTab==='profesor'){ _renderGrouped('profesor'); return; }
-  if(currentPresTab==='aula'){     _renderGrouped('aula');     return; }
-  if(currentPresTab==='material'){ _renderGrouped('material'); return; }
+  if(currentPresTab==='activos' && currentPresGroupBy){
+    _renderGrouped(currentPresGroupBy);
+    return;
+  }
 
   const q = document.getElementById('presSearch').value.toLowerCase();
   let data;
-  if(currentPresTab==='activos') data = getPrestamosActivos().filter(p=>!isVencido(p));
-  else if(currentPresTab==='vencidos') data = getVencidos();
-  else data = prestamos.filter(p=>p.estado==='Devuelto');
+  if(currentPresTab==='activos'){
+    data = currentPresOnlyVencidos ? getVencidos() : getPrestamosActivos();
+  } else {
+    data = prestamos.filter(p=>p.estado==='Devuelto');
+  }
 
   if(q){
     data = data.filter(p=>[p.itemNombre,p.profesorNombre,p.obs].join(' ').toLowerCase().includes(q));
   }
 
   data.sort((a,b)=>{
-    if(currentPresTab==='devueltos') return new Date(b.fechaDevolucion||b.fechaPrestamo) - new Date(a.fechaDevolucion||a.fechaPrestamo);
+    if(currentPresTab==='historial') return new Date(b.fechaDevolucion||b.fechaPrestamo) - new Date(a.fechaDevolucion||a.fechaPrestamo);
     return new Date(a.fechaPrevista||a.fechaPrestamo) - new Date(b.fechaPrevista||b.fechaPrestamo);
   });
 
   const mc = document.getElementById('presContent');
   if(!data.length){
-    const msgs = {
-      activos:'No hay préstamos activos',
-      vencidos:'¡Sin préstamos vencidos! 🎉',
-      devueltos:'No hay préstamos en el histórico'
-    };
-    mc.innerHTML=`<div class="empty"><div class="ei">📋</div><div class="et">${msgs[currentPresTab]}</div></div>`;
+    const msg = currentPresTab==='historial' ? 'No hay préstamos en el histórico'
+      : currentPresOnlyVencidos ? '¡Sin préstamos vencidos! 🎉'
+      : 'No hay préstamos activos';
+    mc.innerHTML=`<div class="empty"><div class="ei">📋</div><div class="et">${msg}</div></div>`;
     return;
   }
 
