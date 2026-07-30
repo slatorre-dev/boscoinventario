@@ -162,5 +162,111 @@ export async function onRequestPost({ request, env, data }) {
     return Response.json({ ok: true, oculto: val });
   }
 
+  if (action === 'restoreBackup') {
+    if (!superadmin) return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    const sections = body.sections || {};
+    const backup = body.backup || {};
+    // Los backups del proyecto original (inventarioelecfp, un solo departamento)
+    // no traen columna "departamento" en sus filas — esta base es multi-departamento,
+    // así que cualquier fila sin departamento propio se asigna a electricidadelectronica.
+    // Solo se borran los departamentos presentes en las filas a importar (nunca la
+    // tabla entera), para no arrastrar datos de los otros departamentos ya en producción.
+    const FALLBACK_DEPT = 'electricidadelectronica';
+    const restored = {};
+
+    function deptsIn(rows){
+      const set = new Set(rows.map(r => r.departamento || FALLBACK_DEPT));
+      return [...set];
+    }
+    async function deleteDepts(table, depts){
+      if (!depts.length) return;
+      const placeholders = depts.map(() => '?').join(',');
+      await env.DB.prepare(`DELETE FROM ${table} WHERE departamento IN (${placeholders})`).bind(...depts).run();
+    }
+
+    // "aulas.id" es TEXT PRIMARY KEY global — si se restauran aulas, se
+    // prefijan con el departamento para no chocar con aulas globales o de
+    // otros departamentos, y las filas de inventario que las referencian
+    // (columna "aula") se reescriben con el mismo mapeo antes de insertar.
+    const aulaIdMap = {};
+    if (sections.aulas) {
+      const rows = Array.isArray(backup.aulas) ? backup.aulas : [];
+      await deleteDepts('aulas', deptsIn(rows));
+      if (rows.length) {
+        const stmt = env.DB.prepare('INSERT OR REPLACE INTO aulas (id,name,icon,desc,th,orden,departamento) VALUES (?,?,?,?,?,?,?)');
+        const batch = rows.map(r => {
+          const dept = r.departamento || FALLBACK_DEPT;
+          const oldId = String(r.id || '');
+          const safeId = oldId.startsWith(dept + '-') ? oldId : `${dept}-${oldId}`;
+          aulaIdMap[oldId] = safeId;
+          return stmt.bind(safeId, r.name, r.icon, r.desc, r.th, r.orden || 0, dept);
+        });
+        await env.DB.batch(batch);
+      }
+      restored.aulas = rows.length;
+    }
+
+    if (sections.inventario) {
+      const rows = Array.isArray(backup.inventario) ? backup.inventario : [];
+      await deleteDepts('inventario', deptsIn(rows));
+      if (rows.length) {
+        // El "id" del backup viejo puede chocar con IDs ya usados por otros
+        // departamentos (PK global) — se reasignan IDs nuevos consecutivos,
+        // igual que hace "add"/"bulkImport".
+        const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM inventario').first();
+        let nextId = (maxRow.m || 0) + 1;
+        const stmt = env.DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')},departamento) VALUES (${HEADERS_INV.map(()=>'?').join(',')},?)`);
+        await env.DB.batch(rows.map(r => {
+          const vals = HEADERS_INV.map(h => {
+            if (h === 'id') return nextId++;
+            if (h === 'aula' && aulaIdMap[r.aula]) return aulaIdMap[r.aula];
+            return r[h] ?? null;
+          });
+          return stmt.bind(...vals, r.departamento || FALLBACK_DEPT);
+        }));
+      }
+      restored.inventario = rows.length;
+    }
+
+    if (sections.categorias) {
+      const rows = Array.isArray(backup.categorias) ? backup.categorias : (backup.cats || []);
+      await deleteDepts('categorias', deptsIn(rows));
+      if (rows.length) {
+        const stmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden,departamento) VALUES (?,?,?,?,?,?)');
+        await env.DB.batch(rows.map(r => stmt.bind(r.name, r.c, r.bg, r.i, r.orden || 0, r.departamento || FALLBACK_DEPT)));
+      }
+      restored.categorias = rows.length;
+    }
+
+    if (sections.ciclos) {
+      const rows = Array.isArray(backup.ciclos) ? backup.ciclos : [];
+      await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
+      await deleteDepts('ciclos', deptsIn(rows));
+      if (rows.length) {
+        const stmt = env.DB.prepare('INSERT INTO ciclos (cicloId,cicloNombre,nivel,icon,th,desc,modCod,modNombre,modHoras,cicloOrden,modOrden,responsable,departamento) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        await env.DB.batch(rows.map(r => stmt.bind(r.cicloId, r.cicloNombre, r.nivel, r.icon, r.th, r.desc, r.modCod, r.modNombre, r.modHoras || 0, r.cicloOrden || 0, r.modOrden || 0, r.responsable || '', r.departamento || FALLBACK_DEPT)));
+      }
+      restored.ciclos = rows.length;
+    }
+
+    if (sections.profesores) {
+      const rows = Array.isArray(backup.profesores) ? backup.profesores : [];
+      await deleteDepts('profesores', deptsIn(rows));
+      if (rows.length) {
+        // "id" es INTEGER PRIMARY KEY global — se reasignan IDs nuevos
+        // consecutivos igual que en inventario, para no chocar con
+        // profesores ya existentes de otros departamentos.
+        const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM profesores').first();
+        let nextId = (maxRow.m || 0) + 1;
+        const stmt = env.DB.prepare('INSERT INTO profesores (id,nombre,departamento,email) VALUES (?,?,?,?)');
+        await env.DB.batch(rows.map(r => stmt.bind(nextId++, r.nombre, r.departamento || FALLBACK_DEPT, r.email || '')));
+      }
+      restored.profesores = rows.length;
+    }
+
+    await auditLog(env.DB, user, 'restoreBackup', '', `Restaurado backup: ${Object.entries(restored).map(([k,v]) => `${k} (${v})`).join(', ')}`);
+    return Response.json({ ok: true, restored });
+  }
+
   return Response.json({ ok: false, error: 'Accion desconocida' });
 }
