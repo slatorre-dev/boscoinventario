@@ -1438,9 +1438,20 @@
     [/\bclase\s+(\d+)\b/gi, 'aula $1'],
     [/\bde\s+volver\b/gi, 'devolver'],
     [/\bde\s+vuelvo\b/gi, 'devuelvo'],
+    [/\bde\s+vuelve\b/gi, 'devuelve'],
     [/\bpr[eé]sta\s*me\b/gi, 'prestame'],
+    [/\bpr[eé]sta\s*nos\b/gi, 'prestanos'],
     [/\bestoc\b/gi, 'stock'],
-    [/\bestoque\b/gi, 'stock']
+    [/\bestoque\b/gi, 'stock'],
+    [/\ba\s*ver[ií]a\b/gi, 'averia'],
+    [/\ba\s*veri[ao]d[ao]\b/gi, 'averiado'],
+    [/\bactuali[sz]a\b/gi, 'actualiza'],
+    [/\bmante\s*nimiento\b/gi, 'mantenimiento'],
+    [/\bmante\s*nimineto\b/gi, 'mantenimiento'],
+    [/\bdeteriora\s*d[ao]\b/gi, 'deteriorado'],
+    [/\bcanti\s*dad\b/gi, 'cantidad'],
+    [/\bhistori[ae]l\b/gi, 'historial'],
+    [/\bprest[ae]mo\b/gi, 'prestamo']
   ];
 
   function normalizarEntradaUsuario(text) {
@@ -1929,8 +1940,56 @@
     return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
   }
 
+  // Distancia de Levenshtein — usada para tolerar errores de transcripción
+  // de voz (Web Speech) o typos de teclado al comparar contra los patrones
+  // de intención, sin necesitar una lista infinita de correcciones manuales.
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    var la = a.length, lb = b.length;
+    if (!la) return lb;
+    if (!lb) return la;
+    if (Math.abs(la - lb) > 3) return Math.max(la, lb); // demasiado distinto, no compensa calcular
+    var prev = new Array(lb + 1);
+    for (var j = 0; j <= lb; j++) prev[j] = j;
+    for (var i = 1; i <= la; i++) {
+      var cur = [i];
+      for (j = 1; j <= lb; j++) {
+        var cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      }
+      prev = cur;
+    }
+    return prev[lb];
+  }
+
+  // Tolerancia según longitud de palabra: cuanto más larga, más margen de error admite.
+  function maxEditDistance(len) {
+    if (len <= 4) return 0;   // palabras cortas: exigir exactitud (evita falsos positivos)
+    if (len <= 7) return 1;
+    return 2;
+  }
+
+  // ¿"text" contiene "pattern", exacto o con pequeñas variaciones de transcripción/typeo?
+  // Primero intenta substring exacto (barato); si falla, compara pattern contra cada
+  // ventana de palabras consecutivas de "text" de longitud similar, con distancia de edición.
+  function fuzzyIncludes(text, pattern) {
+    if (!text || !pattern) return false;
+    if (text.indexOf(pattern) !== -1) return true;
+    if (pattern.length < 5) return false; // patrones cortos: solo exacto, ambiguo tolerar error
+
+    var patWords = pattern.split(' ');
+    var textWords = text.split(' ');
+    var n = patWords.length;
+    for (var i = 0; i + n <= textWords.length; i++) {
+      var window = textWords.slice(i, i + n).join(' ');
+      if (Math.abs(window.length - pattern.length) > maxEditDistance(pattern.length) + 2) continue;
+      if (levenshtein(window, pattern) <= maxEditDistance(pattern.length)) return true;
+    }
+    return false;
+  }
+
   function matchAny(q, list) {
-    return list.some(function(p) { return q.includes(p); });
+    return list.some(function(p) { return fuzzyIncludes(q, p); });
   }
 
   function detectarComandoLimpiarPantalla(query) {
@@ -2069,7 +2128,7 @@
     if (n.includes(phrase) || phrase.includes(n)) return 22;
     var words = phrase.split(/\s+/).filter(function(w) { return w.length > 3; });
     if (!words.length) return 0;
-    var hits = words.filter(function(w) { return n.includes(w); }).length;
+    var hits = words.filter(function(w) { return fuzzyIncludes(n, w); }).length;
     return hits >= Math.ceil(words.length * 0.7) ? 14 : 0;
   }
 
@@ -2187,7 +2246,7 @@
     return rules.reduce(function(total, rule) {
       var pattern = Array.isArray(rule) ? rule[0] : rule;
       var weight = Array.isArray(rule) ? rule[1] : 1;
-      return total + (n.includes(pattern) ? weight : 0);
+      return total + (fuzzyIncludes(n, pattern) ? weight : 0);
     }, 0);
   }
 
