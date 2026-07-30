@@ -759,6 +759,7 @@ function _renderUsuariosList(){
     el.innerHTML='<div class="empty" style="padding:20px"><div class="et" style="font-size:13px">Sin usuarios registrados.</div></div>';
     return;
   }
+  const puedeAsignarDept = String(SESSION?.rol||'').trim().toLowerCase() === 'superadmin' && typeof DEPARTAMENTOS !== 'undefined' && DEPARTAMENTOS.length;
   el.innerHTML = _usuariosEditing.map((u,i)=>{
     const esSelf = u.usuario === SESSION?.usuario;
     const selfClass = esSelf ? ' usr-self' : '';
@@ -775,6 +776,10 @@ function _renderUsuariosList(){
       <select class="fi-w usr-rol${esSelf?' usr-self':''}" onchange="_usuariosEditing[${i}].rol=this.value" ${esSelf?'disabled title="No puedes cambiar tu propio rol"':''}>
         ${ROLES_DISPONIBLES.map(r=>`<option value="${r}" ${rolDisplay===r?'selected':''}>${r}</option>`).join('')}
       </select>
+      ${puedeAsignarDept ? `<select class="fi-w usr-dept" onchange="_usuariosEditing[${i}].departamento=this.value" title="Departamento">
+        <option value="">— Sin departamento —</option>
+        ${DEPARTAMENTOS.map(d=>`<option value="${escHtml(d.slug)}" ${u.departamento===d.slug?'selected':''}>${escHtml(d.icono||'')} ${escHtml(d.nombre)}</option>`).join('')}
+      </select>` : ''}
       ${u._nuevo
         ? `<input class="fi-w usr-pass" placeholder="Contraseña inicial *" onchange="_usuariosEditing[${i}]._resetPass=this.value">`
         : `<button class="btn btn-sm" onclick="_promptResetPass(${i})" title="Resetear contraseña">🔑 Reset</button>`
@@ -928,13 +933,18 @@ function importUsuariosCSV(input) {
       const email   = cols[2] || '';
       const rol     = cols[3] || 'Profesor/a';
       const password = cols[4] || '';
+      const departamento = cols[5] || '';
 
       if (!usuario) return;
       // Evitar duplicados
       if (_usuariosEditing.some(u => u.usuario.toLowerCase() === usuario.toLowerCase())) { omitidos++; return; }
       // El rol debe ser uno de los disponibles, si no forzar Profesor/a
       const rolFinal = ROLES_DISPONIBLES.includes(rol) ? rol : 'Profesor/a';
-      _usuariosEditing.push({ usuario, nombre, email, rol: rolFinal, _nuevo: true, _resetPass: password, _modulos: [] });
+      const entry = { usuario, nombre, email, rol: rolFinal, _nuevo: true, _resetPass: password, _modulos: [] };
+      // Columna departamento (slug) solo tiene efecto si la usa superadmin —
+      // un jefe/a de departamento normal siempre crea en su propio departamento.
+      if (String(SESSION?.rol||'').trim().toLowerCase() === 'superadmin' && departamento) entry.departamento = departamento;
+      _usuariosEditing.push(entry);
       importados++;
     });
 
@@ -958,12 +968,12 @@ async function saveUsuarios(){
   try {
     // Añadir nuevos
     for(const u of _usuariosEditing.filter(u=>u._nuevo)){
-      const res = await apiPost({ action:'userAdd', usuario:{ usuario:u.usuario.trim(), nombre:u.nombre.trim(), email:u.email||'', rol:u.rol, password:u._resetPass.trim() } });
+      const res = await apiPost({ action:'userAdd', usuario:{ usuario:u.usuario.trim(), nombre:u.nombre.trim(), email:u.email||'', rol:u.rol, password:u._resetPass.trim(), departamento:u.departamento } });
       if(!res.ok) throw new Error(res.error);
     }
     // Actualizar existentes
     for(const u of _usuariosEditing.filter(u=>!u._nuevo)){
-      const res = await apiPost({ action:'userUpdate', usuario:{ usuario:u.usuario, nombre:u.nombre.trim(), email:u.email||'', rol:u.rol } });
+      const res = await apiPost({ action:'userUpdate', usuario:{ usuario:u.usuario, nombre:u.nombre.trim(), email:u.email||'', rol:u.rol, departamento:u.departamento } });
       if(!res.ok) throw new Error(res.error);
     }
     // Eliminar los que se quitaron de la lista

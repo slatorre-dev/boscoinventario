@@ -79,8 +79,13 @@ export async function onRequestPost({ request, env, data }) {
     const actual = await env.DB.prepare('SELECT rol FROM usuarios WHERE usuario=?').bind(u.usuario).first();
     const eraSuperAdmin = String(actual?.rol || '').trim().toLowerCase() === 'superadmin';
     const rolFinal = eraSuperAdmin ? actual.rol : u.rol.trim();
-    await env.DB.prepare('UPDATE usuarios SET nombre=?, rol=?, email=? WHERE usuario=?')
-      .bind(u.nombre.trim(), rolFinal, u.email||'', u.usuario).run();
+    if (superadmin && u.departamento != null) {
+      await env.DB.prepare('UPDATE usuarios SET nombre=?, rol=?, email=?, departamento=? WHERE usuario=?')
+        .bind(u.nombre.trim(), rolFinal, u.email||'', u.departamento||'', u.usuario).run();
+    } else {
+      await env.DB.prepare('UPDATE usuarios SET nombre=?, rol=?, email=? WHERE usuario=?')
+        .bind(u.nombre.trim(), rolFinal, u.email||'', u.usuario).run();
+    }
     await auditLog(env.DB, user, 'userUpdate', `Usuario actualizado: ${u.usuario} (${rolFinal})`);
     return Response.json({ ok: true });
   }
