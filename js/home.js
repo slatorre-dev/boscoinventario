@@ -24,7 +24,9 @@ function renderHome(){
     <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-num" style="color:var(--red)">${low}</div></div>
     <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-num" style="color:var(--amber)">${mant}</div></div>${ocCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
-  document.getElementById('gAulas').innerHTML=AULAS.map(a=>{
+  const aulaEntries = loading ? AULAS : AULAS.filter(a=>items.some(x=>x.aula===a.id));
+  document.getElementById('gAulas').innerHTML=aulaEntries.length
+    ? aulaEntries.map(a=>{
     const n=items.filter(x=>x.aula===a.id).length;
     const w=loading ? 0 : items.filter(x=>x.aula===a.id&&isLowStock(x)).length;
     return`<div class="ccard ${a.th}" style="--ch:#2563eb" onclick="goAula('${a.id}')">
@@ -34,7 +36,8 @@ function renderHome(){
       <div class="ccard-title">${a.name}</div>
       <div class="ccard-desc">${a.desc}${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
     </div>`;
-  }).join('');
+  }).join('')
+    : `<div class="empty" style="grid-column:1/-1;padding:32px;text-align:center;color:var(--muted);font-size:13px">No hay ítems clasificados por aula aún.</div>`;
   const catEntries = loading ? sortedCatEntries() : sortedCatEntries().filter(([name])=>items.some(x=>x.cat===name));
   document.getElementById('gCats').innerHTML=catEntries.length
     ? catEntries.map(([name,c])=>{
