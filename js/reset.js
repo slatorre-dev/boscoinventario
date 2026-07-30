@@ -29,7 +29,7 @@ function showRegister() {
   document.getElementById('registerOk').classList.remove('show');
   document.getElementById('registerNombre').value = '';
   document.getElementById('registerEmail').value = '';
-  document.getElementById('registerUserHint').textContent = '';
+  document.getElementById('registerUserHint').style.display = 'none';
   if (!_registerDeptsLoaded) loadRegisterDepartments();
   document.getElementById('registerNombre').focus();
 }
@@ -42,7 +42,12 @@ function _updateRegisterUserHint() {
   const hint = document.getElementById('registerUserHint');
   const userPart = email.split('@')[0] || '';
   const usuario = userPart.replace(/[^a-z0-9._-]/gi, '').toLowerCase();
-  hint.textContent = usuario ? `Tu usuario será: ${usuario}` : '';
+  if (usuario) {
+    hint.textContent = `👤 Tu usuario será: ${usuario}`;
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
 }
 
 async function loadRegisterDepartments() {
