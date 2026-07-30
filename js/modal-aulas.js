@@ -122,3 +122,10 @@ function importAulasCSV(input) {
   };
   reader.readAsText(file, 'utf-8');
 }
+
+function exportAulasCSV(){
+  const h = 'Nombre,Descripción,Icono';
+  const rows = aulasEditing.map(a => [a.name, a.desc, a.icon].map(csvCell).join(','));
+  downloadText('aulas.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));
+  toast('CSV exportado', 'ok');
+}

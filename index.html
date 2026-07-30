@@ -1300,10 +1300,11 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
         📥 Importar CSV
         <input type="file" accept=".csv,.txt" style="display:none" onchange="importAulasCSV(this)">
       </label>
+      <button class="btn" style="font-size:12px" onclick="exportAulasCSV()">📤 Exportar CSV</button>
       <span style="font-size:11px;color:var(--muted)">Columnas: <code>nombre,descripcion,icono</code></span>
     </div>
     <div class="mf" style="margin-top:18px">
-      <div></div>
+      <button class="btn" style="font-size:12px" onclick="openConfigBackups('aulas')">🕐 Versiones anteriores</button>
       <div class="mf-right">
         <button class="btn" onclick="closeAulasModal()">Cancelar</button>
         <button class="btn btn-p" onclick="saveAulas()">💾 Guardar cambios</button>
@@ -1356,7 +1357,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       </div>
     </div>
     <div class="mf" style="margin-top:18px">
-      <div></div>
+      <button class="btn" style="font-size:12px" onclick="openConfigBackups('categorias')">🕐 Versiones anteriores</button>
       <div class="mf-right">
         <button class="btn" onclick="closeCatsModal()">Cancelar</button>
         <button class="btn btn-p" onclick="saveCats()">💾 Guardar cambios</button>
@@ -1381,11 +1382,24 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       <span style="font-size:11px;color:var(--muted)">Columnas: <code>ciclo_id,ciclo_nombre,nivel,icono,mod_codigo,mod_nombre,mod_horas</code> (una fila por asignatura/módulo)</span>
     </div>
     <div class="mf" style="margin-top:18px">
-      <div></div>
+      <button class="btn" style="font-size:12px" onclick="openConfigBackups('ciclos')">🕐 Versiones anteriores</button>
       <div class="mf-right">
         <button class="btn" onclick="closeCiclosModal()">Cancelar</button>
         <button class="btn btn-p" onclick="saveCiclos()">💾 Guardar cambios</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VERSIONES ANTERIORES (aulas/categorias/ciclos) -->
+<div class="mbg" id="mConfigBackups" onclick="if(event.target===this)closeConfigBackups()">
+  <div class="modal" style="max-width:520px">
+    <div class="mh"><div class="mt">🕐 Versiones anteriores</div><button class="mx" onclick="closeConfigBackups()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Se guarda una copia automática justo antes de cada "Guardar cambios" que sobrescriba esta lista. Restaurar reemplaza lo que hay ahora — se guarda otra copia del estado actual antes de restaurar, por si acaso.</p>
+    <div id="configBackupsList"></div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <button class="btn" onclick="closeConfigBackups()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1647,6 +1661,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/modal-ubicaciones.js"></script>
 <script defer src="js/modal-cats.js"></script>
 <script defer src="js/modal-ciclos.js"></script>
+<script defer src="js/modal-config-backups.js"></script>
 <script defer src="js/prestamos.js"></script>
 <script defer src="js/import.js"></script>
 <script defer src="js/nav.js"></script>

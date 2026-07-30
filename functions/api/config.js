@@ -1,4 +1,43 @@
 // Gestión de aulas, categorías y ciclos
+
+// Guarda un snapshot de las filas de una tabla antes de un DELETE masivo
+// (aulasSync/catsSync/ciclosSync borran-e-insertan de golpe: si el body
+// llegara vacío por cualquier motivo, hoy se pierden datos sin dejar
+// rastro — pasó con los ciclos de un departamento y costó reconstruirlos
+// a mano desde la migración original). Guarda como mucho MAX_BACKUPS_POR_TABLA
+// por tabla+departamento, purgando los más antiguos.
+const MAX_BACKUPS_POR_TABLA = 5;
+
+async function ensureConfigBackupsTable(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS config_backups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tabla TEXT NOT NULL,
+    departamento TEXT NOT NULL,
+    fecha TEXT DEFAULT '',
+    usuario TEXT DEFAULT '',
+    filas TEXT DEFAULT '[]'
+  )`).run();
+}
+
+async function snapshotBeforeSync(env, tabla, dept, user) {
+  try {
+    await ensureConfigBackupsTable(env.DB);
+    const rows = await env.DB.prepare(`SELECT * FROM ${tabla} WHERE departamento=?`).bind(dept).all();
+    const filas = rows.results || [];
+    if (!filas.length) return; // nada que respaldar, evita ruido
+    const fecha = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    await env.DB.prepare('INSERT INTO config_backups (tabla,departamento,fecha,usuario,filas) VALUES (?,?,?,?,?)')
+      .bind(tabla, dept, fecha, user?.usuario || '', JSON.stringify(filas)).run();
+    const old = await env.DB.prepare('SELECT id FROM config_backups WHERE tabla=? AND departamento=? ORDER BY id DESC LIMIT -1 OFFSET ?')
+      .bind(tabla, dept, MAX_BACKUPS_POR_TABLA).all();
+    for (const row of (old.results || [])) {
+      await env.DB.prepare('DELETE FROM config_backups WHERE id=?').bind(row.id).run();
+    }
+  } catch (error) {
+    console.warn('snapshotBeforeSync failed', error?.message || error);
+  }
+}
+
 async function auditLog(db, user, accion, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
@@ -192,6 +231,7 @@ export async function onRequestPost({ request, env, data }) {
 
   if (action === 'aulasSync') {
     const aulas = body.aulas || [];
+    await snapshotBeforeSync(env, 'aulas', dept, user);
     await env.DB.prepare('DELETE FROM aulas WHERE departamento=?').bind(dept).run();
     if (aulas.length) {
       const stmt = env.DB.prepare('INSERT INTO aulas (id,name,icon,desc,th,orden,departamento) VALUES (?,?,?,?,?,?,?)');
@@ -214,6 +254,7 @@ export async function onRequestPost({ request, env, data }) {
         seen.add(key);
         return true;
       });
+    await snapshotBeforeSync(env, 'categorias', dept, user);
     await env.DB.prepare('DELETE FROM categorias WHERE departamento=?').bind(dept).run();
     if (cats.length) {
       const stmt = env.DB.prepare('INSERT INTO categorias (name,c,bg,i,orden,departamento) VALUES (?,?,?,?,?,?)');
@@ -331,6 +372,7 @@ export async function onRequestPost({ request, env, data }) {
       respMap[`${r.cicloId}__${r.modCod}`] = r.responsable || '';
       if (!respMap[String(r.modCod)]) respMap[String(r.modCod)] = r.responsable || '';
     }
+    await snapshotBeforeSync(env, 'ciclos', dept, user);
     await env.DB.prepare('DELETE FROM ciclos WHERE departamento=?').bind(dept).run();
     const rows = [];
     ciclos.forEach((c, ci) => (c.modulos||[]).forEach((m, mi) => {
@@ -343,6 +385,36 @@ export async function onRequestPost({ request, env, data }) {
     }
     await auditLog(env.DB, user, 'ciclosSync', `Sincronizados ${ciclos.length} ciclos`);
     return Response.json({ ok: true });
+  }
+
+  if (action === 'configBackupsList') {
+    const tabla = String(body.tabla || '');
+    if (!['aulas','categorias','ciclos'].includes(tabla)) return Response.json({ ok: false, error: 'Tabla no válida' });
+    await ensureConfigBackupsTable(env.DB);
+    const rows = await env.DB.prepare('SELECT id, tabla, departamento, fecha, usuario, LENGTH(filas) tam FROM config_backups WHERE tabla=? AND departamento=? ORDER BY id DESC')
+      .bind(tabla, dept).all();
+    return Response.json({ ok: true, backups: rows.results || [] });
+  }
+
+  if (action === 'configBackupsRestore') {
+    const backupId = Number(body.id);
+    if (!backupId) return Response.json({ ok: false, error: 'Falta id de backup' });
+    await ensureConfigBackupsTable(env.DB);
+    const backup = await env.DB.prepare('SELECT * FROM config_backups WHERE id=? AND departamento=?').bind(backupId, dept).first();
+    if (!backup) return Response.json({ ok: false, error: 'Backup no encontrado' });
+    const tabla = backup.tabla;
+    if (!['aulas','categorias','ciclos'].includes(tabla)) return Response.json({ ok: false, error: 'Tabla no válida' });
+    const filas = JSON.parse(backup.filas || '[]');
+
+    await snapshotBeforeSync(env, tabla, dept, user); // por si acaso, respalda el estado actual antes de sobreescribir
+    await env.DB.prepare(`DELETE FROM ${tabla} WHERE departamento=?`).bind(dept).run();
+    if (filas.length) {
+      const cols = Object.keys(filas[0]);
+      const stmt = env.DB.prepare(`INSERT INTO ${tabla} (${cols.join(',')}) VALUES (${cols.map(()=>'?').join(',')})`);
+      await env.DB.batch(filas.map(f => stmt.bind(...cols.map(c => f[c] ?? null))));
+    }
+    await auditLog(env.DB, user, 'configBackupsRestore', `Restaurado backup #${backupId} de ${tabla} (${filas.length} filas)`);
+    return Response.json({ ok: true, restored: filas.length });
   }
 
   return Response.json({ ok: false, error: 'Acción desconocida' });
