@@ -6,6 +6,10 @@ function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
 
+function isProfesor(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'profesor';
+}
+
 const CAT_PALETTE = [
   { c:'#2563eb', bg:'#eff6ff', i:'🏷️' },
   { c:'#0891b2', bg:'#ecfeff', i:'🏷️' },
@@ -86,6 +90,7 @@ export async function onRequestGet({ request, env, data }) {
   const user = data?.user || request.user;
   const dept = data?.departamento || request.departamento || '';
   const superadmin = isSuperAdmin(user);
+  const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
 
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN es_contenedor INTEGER DEFAULT 0").run().catch(() => {});
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN parent_id INTEGER DEFAULT NULL").run().catch(() => {});
@@ -136,7 +141,7 @@ export async function onRequestGet({ request, env, data }) {
 
   const itemsQuery = superadmin
     ? 'SELECT * FROM inventario ORDER BY id'
-    : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${GENERIC_DEPT}') ORDER BY id`;
+    : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}') ORDER BY id`;
 
   const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows] = await Promise.all([
     superadmin ? env.DB.prepare(itemsQuery).all() : env.DB.prepare(itemsQuery).bind(dept).all(),
@@ -148,16 +153,16 @@ export async function onRequestGet({ request, env, data }) {
       : env.DB.prepare("SELECT usuario, nombre, email FROM usuarios WHERE nombre != '' AND departamento=? ORDER BY nombre").bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM prestamos ORDER BY id').all()
-      : env.DB.prepare(`SELECT p.* FROM prestamos p JOIN inventario i ON i.id=p.itemId WHERE i.departamento=? OR i.departamento='${GENERIC_DEPT}' ORDER BY p.id`).bind(dept).all(),
+      : env.DB.prepare(`SELECT p.* FROM prestamos p JOIN inventario i ON i.id=p.itemId WHERE i.departamento=? OR i.departamento='${genericDept}' ORDER BY p.id`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM aulas ORDER BY orden').all()
-      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${GENERIC_DEPT}' ORDER BY orden`).bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY orden`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all()
       : env.DB.prepare('SELECT * FROM categorias WHERE departamento=? ORDER BY orden').bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM ciclos ORDER BY cicloOrden, modOrden').all()
-      : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${GENERIC_DEPT}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${genericDept}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
   ]);
 
   const cicloMap = {}, cicloOrder = [];

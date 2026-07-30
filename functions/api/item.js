@@ -7,13 +7,17 @@ function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
 
+function isProfesor(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'profesor';
+}
+
 // Deriva el departamento de un ítem a partir del ciclo/asignatura elegido:
 // si el usuario selecciona el ciclo "IES Juan Bosco", el ítem se archiva ahí
 // (bolsa compartida) en vez de en el departamento propio del usuario.
-function resolveItemDept(item, ownDept, superadmin){
+function resolveItemDept(item, ownDept, superadmin, genericDept){
   if (superadmin) return item.departamento || ownDept || '';
   const modCiclo = String(item.mod || '').split('__')[0];
-  return modCiclo === GENERIC_DEPT ? GENERIC_DEPT : ownDept;
+  return modCiclo === genericDept ? genericDept : ownDept;
 }
 
 async function ensureContainerCols(db) {
@@ -76,6 +80,7 @@ export async function onRequestPost({ request, env, data }) {
   const user = await getAuditActor(request, env, data);
   const superadmin = isSuperAdmin(user);
   const dept = user.departamento || '';
+  const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
 
   await ensureContainerCols(env.DB);
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN departamento TEXT DEFAULT ''").run().catch(() => {});
@@ -88,7 +93,7 @@ export async function onRequestPost({ request, env, data }) {
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
     item.tipo_material = item.es_contenedor ? 'inventariable' : (item.tipo_material || 'consumible');
-    item.departamento = resolveItemDept(item, dept, superadmin);
+    item.departamento = resolveItemDept(item, dept, superadmin, genericDept);
     const vals = HEADERS_INV.map(h => item[h] ?? null);
     await env.DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')},departamento) VALUES (${HEADERS_INV.map(()=>'?').join(',')},?)`)
       .bind(...vals, item.departamento).run();
@@ -99,7 +104,7 @@ export async function onRequestPost({ request, env, data }) {
   if (action === 'update') {
     if (!superadmin) {
       const currentDept = await itemDept(env.DB, item.id);
-      if (currentDept !== dept && currentDept !== GENERIC_DEPT) {
+      if (currentDept !== dept && currentDept !== genericDept) {
         return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
       }
     }
@@ -116,7 +121,7 @@ export async function onRequestPost({ request, env, data }) {
   if (action === 'delete') {
     if (!superadmin) {
       const currentDept = await itemDept(env.DB, id);
-      if (currentDept !== dept && currentDept !== GENERIC_DEPT) {
+      if (currentDept !== dept && currentDept !== genericDept) {
         return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
       }
     }
@@ -140,7 +145,7 @@ export async function onRequestPost({ request, env, data }) {
       it.es_contenedor = it.es_contenedor ? 1 : 0;
       it.parent_id = it.parent_id || null;
       it.tipo_material = it.es_contenedor ? 'inventariable' : (it.tipo_material || 'consumible');
-      const itDept = resolveItemDept(it, dept, superadmin);
+      const itDept = resolveItemDept(it, dept, superadmin, genericDept);
       return stmt.bind(...HEADERS_INV.map(h => it[h] ?? null), itDept);
     });
     await env.DB.batch(batch);

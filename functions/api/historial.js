@@ -12,6 +12,10 @@ function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
 
+function isProfesor(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'profesor';
+}
+
 function canReadFullHistory(user, url) {
   const usuario = normalizeText(user?.usuario);
   const loginUsuario = normalizeText(url.searchParams.get('u'));
@@ -74,6 +78,7 @@ export async function onRequest(context) {
   const user = data?.user || request.user;
   const superadmin = isSuperAdmin(user);
   const dept = user?.departamento || '';
+  const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
 
   if (request.method === 'GET') {
     try {
@@ -84,7 +89,7 @@ export async function onRequest(context) {
         if (!superadmin) {
           const itemRow = await env.DB.prepare('SELECT departamento FROM inventario WHERE id=?').bind(String(itemId)).first();
           const itemRowDept = itemRow?.departamento || '';
-          if (itemRow && itemRowDept !== dept && itemRowDept !== GENERIC_DEPT) {
+          if (itemRow && itemRowDept !== dept && itemRowDept !== genericDept) {
             return json({ ok: false, error: 'No autorizado' }, { status: 403 });
           }
         }
