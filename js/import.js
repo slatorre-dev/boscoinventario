@@ -380,7 +380,7 @@ function impRenderPreview(){
         ${cols.map(c=>{
           let v = r[c.k] != null ? String(r[c.k]) : '';
           if(c.k === 'aula'){ const a = AULAS.find(x=>x.id===v); v = a?a.name:v; if(r._aulaCambiada)v+=' ⚠'; }
-          return `<td title="${v}">${v}</td>`;
+          return `<td title="${escHtml(v)}">${escHtml(v)}</td>`;
         }).join('')}
         <td>${isInvalid?`<span style="color:var(--red);font-weight:700">${r._errors.join(', ')}</span>`:'<span style="color:var(--green)">✓</span>'}</td>
       </tr>`;

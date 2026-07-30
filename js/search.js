@@ -85,10 +85,11 @@ function scoreMatch(x, q){
 }
 
 function highlightText(text, query){
-  if(!query||!text) return text;
+  const safe = escHtml(text);
+  if(!query||!text) return safe;
   const words=normalizeStr(query).split(/\s+/).filter(w=>w.length>=2);
-  if(!words.length) return text;
-  let result=text.normalize('NFD');
+  if(!words.length) return safe;
+  let result=safe.normalize('NFD');
   words.forEach(w=>{
     const pattern=w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').split('').map(c=>c+'[̀-ͯ]*').join('');
     result=result.replace(new RegExp(pattern,'gi'),m=>`<mark class="srch-hl">${m}</mark>`);
@@ -126,9 +127,9 @@ function globalSearch(q){
   if(exact){
     res.innerHTML=`<div class="gsr-header">Código encontrado</div>
       <div class="gsr-item" tabindex="-1" role="option" data-idx="0" onclick="gsOpenItem('${String(exact.id).replace(/'/g,"\\'")}')">
-        <span class="cpill" style="background:#eff6ff;color:#2563eb;flex-shrink:0;font-size:11px">${typeof itemCode === 'function' ? itemCode(exact) : (exact.code || exact.id)}</span>
-        <span class="gsr-name">${exact.item}</span>
-        <span class="gsr-aula">📍 ${AULAS.find(a=>a.id===exact.aula)?.name||exact.aula||'—'}</span>
+        <span class="cpill" style="background:#eff6ff;color:#2563eb;flex-shrink:0;font-size:11px">${escHtml(typeof itemCode === 'function' ? itemCode(exact) : (exact.code || exact.id))}</span>
+        <span class="gsr-name">${escHtml(exact.item)}</span>
+        <span class="gsr-aula">📍 ${escHtml(AULAS.find(a=>a.id===exact.aula)?.name||exact.aula||'—')}</span>
         <span class="gsr-qty">${exact.qty}</span>
       </div>`;
     res.classList.add('open');
@@ -141,7 +142,7 @@ function globalSearch(q){
   }).sort((a,b)=>scoreMatch(b,q)-scoreMatch(a,q));
   gsIdx=-1;
   if(!_gsMatches.length){
-    res.innerHTML=`<div class="gsr-empty">Sin resultados para "<strong>${q}</strong>"</div>`;
+    res.innerHTML=`<div class="gsr-empty">Sin resultados para "<strong>${escHtml(q)}</strong>"</div>`;
     res.classList.add('open');return;
   }
   const visible=_gsMatches.slice(0,14);
@@ -151,9 +152,9 @@ function globalSearch(q){
       const aulaName=AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—';
       const low=isLowStock(x);
       return`<div class="gsr-item" tabindex="-1" role="option" data-idx="${i}" onclick="gsGo('${x.aula}','${(x.item||'').replace(/'/g,"\\'")}')">
-        ${cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};flex-shrink:0;font-size:11px">${cat.i}</span>`:'<span style="width:18px;flex-shrink:0"></span>'}
+        ${cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};flex-shrink:0;font-size:11px">${escHtml(cat.i)}</span>`:'<span style="width:18px;flex-shrink:0"></span>'}
         <span class="gsr-name">${highlightText(x.item,q)}</span>
-        <span class="gsr-aula">📍 ${aulaName}</span>
+        <span class="gsr-aula">📍 ${escHtml(aulaName)}</span>
         <span class="gsr-qty ${low?'qlow':'qok'}">${x.qty}</span>
       </div>`;
     }).join('')
@@ -210,26 +211,26 @@ function printGsResults(e, q){
     const mantInfo = [x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · ');
     const code = typeof itemCode==='function'?itemCode(x):(x.code||'');
     return '<tr>'+cols.map(c=>{
-      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${x.foto}" alt="">`:''}</td>`;
-      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${x.ref||'—'}</span></td>`;
-      if(c.key==='item')  return `<td style="font-weight:600">${x.item}</td>`;
-      if(c.key==='aula')  return `<td>${(typeof AULAS!=='undefined'?AULAS.find(a=>a.id===x.aula)?.name:null)||x.aula||'—'}</td>`;
-      if(c.key==='mod')   { const m=typeof findModulo==='function'?findModulo(x.mod):null; return `<td style="font-size:11px">${m?m.cod+' '+m.name:x.mod||'—'}</td>`; }
+      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${escHtml(x.foto)}" alt="">`:''}</td>`;
+      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${escHtml(x.ref||'—')}</span></td>`;
+      if(c.key==='item')  return `<td style="font-weight:600">${escHtml(x.item)}</td>`;
+      if(c.key==='aula')  return `<td>${escHtml((typeof AULAS!=='undefined'?AULAS.find(a=>a.id===x.aula)?.name:null)||x.aula||'—')}</td>`;
+      if(c.key==='mod')   { const m=typeof findModulo==='function'?findModulo(x.mod):null; return `<td style="font-size:11px">${escHtml(m?m.cod+' '+m.name:x.mod||'—')}</td>`; }
       if(c.key==='qty')   return `<td style="text-align:center;font-weight:700;color:${low?'#dc2626':'#15803d'}">${x.qty}${low?' ⚠':''}</td>`;
       if(c.key==='min')   return `<td style="text-align:center">${x.min||'—'}</td>`;
-      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${cat.i} ${x.cat}</span>`:'—'}</td>`;
-      if(c.key==='loc')   return `<td>${x.loc||'—'}</td>`;
-      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
-      if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
-      if(c.key==='proveedor') return `<td style="font-size:11px">${x.proveedor||'—'}</td>`;
-      if(c.key==='tags')  return `<td style="font-size:11px">${x.tags||'—'}</td>`;
-      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
-      if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
+      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:'—'}</td>`;
+      if(c.key==='loc')   return `<td>${escHtml(x.loc||'—')}</td>`;
+      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${escHtml(x.est)}</span></td>`;
+      if(c.key==='util')  return `<td style="font-size:11px">${escHtml(x.util||'—')}</td>`;
+      if(c.key==='proveedor') return `<td style="font-size:11px">${escHtml(x.proveedor||'—')}</td>`;
+      if(c.key==='tags')  return `<td style="font-size:11px">${escHtml(x.tags||'—')}</td>`;
+      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${escHtml(mantInfo||'Pendiente')}`:'—'}</td>`;
+      if(c.key==='obs')   return `<td style="font-size:11px">${escHtml(x.obs||'—')}</td>`;
       return '<td>—</td>';
     }).join('')+'</tr>';
   }).join('');
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-  <title>Búsqueda: ${q}</title>
+  <title>Búsqueda: ${escHtml(q)}</title>
   <style>
     @page{size:A4 landscape;margin:10mm}
     *{box-sizing:border-box}
@@ -244,7 +245,7 @@ function printGsResults(e, q){
     .footer{margin-top:8px;font-size:10px;color:#9ca3af;text-align:right}
   </style></head><body>
   <div class="head">
-    <h1>🔍 Búsqueda: "${q}"</h1>
+    <h1>🔍 Búsqueda: "${escHtml(q)}"</h1>
     <p>IES El Bosco — Inventario Departamento<br>${total} tipos · ${uds} unidades · ${fecha}</p>
   </div>
   <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>

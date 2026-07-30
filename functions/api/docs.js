@@ -202,14 +202,34 @@ async function uploadFileToDrive(env, folderId, fileName, mimeType, base64Data) 
   };
 }
 
-export async function onRequestPost({ request, env }) {
+const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
+
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
+}
+
+// ¿Puede este usuario ver/tocar documentos del ítem itemId? Mismo departamento,
+// departamento compartido, o superadmin (ve todo) — igual que en item.js.
+async function canAccessItemDocs(db, user, itemId) {
+  if (isSuperAdmin(user)) return true;
+  const row = await db.prepare('SELECT departamento FROM inventario WHERE id=?').bind(itemId).first();
+  if (!row) return false;
+  const dept = row.departamento || '';
+  return dept === (user?.departamento || '') || dept === GENERIC_DEPT;
+}
+
+export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
-  const user = request.user;
+  const user = data?.user || request.user;
+  if (!user) return Response.json({ ok: false, error: 'No autorizado' }, { status: 401 });
 
   if (action === 'getDocs') {
     const itemId = body.itemId;
     if (itemId == null) return Response.json({ ok: false, error: 'itemId requerido' });
+    if (!await canAccessItemDocs(env.DB, user, itemId)) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
     const docs = await env.DB.prepare('SELECT * FROM documentos WHERE itemId=? ORDER BY id').bind(itemId).all();
     return Response.json({ ok: true, docs: docs.results || [] });
   }
@@ -217,6 +237,11 @@ export async function onRequestPost({ request, env }) {
   if (action === 'deleteDoc') {
     const docId = body.docId;
     if (docId == null) return Response.json({ ok: false, error: 'docId requerido' });
+    const docRow = await env.DB.prepare('SELECT itemId FROM documentos WHERE id=?').bind(docId).first();
+    if (!docRow) return Response.json({ ok: false, error: 'Documento no encontrado' });
+    if (!await canAccessItemDocs(env.DB, user, docRow.itemId)) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
     if (body.driveId) {
       try {
         const token = await getGoogleAccessToken(env);
@@ -234,17 +259,20 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (action === 'uploadDoc') {
-    const { itemId, itemNombre, aulaId, aulaName, fileName, mimeType, data } = body;
+    const { itemId, itemNombre, aulaId, aulaName, fileName, mimeType, data: fileData } = body;
     if (itemId == null) return Response.json({ ok: false, error: 'itemId requerido' });
     if (!fileName) return Response.json({ ok: false, error: 'fileName requerido' });
-    if (!data) return Response.json({ ok: false, error: 'data requerido' });
+    if (!fileData) return Response.json({ ok: false, error: 'data requerido' });
+    if (!await canAccessItemDocs(env.DB, user, itemId)) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
 
     const rootFolderId = env.GOOGLE_DRIVE_ROOT_FOLDER_ID || env.DRIVE_FOLDER_ID;
     if (!rootFolderId) return Response.json({ ok: false, error: 'Drive root folder no configurado' });
 
     try {
       const folderId = await findOrCreateDriveFolder(env, rootFolderId, aulaName || aulaId || 'Aula');
-      const uploaded = await uploadFileToDrive(env, folderId, fileName, mimeType || 'application/octet-stream', data);
+      const uploaded = await uploadFileToDrive(env, folderId, fileName, mimeType || 'application/octet-stream', fileData);
       await env.DB.prepare('INSERT INTO documentos (itemId,itemNombre,aulaId,fileName,driveId,driveUrl,fecha) VALUES (?,?,?,?,?,?,?)')
         .bind(itemId, itemNombre || '', aulaId || '', fileName, uploaded.driveId, uploaded.driveUrl, new Date().toISOString()).run();
       const doc = await env.DB.prepare('SELECT * FROM documentos WHERE driveId=?').bind(uploaded.driveId).first();

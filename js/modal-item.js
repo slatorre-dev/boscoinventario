@@ -222,7 +222,8 @@ function findCanonicalTag(typed){
 
 function initTagsAutocomplete(){
   const input = document.getElementById('f_tags');
-  if(!input) return;
+  if(!input || input._tagsAutocompleteInit) return;
+  input._tagsAutocompleteInit = true;
   input.addEventListener('input', () => {
     fillTagSuggestions();
     showTagsDropdown();
@@ -1284,10 +1285,10 @@ async function openHistorial(){
         <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead>
         <tbody>${logs.map(l =>
           `<tr>
-            <td style="white-space:nowrap;font-size:12px">${l.fecha}</td>
-            <td style="font-size:13px">${l.usuario}</td>
-            <td style="font-size:12px">${l.accion}</td>
-            <td style="font-size:12px;word-break:break-word">${l.resumen}</td>
+            <td style="white-space:nowrap;font-size:12px">${escHtml(l.fecha)}</td>
+            <td style="font-size:13px">${escHtml(l.usuario)}</td>
+            <td style="font-size:12px">${escHtml(l.accion)}</td>
+            <td style="font-size:12px;word-break:break-word">${escHtml(l.resumen)}</td>
           </tr>`
         ).join('')}</tbody>
       </table>`;

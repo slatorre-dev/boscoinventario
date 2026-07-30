@@ -115,14 +115,14 @@ function _presCardHtml(p){
   const pillClass = stateClass;
   return `<div class="pres-card ${stateClass}">
     <div class="pres-info">
-      <div class="pres-name">${p.itemNombre} ${item?`<span style="color:var(--muted);font-weight:400;font-size:12px">· ${item.ref||''}</span>`:''}</div>
-      <div class="pres-prof">${p.profesorNombre}</div>
+      <div class="pres-name">${escHtml(p.itemNombre)} ${item?`<span style="color:var(--muted);font-weight:400;font-size:12px">· ${escHtml(item.ref||'')}</span>`:''}</div>
+      <div class="pres-prof">${escHtml(p.profesorNombre)}</div>
       <div class="pres-meta">
-        <span>📅 ${p.fechaPrestamo}${p.fechaPrevista?` → ${p.fechaPrevista}`:''}</span>
-        <span>🏫 ${aulaO}${p.aulaDestino?` → ${aulaD}`:''}</span>
-        <span class="pres-pill ${pillClass}">${p.estado}${venc&&p.estado!=='Devuelto'?' (vencido)':''}</span>
+        <span>📅 ${escHtml(p.fechaPrestamo)}${p.fechaPrevista?` → ${escHtml(p.fechaPrevista)}`:''}</span>
+        <span>🏫 ${escHtml(aulaO)}${p.aulaDestino?` → ${escHtml(aulaD)}`:''}</span>
+        <span class="pres-pill ${pillClass}">${escHtml(p.estado)}${venc&&p.estado!=='Devuelto'?' (vencido)':''}</span>
       </div>
-      ${p.obs?`<div style="font-size:11px;color:var(--muted);margin-top:4px">💬 ${p.obs}</div>`:''}
+      ${p.obs?`<div style="font-size:11px;color:var(--muted);margin-top:4px">💬 ${escHtml(p.obs)}</div>`:''}
     </div>
     <div class="pres-actions">
       <div class="pres-qty-info">
@@ -185,13 +185,13 @@ function _renderGrouped(groupKey){
       const pendiente = Number(p.cantidad)-Number(p.cantidadDevuelta||0);
       let meta = '';
       if(groupKey==='profesor'){
-        meta = `${p.itemNombre}${items.find(x=>Number(x.id)===Number(p.itemId))?.ref?' ['+items.find(x=>Number(x.id)===Number(p.itemId)).ref+']':''} · ${pendiente} ud${pendiente!==1?'s':''}`;
+        meta = `${escHtml(p.itemNombre)}${items.find(x=>Number(x.id)===Number(p.itemId))?.ref?' ['+escHtml(items.find(x=>Number(x.id)===Number(p.itemId)).ref)+']':''} · ${pendiente} ud${pendiente!==1?'s':''}`;
       } else if(groupKey==='aula'){
-        meta = `${p.itemNombre} — ${p.profesorNombre} · ${pendiente} ud${pendiente!==1?'s':''}`;
+        meta = `${escHtml(p.itemNombre)} — ${escHtml(p.profesorNombre)} · ${pendiente} ud${pendiente!==1?'s':''}`;
       } else {
-        meta = `${p.profesorNombre} · ${pendiente} ud${pendiente!==1?'s':''}`;
+        meta = `${escHtml(p.profesorNombre)} · ${pendiente} ud${pendiente!==1?'s':''}`;
       }
-      const fechaTxt = p.fechaPrevista ? `devolver: ${p.fechaPrevista}` : `prestado: ${p.fechaPrestamo}`;
+      const fechaTxt = p.fechaPrevista ? `devolver: ${escHtml(p.fechaPrevista)}` : `prestado: ${escHtml(p.fechaPrestamo)}`;
       return `<div class="pres-group-row">
         <div class="pres-group-row-info">
           <strong>${meta}</strong>
@@ -204,7 +204,7 @@ function _renderGrouped(groupKey){
     return `<div class="pres-group">
       <div class="pres-group-header">
         <div>
-          <div class="pres-group-title">${g.label}${g.sublabel?` <span style="font-weight:400;font-size:12px;color:var(--muted)">${g.sublabel}</span>`:''}</div>
+          <div class="pres-group-title">${escHtml(g.label)}${g.sublabel?` <span style="font-weight:400;font-size:12px;color:var(--muted)">${escHtml(g.sublabel)}</span>`:''}</div>
           <div class="pres-group-meta">${total} unidad${total!==1?'es':''} fuera</div>
         </div>
         <span class="pres-group-badge ${badgeClass}">${badgeTxt}</span>
@@ -352,13 +352,13 @@ async function openPrestar(itemId){
   const profsFiltrados = loanTeacherOptions();
   const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
   if(profPropio){
-    profSelect.innerHTML = '<option value=””>— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value=”${p.id}” ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}${p.departamento?' ('+p.departamento+')':''}</option>`).join('');
+    profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
+      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${escHtml(p.nombre)}${p.departamento?' ('+escHtml(p.departamento)+')':''}</option>`).join('');
     profSelect.disabled = false;
   } else {
     profSelect.disabled = false;
     profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}">${p.nombre}${p.departamento?' ('+p.departamento+')':''}</option>`).join('');
+      profsFiltrados.map(p=>`<option value="${p.id}">${escHtml(p.nombre)}${p.departamento?' ('+escHtml(p.departamento)+')':''}</option>`).join('');
   }
 
   const f = new Date(); f.setDate(f.getDate()+7);
@@ -383,7 +383,7 @@ function openPrestarCaja(cajaId){
   document.getElementById('prestarCajaNombre').textContent = `${caja.ref ? caja.ref+' · ' : ''}${caja.item}`;
   document.getElementById('prestarCajaComponentes').innerHTML = hijos.map(h=>
     `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
-      <span style="font-weight:600">${h.item}</span>
+      <span style="font-weight:600">${escHtml(h.item)}</span>
       <span style="color:var(--muted);font-size:12px"> · ${h.qty} ud.</span>
     </div>`
   ).join('');
@@ -392,13 +392,13 @@ function openPrestarCaja(cajaId){
   const profsFiltrados = loanTeacherOptions();
   const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
   if(profPropio){
-    profSelect.innerHTML = '<option value=””>— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value=”${p.id}” ${String(p.id)===String(profPropio.id)?'selected':''}>${p.nombre}</option>`).join('');
+    profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
+      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${escHtml(p.nombre)}</option>`).join('');
     profSelect.disabled = false;
   } else {
     profSelect.disabled = false;
     profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('');
+      profsFiltrados.map(p=>`<option value="${p.id}">${escHtml(p.nombre)}</option>`).join('');
   }
 
   document.getElementById('prestarCajaAulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
@@ -550,8 +550,8 @@ function renderProfList(){
   }
   document.getElementById('profList').innerHTML = profEditing.map((p,i)=>`
     <div class="prof-row">
-      <input class="fi-w name-input" value="${p.nombre||''}" onchange="profEditing[${i}].nombre=this.value" placeholder="Nombre completo" ${p.source==='usuarios'?'readonly title="Usuario de la app: se gestiona desde Usuarios"':''}>
-      <input class="fi-w dept-input" value="${p.departamento||''}" onchange="profEditing[${i}].departamento=this.value" placeholder="Departamento" ${p.source==='usuarios'?'readonly':''}>
+      <input class="fi-w name-input" value="${escHtml(p.nombre||'')}" onchange="profEditing[${i}].nombre=this.value" placeholder="Nombre completo" ${p.source==='usuarios'?'readonly title="Usuario de la app: se gestiona desde Usuarios"':''}>
+      <input class="fi-w dept-input" value="${escHtml(p.departamento||'')}" onchange="profEditing[${i}].departamento=this.value" placeholder="Departamento" ${p.source==='usuarios'?'readonly':''}>
       <button class="del-btn" onclick="removeProfRow(${i})" title="Eliminar">🗑</button>
     </div>
   `).join('');
@@ -689,8 +689,8 @@ function openPresDevModal(itemId){
         const venc = isVencido(p);
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:8px;gap:8px;margin-bottom:6px;border:1px solid var(--border)">
           <div style="font-size:13px">
-            <strong>${p.profesorNombre}</strong>
-            <div style="font-size:11px;color:${venc?'var(--red)':'var(--muted)'};margin-top:2px">${pendiente} ud${pendiente!==1?'s':''} · devolver: ${p.fechaPrevista||'—'}${venc?' ⚠ Vencido':''}</div>
+            <strong>${escHtml(p.profesorNombre)}</strong>
+            <div style="font-size:11px;color:${venc?'var(--red)':'var(--muted)'};margin-top:2px">${pendiente} ud${pendiente!==1?'s':''} · devolver: ${escHtml(p.fechaPrevista||'—')}${venc?' ⚠ Vencido':''}</div>
           </div>
           <button class="btn btn-sm btn-return" onclick="closePresDevModal();openDevolver(${p.id})">📥 Devolver</button>
         </div>`;
@@ -766,11 +766,11 @@ function _renderUsuariosList(){
     const modBadge = nMods > 0 ? `<span class="usr-mod-badge">${nMods}</span>` : '';
     const rolDisplay = (u.rol || '').toLowerCase().trim() === 'superadmin' ? 'Jefe/a Departamento' : u.rol;
     return `<div class="usr-row">
-      <input class="fi-w usr-nombre${selfClass}" value="${u.nombre||''}" placeholder="Nombre completo *"
+      <input class="fi-w usr-nombre${selfClass}" value="${escHtml(u.nombre||'')}" placeholder="Nombre completo *"
         onchange="_usuariosEditing[${i}].nombre=this.value" ${esSelf?'title="Es tu propia cuenta"':''}>
-      <input class="fi-w usr-login${selfClass}" value="${u.usuario||''}" placeholder="Usuario *"
+      <input class="fi-w usr-login${selfClass}" value="${escHtml(u.usuario||'')}" placeholder="Usuario *"
         onchange="_usuariosEditing[${i}].usuario=this.value" ${u._nuevo?'':'readonly title="El usuario no se puede cambiar"'}>
-      <input class="fi-w usr-email${selfClass}" value="${u.email||''}" placeholder="Email"
+      <input class="fi-w usr-email${selfClass}" value="${escHtml(u.email||'')}" placeholder="Email"
         onchange="_usuariosEditing[${i}].email=this.value">
       <select class="fi-w usr-rol${esSelf?' usr-self':''}" onchange="_usuariosEditing[${i}].rol=this.value" ${esSelf?'disabled title="No puedes cambiar tu propio rol"':''}>
         ${ROLES_DISPONIBLES.map(r=>`<option value="${r}" ${rolDisplay===r?'selected':''}>${r}</option>`).join('')}
@@ -849,15 +849,15 @@ function openModulosUsuario(i){
       const checked = seleccionados.has(mid) || seleccionados.has(String(m.cod)) ? 'checked' : '';
       const respActual = respMap[mid] || '';
       const otroResp = respActual && respActual.toLowerCase() !== (u.nombre||'').toLowerCase()
-        ? `<span class="mod-otro-resp">(${respActual})</span>` : '';
+        ? `<span class="mod-otro-resp">(${escHtml(respActual)})</span>` : '';
       return `<label class="mod-check-row">
         <input type="checkbox" value="${mid}" ${checked} onchange="_toggleModUsuario('${mid}',this.checked)">
-        <span class="mod-check-name">${m.name}</span>
+        <span class="mod-check-name">${escHtml(m.name)}</span>
         ${otroResp}
       </label>`;
     }).join('');
     return `<div class="mod-ciclo-group">
-      <div class="mod-ciclo-title">${c.name}${c.nivel?' · '+c.nivel:''}</div>
+      <div class="mod-ciclo-title">${escHtml(c.name)}${c.nivel?' · '+escHtml(c.nivel):''}</div>
       ${rows}
     </div>`;
   }).join('');

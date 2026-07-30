@@ -65,15 +65,15 @@ function renderDocList(){
   const el = document.getElementById('f_doc_list');
   const ex = docsActuales.map(d=>`
     <div class="doc-row">
-      <span class="di">${docIcon(d.fileName)}</span>
-      <span class="dn" title="${d.fileName}">${d.fileName}</span>
-      <a class="dv" href="${d.driveUrl}" target="_blank">Ver</a>
+      <span class="di">${escHtml(docIcon(d.fileName))}</span>
+      <span class="dn" title="${escHtml(d.fileName)}">${escHtml(d.fileName)}</span>
+      <a class="dv" href="${escHtml(d.driveUrl)}" target="_blank">Ver</a>
       <button class="dx" onclick="deleteExistingDoc(${d.id},'${d.driveId}')" title="Eliminar">✕</button>
     </div>`).join('');
   const pe = docsPendientes.map((f,i)=>`
     <div class="doc-row dp">
-      <span class="di">${docIcon(f.name)}</span>
-      <span class="dn" title="${f.name}">${f.name} <span style="color:var(--muted);font-size:10px">${(f.size/1024).toFixed(0)} KB · pendiente</span></span>
+      <span class="di">${escHtml(docIcon(f.name))}</span>
+      <span class="dn" title="${escHtml(f.name)}">${escHtml(f.name)} <span style="color:var(--muted);font-size:10px">${(f.size/1024).toFixed(0)} KB · pendiente</span></span>
       <button class="dx" onclick="removePendingDoc(${i})" title="Quitar">✕</button>
     </div>`).join('');
   el.innerHTML = ex + pe;
@@ -164,15 +164,15 @@ function _renderDmList(){
   const el = document.getElementById('dm_doc_list');
   const ex = _dmActuales.map(d=>`
     <div class="doc-row">
-      <span class="di">${docIcon(d.fileName)}</span>
-      <span class="dn" title="${d.fileName}">${d.fileName}</span>
-      <a class="dv" href="${d.driveUrl}" target="_blank">Ver</a>
+      <span class="di">${escHtml(docIcon(d.fileName))}</span>
+      <span class="dn" title="${escHtml(d.fileName)}">${escHtml(d.fileName)}</span>
+      <a class="dv" href="${escHtml(d.driveUrl)}" target="_blank">Ver</a>
       <button class="dx" onclick="_dmDeleteDoc(${d.id},'${d.driveId}')" title="Eliminar">✕</button>
     </div>`).join('');
   const pe = _dmPendientes.map((f,i)=>`
     <div class="doc-row dp">
-      <span class="di">${docIcon(f.name)}</span>
-      <span class="dn">${f.name} <span style="color:var(--muted);font-size:10px">${(f.size/1024).toFixed(0)} KB · pendiente</span></span>
+      <span class="di">${escHtml(docIcon(f.name))}</span>
+      <span class="dn">${escHtml(f.name)} <span style="color:var(--muted);font-size:10px">${(f.size/1024).toFixed(0)} KB · pendiente</span></span>
       <button class="dx" onclick="_dmPendientes.splice(${i},1);_renderDmList()" title="Quitar">✕</button>
     </div>`).join('');
   el.innerHTML = (ex+pe) || '<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin documentos adjuntos.</div>';

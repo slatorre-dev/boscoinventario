@@ -21,6 +21,17 @@ function goProfile() {
   document.getElementById('profNombre').value = SESSION.nombre || '';
   document.getElementById('profEmail').value = SESSION.email || '';
 
+  const isSuperAdmin = String(SESSION.rol||'').trim().toLowerCase() === 'superadmin';
+  const deptWrap = document.getElementById('profDeptWrap');
+  if(isSuperAdmin && typeof DEPARTAMENTOS !== 'undefined' && DEPARTAMENTOS.length){
+    deptWrap.style.display = '';
+    const sel = document.getElementById('profDept');
+    sel.innerHTML = DEPARTAMENTOS.map(d=>`<option value="${escHtml(d.slug)}">${escHtml(d.icono||'')} ${escHtml(d.nombre)}</option>`).join('');
+    sel.value = SESSION.departamento || '';
+  } else {
+    deptWrap.style.display = 'none';
+  }
+
   document.getElementById('profPassOld').value = '';
   document.getElementById('profPassNew').value = '';
   document.getElementById('profPassConf').value = '';
@@ -33,13 +44,22 @@ async function saveProfile() {
   const email = document.getElementById('profEmail').value.trim();
   if (!nombre) { toast('El nombre no puede estar vacío', 'err'); return; }
 
+  const deptWrap = document.getElementById('profDeptWrap');
+  const departamento = deptWrap.style.display !== 'none' ? document.getElementById('profDept').value : undefined;
+
   const btn = document.getElementById('btnSavePerfil');
   btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    const res = await apiPost({ action: 'updateProfile', nombre, email });
+    const res = await apiPost({ action: 'updateProfile', nombre, email, departamento });
     if (!res.ok) throw new Error(res.error || 'Error al guardar');
     SESSION.nombre = nombre;
     SESSION.email = email;
+    if(departamento != null){
+      SESSION.departamento = departamento;
+      const dept = DEPARTAMENTOS.find(d=>d.slug===departamento);
+      SESSION.departamentoNombre = dept?.nombre || '';
+      SESSION.departamentoIcono = dept?.icono || '';
+    }
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
     showUserChip();
     const initials = nombre.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();

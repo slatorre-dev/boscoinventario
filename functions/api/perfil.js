@@ -9,27 +9,28 @@ async function auditLog(db, user, accion, resumen) {
   }
 }
 
-async function getRequestUser(request, env) {
-  if (request.user) return request.user;
-  const url = new URL(request.url);
-  const u = url.searchParams.get('u') || '';
-  const p = url.searchParams.get('p') || '';
-  if (!u || !p) return null;
-  return env.DB.prepare(
-    'SELECT usuario, nombre, rol, email FROM usuarios WHERE usuario=? AND password=?'
-  ).bind(u.trim(), p).first();
+function isSuperAdmin(user){
+  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, data }) {
   try {
     const body = await request.json();
     const { action } = body;
-    const user = await getRequestUser(request, env);
+    const user = data?.user || request.user;
     if (!user) return Response.json({ ok: false, error: 'No autorizado' }, { status: 401 });
 
     if (action === 'updateProfile') {
-      await env.DB.prepare('UPDATE usuarios SET nombre=?, email=? WHERE usuario=?')
-        .bind(body.nombre, body.email || '', user.usuario).run();
+      // Solo superadmin puede cambiar su propio departamento de referencia
+      // (badge, icono del juego, y base para "actuar como" ese departamento
+      // en Fase 3) — un jefe/a de departamento normal tiene el suyo fijo.
+      if (isSuperAdmin(user) && body.departamento != null) {
+        await env.DB.prepare('UPDATE usuarios SET nombre=?, email=?, departamento=? WHERE usuario=?')
+          .bind(body.nombre, body.email || '', body.departamento || '', user.usuario).run();
+      } else {
+        await env.DB.prepare('UPDATE usuarios SET nombre=?, email=? WHERE usuario=?')
+          .bind(body.nombre, body.email || '', user.usuario).run();
+      }
       await auditLog(env.DB, user, 'updateProfile', `Perfil actualizado: ${body.nombre}`);
       return Response.json({ ok: true });
     }

@@ -141,6 +141,11 @@ function renderActiveFilters(){
 
 function renderInv(){
   updateViewBtns();
+  // Limpiar menús de acciones reparentados a <body> por toggleActionMenu() en el
+  // render anterior — si no, cada re-render deja un nodo #am-<id> huérfano ahí,
+  // acumulándose indefinidamente durante la sesión (y duplicando el id con la
+  // fila nueva que renderConfInv() vuelve a generar).
+  document.querySelectorAll('body > [id^="am-"]').forEach(m => m.remove());
   const mc=document.getElementById('iContent');
   if(!itemsLoaded){
     document.getElementById('iCount').textContent='';
@@ -828,21 +833,21 @@ function bulkPrintSelected(){
     const ec = ESTC[x.est]||'#6b7280';
     const mantInfo = [x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · ');
     return '<tr>'+cols.map(c=>{
-      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${x.foto}" alt="">`:''}</td>`;
-      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${x.ref||'—'}</span></td>`;
-      if(c.key==='item')  return `<td style="font-weight:600">${x.item}</td>`;
-      if(c.key==='aula')  return `<td>${AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—'}</td>`;
-      if(c.key==='mod')   { const m=findModulo(x.mod); return `<td style="font-size:11px">${m?m.cod+' '+m.name:x.mod||'—'}</td>`; }
+      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${escHtml(x.foto)}" alt="">`:''}</td>`;
+      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${escHtml(x.ref||'—')}</span></td>`;
+      if(c.key==='item')  return `<td style="font-weight:600">${escHtml(x.item)}</td>`;
+      if(c.key==='aula')  return `<td>${escHtml(AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—')}</td>`;
+      if(c.key==='mod')   { const m=findModulo(x.mod); return `<td style="font-size:11px">${escHtml(m?m.cod+' '+m.name:x.mod||'—')}</td>`; }
       if(c.key==='qty')   return `<td style="text-align:center;font-weight:700;color:${low?'#dc2626':'#15803d'}">${x.qty}${low?' ⚠':''}</td>`;
       if(c.key==='min')   return `<td style="text-align:center">${x.min||'—'}</td>`;
-      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${cat.i} ${x.cat}</span>`:'—'}</td>`;
-      if(c.key==='loc')   return `<td>${x.loc||'—'}</td>`;
-      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
-      if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
-      if(c.key==='proveedor') return `<td style="font-size:11px">${x.proveedor||'—'}</td>`;
-      if(c.key==='tags')  return `<td style="font-size:11px">${x.tags||'—'}</td>`;
-      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
-      if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
+      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:'—'}</td>`;
+      if(c.key==='loc')   return `<td>${escHtml(x.loc||'—')}</td>`;
+      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${escHtml(x.est)}</span></td>`;
+      if(c.key==='util')  return `<td style="font-size:11px">${escHtml(x.util||'—')}</td>`;
+      if(c.key==='proveedor') return `<td style="font-size:11px">${escHtml(x.proveedor||'—')}</td>`;
+      if(c.key==='tags')  return `<td style="font-size:11px">${escHtml(x.tags||'—')}</td>`;
+      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${escHtml(mantInfo||'Pendiente')}`:'—'}</td>`;
+      if(c.key==='obs')   return `<td style="font-size:11px">${escHtml(x.obs||'—')}</td>`;
       return '<td>—</td>';
     }).join('')+'</tr>';
   }).join('');
@@ -964,24 +969,24 @@ function rTable(data,mc){
       const selected = bulkSelected.has(String(x.id));
       return`<tr class="${selected?'bulk-row-selected':''}${x.oculto==1?' item-oculto':''}"${parentItem?' style="background:var(--bg2,#f9fafb)"':''}>
         <td><input class="bulk-check" type="checkbox" ${selected?'checked':''} onclick="event.stopPropagation()" onchange="toggleBulkSelect(${x.id},this.checked)" title="Seleccionar"></td>
-        <td>${x.foto?`<img class="table-photo quick-item-trigger" src="${x.foto}" alt="" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:`<span class="table-photo table-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">📷</span>`}</td>
-        <td><span class="rbadge">${x.ref||'—'}</span></td>
-        <td style="font-size:12px;color:var(--muted)">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</td>
-        <td style="max-width:220px;font-weight:600" title="${x.item}">
+        <td>${x.foto?`<img class="table-photo quick-item-trigger" src="${escHtml(x.foto)}" alt="" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:`<span class="table-photo table-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">📷</span>`}</td>
+        <td><span class="rbadge">${escHtml(x.ref||'—')}</span></td>
+        <td style="font-size:12px;color:var(--muted)">${escHtml(AULAS.find(a=>a.id===x.aula)?.name||x.aula)}</td>
+        <td style="max-width:220px;font-weight:600" title="${escHtml(x.item)}">
           <div class="item-title-line">
             ${parentItem?'<span style="color:var(--muted);margin-right:4px">↳</span>':''}
-            <span class="item-title-text item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${x.item}</span>
+            <span class="item-title-text item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${escHtml(x.item)}</span>
             ${esContenedor?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px;margin-left:4px">📦 ${numHijos}</span>`:''}
-            ${parentItem?`<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:4px" title="En caja: ${parentItem.item}">📦 ${parentItem.ref||parentItem.item}</span>`:''}
+            ${parentItem?`<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:4px" title="En caja: ${escHtml(parentItem.item)}">📦 ${escHtml(parentItem.ref||parentItem.item)}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="event.stopPropagation();openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
           </div>
         </td>
         <td><span class="qval ${low?'qlow':'qok'}">${x.qty}${low?' ⚠':''}</span></td>
         <td style="color:var(--muted);font-family:var(--mono);font-size:12px">${x.min}</td>
-        <td>${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c}">${cat.i} ${x.cat}</span>`:'—'}<br><span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:10px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span>${tags.length?`<br><span class="tag-mini">${escHtml(tags.slice(0,3).join(', '))}</span>`:''}</td>
-        <td style="color:var(--muted);font-size:12px" title="${x.loc||''}">${x.loc?(x.loc.length>10?x.loc.slice(0,10)+'…':x.loc):'—'}</td>
-        <td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:'—'}</td>
-        <td style="color:var(--muted);font-size:12px" title="${utilTitle}"><span class="table-util-text">${utilVisible}</span></td>
+        <td>${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c}">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:'—'}<br><span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:10px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span>${tags.length?`<br><span class="tag-mini">${escHtml(tags.slice(0,3).join(', '))}</span>`:''}</td>
+        <td style="color:var(--muted);font-size:12px" title="${escHtml(x.loc||'')}">${x.loc?escHtml(x.loc.length>10?x.loc.slice(0,10)+'…':x.loc):'—'}</td>
+        <td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${escHtml(x.est)}</span>`:'—'}</td>
+        <td style="color:var(--muted);font-size:12px" title="${escHtml(utilTitle)}"><span class="table-util-text">${escHtml(utilVisible)}</span></td>
         <td><div style="display:flex;gap:6px;position:relative">
           <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
           ${esContenedor
@@ -1017,45 +1022,45 @@ function rCards(data,mc){
         <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
       </label>
       <div class="card-head">
-        ${x.foto?`<img class="card-photo quick-item-trigger" src="${x.foto}" alt="Foto de ${x.item}" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:''}
+        ${x.foto?`<img class="card-photo quick-item-trigger" src="${escHtml(x.foto)}" alt="Foto de ${escHtml(x.item)}" onclick="showQuickItem(${x.id},event)" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">`:''}
         <div class="ch">
           <div class="card-title-wrap">
             <div class="item-title-line">
-              <div class="cname item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${parentItem2?'↳ ':''}${x.item}</div>
+              <div class="cname item-title-link" onclick="openModal(${x.id})" onmouseenter="showQuickItem(${x.id},event)" onmousemove="moveQuickItem(event)" onmouseleave="hideQuickItem()">${parentItem2?'↳ ':''}${escHtml(x.item)}</div>
               <span class="cq-inline" style="color:${low?'var(--red)':'var(--green)'}">${x.qty}<span class="cq-min">mín.${x.min}</span></span>
               ${esContenedor2?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px">📦 ${numHijos2}</span>`:''}
               <button type="button" class="qr-name-btn" onclick="openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
             </div>
-            <div class="cref">${x.ref||''}${parentItem2?` · <span style="color:#15803d;font-size:10px">📦 ${parentItem2.ref||parentItem2.item}</span>`:''}</div>
+            <div class="cref">${escHtml(x.ref||'')}${parentItem2?` · <span style="color:#15803d;font-size:10px">📦 ${escHtml(parentItem2.ref||parentItem2.item)}</span>`:''}</div>
           </div>
           <div class="cqbox"><div class="cqbig" style="color:${low?'var(--red)':'var(--green)'}">${x.qty}</div><div class="cqmin">mín. ${x.min}</div></div>
         </div>
       </div>
       <div class="cfg">
-        <div><div class="cfl">Aula</div><div class="cfv">${AULAS.find(a=>a.id===x.aula)?.name||x.aula}</div></div>
-        <div><div class="cfl">Ubicación</div><div class="cfv">${x.loc||'—'}</div></div>
+        <div><div class="cfl">Aula</div><div class="cfv">${escHtml(AULAS.find(a=>a.id===x.aula)?.name||x.aula)}</div></div>
+        <div><div class="cfl">Ubicación</div><div class="cfv">${escHtml(x.loc||'—')}</div></div>
       </div>
       ${activeLoans.length?`<div class="loan-chip">⌛ Prestado · ${activeLoans.length===1?escHtml(activeLoans[0].profesorNombre||'Prof.'):activeLoans.length+' personas'}</div>`:''}
       <button class="card-expand-btn" onclick="toggleCardExtra(this)">▼ Ver más</button>
       <div class="card-extra">
         <div class="cpills">
-          ${x.est?`<span class="edot" style="font-size:12px"><span class="dot" style="background:${ec}"></span>${x.est}</span>`:''}
-          ${mant?`<span class="cpill maintenance-pill">🛠️ ${mantStatus}</span>`:''}
-          ${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};font-size:11px">${cat.i} ${x.cat}</span>`:''}
+          ${x.est?`<span class="edot" style="font-size:12px"><span class="dot" style="background:${ec}"></span>${escHtml(x.est)}</span>`:''}
+          ${mant?`<span class="cpill maintenance-pill">🛠️ ${escHtml(mantStatus)}</span>`:''}
+          ${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};font-size:11px">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:''}
           <span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:11px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span>
-          ${mod?`<span class="cpill" style="background:#eff6ff;color:#1d4ed8;font-size:11px">${mod.ciclo.icon||'📚'} ${mod.name}</span>`:''}
+          ${mod?`<span class="cpill" style="background:#eff6ff;color:#1d4ed8;font-size:11px">${escHtml(mod.ciclo.icon||'📚')} ${escHtml(mod.name)}</span>`:''}
           ${tags.slice(0,4).map(t=>`<span class="tag-pill">${escHtml(t)}</span>`).join('')}
         </div>
         <div class="cfg cfg-extra">
-          ${x.util?`<div><div class="cfl">Utilidad</div><div class="cfv" style="font-size:11px" title="${x.util||''}">${shortText(x.util)}</div></div>`:''}
-          ${x.proveedor?`<div><div class="cfl">Proveedor</div><div class="cfv" style="font-size:11px" title="${x.proveedor||''}">${shortText(x.proveedor)}</div></div>`:''}
-          <div><div class="cfl">Revisión</div><div class="cfv" style="font-family:var(--mono);font-size:11px">${x.fecha||'—'}</div></div>
+          ${x.util?`<div><div class="cfl">Utilidad</div><div class="cfv" style="font-size:11px" title="${escHtml(x.util||'')}">${escHtml(shortText(x.util))}</div></div>`:''}
+          ${x.proveedor?`<div><div class="cfl">Proveedor</div><div class="cfv" style="font-size:11px" title="${escHtml(x.proveedor||'')}">${escHtml(shortText(x.proveedor))}</div></div>`:''}
+          <div><div class="cfl">Revisión</div><div class="cfv" style="font-family:var(--mono);font-size:11px">${escHtml(x.fecha||'—')}</div></div>
         </div>
         ${mant?`<div class="maint-note">
-          <strong>${mantStatus}</strong>${x.mantFecha?` · ${x.mantFecha}`:''}${x.mantResp?` · ${x.mantResp}`:''}
-          ${x.mantNota?`<br>${x.mantNota}`:''}
+          <strong>${escHtml(mantStatus)}</strong>${x.mantFecha?` · ${escHtml(x.mantFecha)}`:''}${x.mantResp?` · ${escHtml(x.mantResp)}`:''}
+          ${x.mantNota?`<br>${escHtml(x.mantNota)}`:''}
         </div>`:''}
-        ${x.obs?`<div class="cobs">💬 ${x.obs}</div>`:''}
+        ${x.obs?`<div class="cobs">💬 ${escHtml(x.obs)}</div>`:''}
       </div>
       <div class="cfoot" style="position:relative">
         <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
@@ -1124,11 +1129,11 @@ function rList(data,mc){
       <label class="list-check" onclick="event.stopPropagation()">
         <input type="checkbox" ${selected?'checked':''} onchange="toggleBulkSelect(${x.id},this.checked)">
       </label>
-      ${x.foto?`<img class="list-photo quick-item-trigger" src="${x.foto}" alt="" onclick="showQuickItem(${x.id},event)" style="cursor:pointer">`:
+      ${x.foto?`<img class="list-photo quick-item-trigger" src="${escHtml(x.foto)}" alt="" onclick="showQuickItem(${x.id},event)" style="cursor:pointer">`:
         `<div class="list-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" style="cursor:pointer">📷</div>`}
       <div class="list-info">
-        <div class="list-name item-title-link" onclick="openModal(${x.id})">${parentItem?'↳ ':''}${x.item}${esContenedor?` 📦${numHijos}`:''}</div>
-        <div class="list-meta">${x.ref?`<span class="list-badge">${x.ref}</span>`:''}${x.cat?` <span class="list-cat">${cat.i} ${x.cat}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">●</span>`:''}</div>
+        <div class="list-name item-title-link" onclick="openModal(${x.id})">${parentItem?'↳ ':''}${escHtml(x.item)}${esContenedor?` 📦${numHijos}`:''}</div>
+        <div class="list-meta">${x.ref?`<span class="list-badge">${escHtml(x.ref)}</span>`:''}${x.cat?` <span class="list-cat">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">●</span>`:''}</div>
       </div>
       <div class="list-footer">
         <div class="list-qty ${low?'low':''}">
@@ -1197,8 +1202,8 @@ function delPickerFilter(){
   }
   list.innerHTML=src.slice(0,25).map(x=>`
     <button class="btn" style="width:100%;justify-content:space-between;text-align:left;padding:9px 12px;font-size:13px" onclick="delPickerSelect(${x.id})">
-      <span>${x.item}</span>
-      <span style="font-size:11px;color:var(--muted)">${x.ref||''}</span>
+      <span>${escHtml(x.item)}</span>
+      <span style="font-size:11px;color:var(--muted)">${escHtml(x.ref||'')}</span>
     </button>`).join('');
 }
 function delPickerSelect(itemId){
@@ -1256,10 +1261,10 @@ function downloadText(filename, mime, text){
 }
 
 function inventoryCsvRows(data){
-  const h='Referencia,Aula,MÃ³dulo,Ãtem,Cantidad,MÃ­nimo,Tipo material,CategorÃ­a,Tags,UbicaciÃ³n,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,RevisiÃ³n,Observaciones';
+  const h='Referencia,Aula,Módulo,Ítem,Cantidad,Mínimo,Tipo material,Categoría,Tags,Ubicación,Estado,Mantenimiento,Fecha aviso mant.,Estado mant.,Responsable mant.,Nota mant.,Utilidad,Proveedor,Revisión,Observaciones';
   const rows=data.map(x=>{
     const m = findModulo(x.mod);
-    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.tags,x.loc,x.est,needsMaintenance(x)?'SÃ­':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(csvCell).join(',');
+    return [x.ref,AULAS.find(a=>a.id===x.aula)?.name||x.aula,m?`${m.cod} ${m.name}`:'',x.item,x.qty,x.min,materialType(x),x.cat,x.tags,x.loc,x.est,needsMaintenance(x)?'Sí':'',x.mantFecha,x.mantEstado,x.mantResp,x.mantNota,x.util,x.proveedor,x.fecha,x.obs].map(csvCell).join(',');
   });
   return '\uFEFF' + [h,...rows].join('\n');
 }
@@ -1580,27 +1585,27 @@ function printInv(){
     const ec = ESTC[x.est]||'#6b7280';
     const mantInfo = [x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · ');
     return '<tr>'+cols.map(c=>{
-      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${x.foto}" alt="">`:''}</td>`;
-      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${x.ref||'—'}</span></td>`;
-      if(c.key==='item')  return `<td style="font-weight:600">${x.item}</td>`;
-      if(c.key==='aula')  return `<td>${AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—'}</td>`;
-      if(c.key==='mod')   { const m=findModulo(x.mod); return `<td style="font-size:11px">${m?m.cod+' '+m.name:x.mod||'—'}</td>`; }
+      if(c.key==='foto')  return `<td>${x.foto?`<img style="width:36px;height:36px;object-fit:cover;border-radius:4px" src="${escHtml(x.foto)}" alt="">`:''}</td>`;
+      if(c.key==='ref')   return `<td><span style="font-family:monospace;font-size:11px;background:#f3f4f6;padding:1px 5px;border-radius:4px">${escHtml(x.ref||'—')}</span></td>`;
+      if(c.key==='item')  return `<td style="font-weight:600">${escHtml(x.item)}</td>`;
+      if(c.key==='aula')  return `<td>${escHtml(AULAS.find(a=>a.id===x.aula)?.name||x.aula||'—')}</td>`;
+      if(c.key==='mod')   { const m=findModulo(x.mod); return `<td style="font-size:11px">${escHtml(m?m.cod+' '+m.name:x.mod||'—')}</td>`; }
       if(c.key==='qty')   return `<td style="text-align:center;font-weight:700;color:${low?'#dc2626':'#15803d'}">${x.qty}${low?' ⚠':''}</td>`;
       if(c.key==='min')   return `<td style="text-align:center">${x.min||'—'}</td>`;
-      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${cat.i} ${x.cat}</span>`:'—'}</td>`;
-      if(c.key==='loc')   return `<td>${x.loc||'—'}</td>`;
-      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${x.est}</span></td>`;
-      if(c.key==='util')  return `<td style="font-size:11px">${x.util||'—'}</td>`;
-      if(c.key==='proveedor') return `<td style="font-size:11px">${x.proveedor||'—'}</td>`;
-      if(c.key==='tags')  return `<td style="font-size:11px">${x.tags||'—'}</td>`;
-      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${mantInfo||'Pendiente'}`:'—'}</td>`;
-      if(c.key==='obs')   return `<td style="font-size:11px">${x.obs||'—'}</td>`;
+      if(c.key==='cat')   return `<td>${x.cat?`<span style="background:${cat.bg};color:${cat.c};padding:1px 6px;border-radius:10px;font-size:11px">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:'—'}</td>`;
+      if(c.key==='loc')   return `<td>${escHtml(x.loc||'—')}</td>`;
+      if(c.key==='est')   return `<td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ec};display:inline-block"></span>${escHtml(x.est)}</span></td>`;
+      if(c.key==='util')  return `<td style="font-size:11px">${escHtml(x.util||'—')}</td>`;
+      if(c.key==='proveedor') return `<td style="font-size:11px">${escHtml(x.proveedor||'—')}</td>`;
+      if(c.key==='tags')  return `<td style="font-size:11px">${escHtml(x.tags||'—')}</td>`;
+      if(c.key==='mant')  return `<td style="font-size:11px">${mant?`🛠️ ${escHtml(mantInfo||'Pendiente')}`:'—'}</td>`;
+      if(c.key==='obs')   return `<td style="font-size:11px">${escHtml(x.obs||'—')}</td>`;
       return '<td>—</td>';
     }).join('')+'</tr>';
   }).join('');
 
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-  <title>Inventario ${titulo}</title>
+  <title>Inventario ${escHtml(titulo)}</title>
   <style>
     @page{size:${pageSize};margin:${pageMargin}}
     *{box-sizing:border-box}

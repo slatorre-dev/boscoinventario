@@ -67,7 +67,7 @@ export async function onRequestGet({ request, env, data }) {
   const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run().catch(() => {});
 
-  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows] = await Promise.all([
+  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows] = await Promise.all([
     superadmin
       ? env.DB.prepare('SELECT * FROM aulas ORDER BY orden').all()
       : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY orden`).bind(dept).all(),
@@ -84,6 +84,9 @@ export async function onRequestGet({ request, env, data }) {
     superadmin
       ? env.DB.prepare('SELECT * FROM ciclos ORDER BY cicloOrden, modOrden').all()
       : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${genericDept}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
+    superadmin
+      ? env.DB.prepare('SELECT slug, nombre, icono FROM departamentos ORDER BY orden').all()
+      : Promise.resolve({ results: [] }),
   ]);
 
   const cicloMap = {}, cicloOrder = [];
@@ -101,6 +104,7 @@ export async function onRequestGet({ request, env, data }) {
     cats: mergeCats(cats.results, invCats.results),
     ubicaciones: mergeUbicaciones(ubicaciones.results, invLocs.results),
     ciclos: cicloOrder.map(id => cicloMap[id]),
+    departamentos: superadmin ? departamentosRows.results : undefined,
     user
   });
 }

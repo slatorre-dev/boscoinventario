@@ -32,9 +32,9 @@ function renderHome(){
     return`<div class="ccard ${a.th}" style="--ch:#2563eb" onclick="goAula('${a.id}')">
       ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
       <button class="ccard-edit" onclick="event.stopPropagation();openAulasModal()" title="Editar aulas">✏️</button>
-      <div class="ccard-icon">${a.icon}</div>
-      <div class="ccard-title">${a.name}</div>
-      <div class="ccard-desc">${a.desc}${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
+      <div class="ccard-icon">${escHtml(a.icon)}</div>
+      <div class="ccard-title">${escHtml(a.name)}</div>
+      <div class="ccard-desc">${escHtml(a.desc)}${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
     </div>`;
   }).join('')
     : `<div class="empty" style="grid-column:1/-1;padding:32px;text-align:center;color:var(--muted);font-size:13px">No hay ítems clasificados por aula aún.</div>`;
@@ -45,8 +45,8 @@ function renderHome(){
         const w=loading ? 0 : items.filter(x=>x.cat===name&&isLowStock(x)).length;
         return`<div class="ccard" style="--ch:${c.c};--cbg:${c.bg}" onclick="goCat('${name.replace(/'/g,"\\'")}')">
           ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
-          <div class="ccard-icon">${c.i}</div>
-          <div class="ccard-title">${name}</div>
+          <div class="ccard-icon">${escHtml(c.i)}</div>
+          <div class="ccard-title">${escHtml(name)}</div>
           <div class="ccard-desc">${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
         </div>`;
       }).join('')
@@ -55,9 +55,9 @@ function renderHome(){
     const n=items.filter(x=>x.mod && x.mod.startsWith(c.id+'__')).length;
     return`<div class="ccard ${c.th}" onclick="openCiclo('${c.id}')">
       ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
-      <div class="ccard-icon">${c.icon}</div>
-      <div class="ccard-title">${c.name}</div>
-      <div class="ccard-desc">${c.desc}</div>
+      <div class="ccard-icon">${escHtml(c.icon)}</div>
+      <div class="ccard-title">${escHtml(c.name)}</div>
+      <div class="ccard-desc">${escHtml(c.desc)}</div>
     </div>`;
   }).join('');
 

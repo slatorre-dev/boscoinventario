@@ -1,5 +1,11 @@
 const HEADERS_PRES = ['id','itemId','itemNombre','cantidad','aulaOrigen','aulaDestino','profesorId','profesorNombre','gestionadoPor','fechaPrestamo','fechaPrevista','fechaDevolucion','cantidadDevuelta','estado','obs'];
 
+function escHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+
 const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
 
 function isSuperAdmin(user){
@@ -139,14 +145,14 @@ export async function onRequestPost({ request, env, data }) {
             const subject = `Préstamo de material: ${pres.itemNombre}`;
             const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
               <h2>Nuevo préstamo de material</h2>
-              <p>Hola ${responsableNombre},</p>
-              <p>Se ha registrado un préstamo de material de tu módulo <strong>${pres.moduloNombre || pres.moduloCod}</strong>:</p>
+              <p>Hola ${escHtml(responsableNombre)},</p>
+              <p>Se ha registrado un préstamo de material de tu módulo <strong>${escHtml(pres.moduloNombre || pres.moduloCod)}</strong>:</p>
               <table style="border-collapse:collapse;width:100%;max-width:500px">
-                <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${pres.itemNombre}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Cantidad:</td><td style="padding:6px">${pres.cantidad}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Profesor:</td><td style="padding:6px">${pres.profesorNombre}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Aula destino:</td><td style="padding:6px">${pres.aulaDestino || '-'}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Fecha prevista devolución:</td><td style="padding:6px">${pres.fechaPrevista || '-'}</td></tr>
+                <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(pres.itemNombre)}</td></tr>
+                <tr><td style="padding:6px;font-weight:bold">Cantidad:</td><td style="padding:6px">${escHtml(pres.cantidad)}</td></tr>
+                <tr><td style="padding:6px;font-weight:bold">Profesor:</td><td style="padding:6px">${escHtml(pres.profesorNombre)}</td></tr>
+                <tr><td style="padding:6px;font-weight:bold">Aula destino:</td><td style="padding:6px">${escHtml(pres.aulaDestino || '-')}</td></tr>
+                <tr><td style="padding:6px;font-weight:bold">Fecha prevista devolución:</td><td style="padding:6px">${escHtml(pres.fechaPrevista || '-')}</td></tr>
               </table>
               <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
             </div>`;

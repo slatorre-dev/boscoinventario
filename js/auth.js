@@ -265,10 +265,14 @@ function _doAutoLogout(){
   show('pLogin');
 }
 
+let _inactivityWatchStarted = false;
 function _startInactivityWatch(){
-  ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(ev=>{
-    document.addEventListener(ev, _resetInactivityTimer, {passive:true});
-  });
+  if(!_inactivityWatchStarted){
+    _inactivityWatchStarted = true;
+    ['mousemove','mousedown','keydown','touchstart','scroll','click'].forEach(ev=>{
+      document.addEventListener(ev, _resetInactivityTimer, {passive:true});
+    });
+  }
   _resetInactivityTimer();
 }
 
@@ -367,6 +371,7 @@ async function loadData(){
     if(meta.cats && meta.cats.length) setCatsFromEntries(meta.cats.map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
     if(meta.ciclos && meta.ciclos.length) CICLOS = meta.ciclos;
+    if(meta.departamentos && meta.departamentos.length) DEPARTAMENTOS = meta.departamentos;
     document.getElementById('btnN').style.display='flex';
     document.getElementById('btnPres').style.display='flex';
     document.getElementById('btnPed').style.display='flex';

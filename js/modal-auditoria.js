@@ -337,10 +337,12 @@ function abrirItemParaEditar(itemId) {
   // Abrir modal de edición (no cierra la auditoría)
   openModal(item.id);
 
-  // Restaurar z-index después de cerrar el modal de item
-  const originalClose = window.closeM;
+  // Restaurar z-index después de cerrar el modal de item — se guarda la
+  // función closeM original una única vez (window._closeMOriginal) para no
+  // anidar wrappers si se abren varios items seguidos desde auditoría.
+  if (!window._closeMOriginal) window._closeMOriginal = window.closeM;
   window.closeM = function() {
-    originalClose?.call(this);
+    window._closeMOriginal?.call(this);
     if (auditoriaModal) auditoriaModal.style.zIndex = '501';
   };
 }

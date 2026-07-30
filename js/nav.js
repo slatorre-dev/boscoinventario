@@ -163,9 +163,9 @@ function openSub(){
 
   // Breadcrumb
   if(cf.type==='aula'){
-    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>${cf.icon} ${cf.label}</strong>`;
+    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>${escHtml(cf.icon)} ${escHtml(cf.label)}</strong>`;
   } else if(cf.type==='cat'){
-    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>${cf.icon} ${cf.label}</strong>`;
+    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>${escHtml(cf.icon)} ${escHtml(cf.label)}</strong>`;
   } else if(cf.type==='lowstock'){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>⚠️ Stock bajo</strong>`;
   } else if(cf.type==='maintenance'){
@@ -173,9 +173,9 @@ function openSub(){
   } else if(cf.type==='ocultos'){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>🙈 Ítems ocultos</strong>`;
   } else if(cf.type==='caja'){
-    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>📦 ${cf.label}</strong>`;
+    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>📦 ${escHtml(cf.label)}</strong>`;
   } else {
-    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><span class="bc-link" onclick="openCiclo('${cf.ciclo.id}')">${cf.ciclo.icon} ${cf.ciclo.name}</span><span class="sep">›</span><strong>${cf.label}</strong>`;
+    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><span class="bc-link" onclick="openCiclo('${cf.ciclo.id}')">${escHtml(cf.ciclo.icon)} ${escHtml(cf.ciclo.name)}</span><span class="sep">›</span><strong>${escHtml(cf.label)}</strong>`;
   }
 
   // Breadcrumb del sub-header (ruta de ubicación: Inicio › Tipo › Nombre)
