@@ -69,8 +69,8 @@ export async function onRequestGet({ request, env, data }) {
 
   const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows] = await Promise.all([
     superadmin
-      ? env.DB.prepare('SELECT * FROM aulas ORDER BY orden').all()
-      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY orden`).bind(dept).all(),
+      ? env.DB.prepare(`SELECT * FROM aulas ORDER BY (departamento IS NOT NULL AND departamento!=''), departamento, orden`).all()
+      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY (departamento IS NOT NULL AND departamento!=''), orden`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all()
       : env.DB.prepare("SELECT * FROM categorias WHERE departamento=? ORDER BY orden").bind(dept).all(),
