@@ -301,8 +301,13 @@ function isOwnLoanTeacher(p){
 }
 
 function isExternalLoanTeacher(p){
+  // profesores.results (tabla propia) trae su departamento real; los que
+  // vienen de usuarios de la app (source==='usuarios') ya llegan del
+  // backend filtrados por el propio departamento del actor (list.js:153),
+  // así que no hace falta comprobarlo aquí — cualquiera de los dos origenes
+  // es un prestatario válido dentro del mismo departamento.
   const dep = String(p.departamento || '').toLowerCase().trim();
-  return p.source !== 'usuarios' && dep !== 'departamento' && dep !== 'usuarios app';
+  return dep !== 'departamento';
 }
 
 function loanTeacherOptions(){
@@ -825,6 +830,51 @@ async function _promptResetPass(i){
 
 // ─── MÓDULOS POR USUARIO ──────────────────────────────────
 let _modUsuarioIdx = null;
+let _modUsuarioCiclos = []; // [{cid,name,nivel,mods:[{mid,cod,name,checked,respActual}]}]
+let _modUsuarioExpanded = new Set(); // cid de ciclos expandidos manualmente
+
+function _renderModUsuarioGroups(query){
+  const u = _usuariosEditing[_modUsuarioIdx];
+  const q = normalizeStr(query || '');
+  const body = document.getElementById('mModUsuarioBody');
+
+  const html = _modUsuarioCiclos.map(c => {
+    const modsFiltrados = q ? c.mods.filter(m => normalizeStr(m.name).includes(q)) : c.mods;
+    if(!modsFiltrados.length) return '';
+    const nMarcados = c.mods.filter(m => m.checked).length;
+    // Expandido si: hay búsqueda activa, se expandió a mano, o ya tiene módulos marcados (para no esconder lo ya asignado)
+    const expanded = !!q || _modUsuarioExpanded.has(c.cid) || nMarcados > 0;
+    const rows = modsFiltrados.map(m => {
+      const otroResp = m.respActual && m.respActual.toLowerCase() !== (u.nombre||'').toLowerCase()
+        ? `<span class="mod-otro-resp">(${escHtml(m.respActual)})</span>` : '';
+      return `<label class="mod-check-row">
+        <input type="checkbox" value="${m.mid}" ${m.checked?'checked':''} onchange="_toggleModUsuario('${m.mid}',this.checked)">
+        <span class="mod-check-name">${escHtml(m.name)}</span>
+        ${otroResp}
+      </label>`;
+    }).join('');
+    return `<div class="mod-ciclo-group">
+      <div class="mod-ciclo-title" style="cursor:pointer;display:flex;align-items:center;gap:6px" onclick="_toggleModCicloExpand('${c.cid}')">
+        <span style="font-size:11px;color:var(--muted)">${expanded?'▼':'▶'}</span>
+        <span>${escHtml(c.name)}${c.nivel?' · '+escHtml(c.nivel):''}</span>
+        ${nMarcados?`<span class="usr-mod-badge" style="margin-left:auto">${nMarcados}</span>`:''}
+      </div>
+      ${expanded ? rows : ''}
+    </div>`;
+  }).join('');
+
+  body.innerHTML = html || '<p style="color:var(--muted);font-size:13px">Sin resultados.</p>';
+}
+
+function _toggleModCicloExpand(cid){
+  if(_modUsuarioExpanded.has(cid)) _modUsuarioExpanded.delete(cid);
+  else _modUsuarioExpanded.add(cid);
+  _renderModUsuarioGroups(document.getElementById('modUsuarioSearch').value);
+}
+
+function filterModUsuario(){
+  _renderModUsuarioGroups(document.getElementById('modUsuarioSearch').value);
+}
 
 function openModulosUsuario(i){
   _modUsuarioIdx = i;
@@ -853,29 +903,19 @@ function openModulosUsuario(i){
   const respMap = {};
   _todosModulos.forEach(m=>{ respMap[String(m.id || m.cod)] = m.responsable || ''; });
 
-  const html = cicloOrder.map(cid=>{
+  _modUsuarioCiclos = cicloOrder.map(cid => {
     const c = cicloMap[cid];
-    if(!c.mods.length) return '';
-    const rows = c.mods.map(m=>{
+    const mods = c.mods.map(m => {
       const mid = String(m.id || m.cod);
-      const checked = seleccionados.has(mid) || seleccionados.has(String(m.cod)) ? 'checked' : '';
       const respActual = respMap[mid] || '';
-      const otroResp = respActual && respActual.toLowerCase() !== (u.nombre||'').toLowerCase()
-        ? `<span class="mod-otro-resp">(${escHtml(respActual)})</span>` : '';
-      return `<label class="mod-check-row">
-        <input type="checkbox" value="${mid}" ${checked} onchange="_toggleModUsuario('${mid}',this.checked)">
-        <span class="mod-check-name">${escHtml(m.name)}</span>
-        ${otroResp}
-      </label>`;
-    }).join('');
-    return `<div class="mod-ciclo-group">
-      <div class="mod-ciclo-title">${escHtml(c.name)}${c.nivel?' · '+escHtml(c.nivel):''}</div>
-      ${rows}
-    </div>`;
-  }).join('');
+      return { ...m, mid, checked: seleccionados.has(mid) || seleccionados.has(String(m.cod)), respActual };
+    });
+    return { cid, name: c.name, nivel: c.nivel, mods };
+  }).filter(c => c.mods.length);
 
   document.getElementById('mModUsuarioTitle').textContent = `📚 Módulos de ${u.nombre||u.usuario}`;
-  document.getElementById('mModUsuarioBody').innerHTML = html || '<p style="color:var(--muted);font-size:13px">No hay ciclos configurados.</p>';
+  document.getElementById('modUsuarioSearch').value = '';
+  _renderModUsuarioGroups('');
   document.getElementById('mModUsuario').classList.add('open');
 }
 
@@ -888,6 +928,17 @@ function _toggleModUsuario(cod, checked){
   } else {
     u._modulos = u._modulos.filter(c=>c!==cod);
   }
+  // Mantener sincronizado el estado local para que el badge y el
+  // colapsado reflejen el cambio sin tener que reabrir el modal.
+  let cidTocado = null;
+  for(const c of _modUsuarioCiclos){
+    const m = c.mods.find(mm => mm.mid === cod);
+    if(m){ m.checked = checked; cidTocado = c.cid; break; }
+  }
+  // Un grupo con algo marcado debe quedar expandido aunque no se haya
+  // abierto a mano — re-render ligero solo para actualizar el badge.
+  if(cidTocado) _modUsuarioExpanded.add(cidTocado);
+  _renderModUsuarioGroups(document.getElementById('modUsuarioSearch')?.value || '');
 }
 
 function closeModulosUsuario(){

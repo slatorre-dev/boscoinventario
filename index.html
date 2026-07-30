@@ -1276,7 +1276,8 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <div class="mbg" id="mModUsuario" style="z-index:600" onclick="if(event.target===this)closeModulosUsuario()">
   <div class="modal" style="width:min(520px,100%)">
     <div class="mh"><div class="mt" id="mModUsuarioTitle">📚 Módulos del usuario</div><button class="mx" onclick="closeModulosUsuario()">✕</button></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Marca los módulos que imparte este profesor. Al guardar se actualizará la columna <strong>Profesor/a</strong> en la hoja Modulos.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Marca los módulos que imparte este profesor. Al guardar se actualizará la columna <strong>Profesor/a</strong> en la hoja Modulos.</p>
+    <input type="text" id="modUsuarioSearch" class="fi-w" placeholder="🔍 Buscar asignatura..." oninput="filterModUsuario()" style="margin-bottom:12px">
     <div id="mModUsuarioBody" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px"></div>
     <div class="mf" style="margin-top:18px">
       <div></div>
