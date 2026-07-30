@@ -1477,7 +1477,7 @@
 <div class="mbg" id="mAuditoria" onclick="if(event.target===this)closeAuditoriaModal()" style="display:none">
   <div class="modal auditoria-modal">
     <div class="mh">
-      <h2>🔍 Auditoría de datos — Items incompletos</h2>
+      <h2>🔍 Auditoría de datos — Items incompletos o duplicados</h2>
       <button class="mbtn-close" onclick="closeAuditoriaModal()">✕</button>
     </div>
     <div class="auditoria-body">
@@ -1490,6 +1490,7 @@
         <button class="abtn" onclick="filtrarAuditoria('ref')">Sin referencia</button>
         <button class="abtn" onclick="filtrarAuditoria('loc')">Sin ubicación</button>
         <button class="abtn" onclick="filtrarAuditoria('proveedor')">Sin proveedor</button>
+        <button class="abtn" onclick="filtrarAuditoria('dup')" style="border-color:var(--warn,#e8a33d)">⚠ Duplicados</button>
         <span style="color:var(--muted);font-size:12px;margin-left:8px;margin-right:4px">Agrupar:</span>
         <button class="abtn active" id="audGrpNone" onclick="agruparAuditoria('none')">Sin agrupar</button>
         <button class="abtn" id="audGrpCat" onclick="agruparAuditoria('cat')">Categoría</button>

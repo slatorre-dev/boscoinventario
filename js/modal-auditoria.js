@@ -54,10 +54,22 @@ function cargarAuditoria() {
   }
 
   // Analizar cada item y encontrar campos faltantes
-  auditoriaData = items.map(item => ({
+  const conProblemas = items.map(item => ({
     ...item,
     problemas: getItemProblemas(item)
   })).filter(item => item.problemas.length > 0);
+
+  // Duplicados (mismo nombre + aula) — criterio aparte de "campos faltantes"
+  const duplicadosIds = new Set(getDuplicados().map(i => i.id));
+  const yaIncluidos = new Set(conProblemas.map(i => i.id));
+  const soloDuplicados = items
+    .filter(i => duplicadosIds.has(i.id) && !yaIncluidos.has(i.id))
+    .map(item => ({ ...item, problemas: [] }));
+
+  auditoriaData = [...conProblemas, ...soloDuplicados];
+  auditoriaData.forEach(item => {
+    if (duplicadosIds.has(item.id)) item.esDuplicado = true;
+  });
 
   // Mostrar controles de selección si hay items
   const hasItems = auditoriaData.length > 0;
@@ -77,6 +89,28 @@ function getItemProblemas(item) {
     .map(c => c.label);
 }
 
+function normalizeDup(s) {
+  return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Duplicados: mismo nombre normalizado + misma aula, entre items no-contenedor
+// (contenedores/hijos de SET-/CONT- no cuentan como "el mismo item repetido").
+function getDuplicados() {
+  const grupos = new Map();
+  items.forEach(item => {
+    if (item.es_contenedor || item.parent_id) return;
+    const key = normalizeDup(item.item) + '||' + normalizeDup(item.aula);
+    if (!key.trim().replace('||', '')) return;
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(item);
+  });
+  const dupIds = new Set();
+  grupos.forEach(grupo => {
+    if (grupo.length > 1) grupo.forEach(i => dupIds.add(i.id));
+  });
+  return items.filter(i => dupIds.has(i.id));
+}
+
 function renderAuditoria(filtro) {
   const tbody = document.getElementById('auditoriaTbody');
   const empty = document.getElementById('auditoriaEmpty');
@@ -86,7 +120,9 @@ function renderAuditoria(filtro) {
 
   // Filtrar items según el tipo de problema
   let items = auditoriaData;
-  if (filtro !== 'all') {
+  if (filtro === 'dup') {
+    items = auditoriaData.filter(item => item.esDuplicado);
+  } else if (filtro !== 'all') {
     const field = TODOS_LOS_CAMPOS.find(f => f.key === filtro);
     if (field) {
       items = auditoriaData.filter(item =>
@@ -102,7 +138,9 @@ function renderAuditoria(filtro) {
 
   let infoText = '';
   if (filtro === 'all') {
-    infoText = `<strong>${total} items con campos faltantes</strong>`;
+    infoText = `<strong>${total} items con campos faltantes o duplicados</strong>`;
+  } else if (filtro === 'dup') {
+    infoText = `<strong>${mostrados} items duplicados</strong> (mismo nombre + aula)`;
   } else {
     const fieldName = TODOS_LOS_CAMPOS.find(f => f.key === filtro)?.label || filtro;
     infoText = `<strong>${mostrados} items sin ${fieldName}</strong> (de ${total} total)`;
@@ -135,7 +173,9 @@ function renderAuditoriaFilas(items) {
 
   items.forEach(item => {
     const tr = document.createElement('tr');
-    const problemasStr = item.problemas.join(', ');
+    const problemasStr = item.problemas.length
+      ? item.problemas.join(', ')
+      : (item.esDuplicado ? 'Duplicado' : '');
     const isChecked = auditoriaSeleccionados.has(item.id);
 
     tr.innerHTML = `
@@ -197,7 +237,9 @@ function renderAuditoriaAgrupada(items) {
       rowTr.setAttribute('data-group', grupoKey);
       rowTr.style.display = isGroupCollapsed ? 'none' : '';
 
-      const problemasStr = item.problemas.join(', ');
+      const problemasStr = item.problemas.length
+      ? item.problemas.join(', ')
+      : (item.esDuplicado ? 'Duplicado' : '');
       const isChecked = auditoriaSeleccionados.has(item.id);
 
       rowTr.innerHTML = `
@@ -247,6 +289,7 @@ function updateFiltroButtons() {
       item.problemas.includes(field.label)
     ).length;
   });
+  const dupCount = auditoriaData.filter(item => item.esDuplicado).length;
 
   // Actualizar texto de botones
   const botones = document.querySelectorAll('#auditoriaFiltros .abtn');
@@ -255,6 +298,8 @@ function updateFiltroButtons() {
 
     if (onclick.includes("'all'")) {
       btn.innerHTML = `Todos (${auditoriaData.length})`;
+    } else if (onclick.includes("'dup'")) {
+      btn.innerHTML = `Duplicados (${dupCount})`;
     } else {
       TODOS_LOS_CAMPOS.forEach(field => {
         if (onclick.includes(`'${field.key}'`)) {
