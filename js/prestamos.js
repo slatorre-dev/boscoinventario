@@ -975,6 +975,54 @@ function exportUsuariosCSV(){
   toast('CSV exportado', 'ok');
 }
 
+function importModulosCSV(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    const lines = e.target.result.trim().split('\n').filter(l => l.trim());
+    if(!lines.length){ toast('CSV vacío', 'err'); return; }
+
+    const primera = lines[0].toLowerCase().replace(/\s/g,'');
+    const tieneCabecera = primera.includes('usuario') || primera.includes('asignatura') || primera.includes('modulo');
+    const filas = tieneCabecera ? lines.slice(1) : lines;
+
+    const rows = filas.map(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+      return { usuario: cols[0] || '', asignatura: cols[1] || '' };
+    }).filter(r => r.usuario && r.asignatura);
+
+    if(!rows.length){ toast('No hay filas válidas en el CSV (usuario,asignatura)', 'err'); return; }
+
+    input.value = '';
+    try {
+      const res = await apiPost({ action:'importModulosCSV', rows });
+      if(!res.ok) throw new Error(res.error);
+      const fallidas = res.resultados.filter(r => !r.ok);
+      if(fallidas.length){
+        console.warn('Filas sin coincidencia en importModulosCSV:', fallidas);
+        toast(`${res.okCount}/${res.total} asignados. ${fallidas.length} sin coincidencia clara — revisa la consola (F12) para el detalle.`, 'warn');
+      } else {
+        toast(`${res.okCount}/${res.total} módulos asignados correctamente`, 'ok');
+      }
+      // Refrescar la lista de usuarios para ver los nuevos módulos asignados
+      const usersRes = await apiPost({ action: 'getUsers' });
+      if(usersRes.ok){
+        _todosModulos = usersRes.todosModulos || [];
+        const existentesPorUsuario = new Map(_usuariosEditing.map(u => [u.usuario, u]));
+        _usuariosEditing = usersRes.usuarios.map(u => {
+          const prev = existentesPorUsuario.get(u.usuario);
+          return { ...u, _nuevo:false, _resetPass: prev?._resetPass || '', _modulos: u.modulos || [] };
+        });
+        _renderUsuariosList();
+      }
+    } catch(err){
+      toast('Error al importar: '+err.message, 'err');
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
 async function saveUsuarios(){
   // Validar antes de enviar
   for(const u of _usuariosEditing){

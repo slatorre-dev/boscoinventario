@@ -16,6 +16,63 @@ function moduloId(row) {
   return `${row.cicloId}__${row.modCod}`;
 }
 
+function normalizeText(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+}
+
+// Distancia de Levenshtein — misma tolerancia que el matching de intención
+// de Volt (js/agente-widget.js), portada aquí para el import de módulos por
+// nombre de asignatura sin exigir coincidencia exacta.
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const la = a.length, lb = b.length;
+  if (!la) return lb;
+  if (!lb) return la;
+  let prev = new Array(lb + 1);
+  for (let j = 0; j <= lb; j++) prev[j] = j;
+  for (let i = 1; i <= la; i++) {
+    const cur = [i];
+    for (let j = 1; j <= lb; j++) {
+      const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur;
+  }
+  return prev[lb];
+}
+
+function maxEditDistance(len) {
+  if (len <= 4) return 0;
+  if (len <= 7) return 1;
+  return 2;
+}
+
+// Empareja "nombreBuscado" contra la lista de módulos de un departamento.
+// Devuelve el mejor match si es único e inequívoco; null si no hay match o
+// hay ambigüedad (dos módulos igual de parecidos) — nunca adivina a ciegas.
+function matchModuloPorNombre(nombreBuscado, modulos) {
+  const n = normalizeText(nombreBuscado);
+  if (!n) return { match: null, reason: 'nombre vacío' };
+
+  const exact = modulos.filter(m => normalizeText(m.modNombre) === n);
+  if (exact.length === 1) return { match: exact[0], reason: null };
+  if (exact.length > 1) return { match: null, reason: 'ambiguo (varias asignaturas con el mismo nombre)' };
+
+  const scored = modulos.map(m => {
+    const mn = normalizeText(m.modNombre);
+    const dist = levenshtein(n, mn);
+    const contains = mn.includes(n) || n.includes(mn);
+    return { m, dist, contains };
+  }).filter(s => s.contains || s.dist <= maxEditDistance(Math.max(n.length, s.m.modNombre.length)));
+
+  if (!scored.length) return { match: null, reason: 'sin coincidencia' };
+  scored.sort((a, b) => a.dist - b.dist);
+  if (scored.length > 1 && scored[0].dist === scored[1].dist) {
+    return { match: null, reason: 'ambiguo (varias asignaturas igual de parecidas)' };
+  }
+  return { match: scored[0].m, reason: null };
+}
+
 function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
@@ -141,6 +198,72 @@ export async function onRequestPost({ request, env, data }) {
     }
     await auditLog(env.DB, user, 'userAssignModulos', `Módulos asignados a ${nombre}: ${modulos.join(',')}`);
     return Response.json({ ok: true });
+  }
+
+  if (action === 'importModulosCSV') {
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+    if (!rows.length) return Response.json({ ok: false, error: 'CSV vacío' });
+    await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
+
+    const usuariosCache = {};
+    const modulosCache = {};
+    const resultados = [];
+    const porUsuario = {}; // usuario -> { nombre, departamento, modIds:Set }
+
+    for (const row of rows) {
+      const usuarioLogin = String(row.usuario || '').trim();
+      const asignatura = String(row.asignatura || '').trim();
+      if (!usuarioLogin || !asignatura) {
+        resultados.push({ usuario: usuarioLogin, asignatura, ok: false, error: 'Fila incompleta' });
+        continue;
+      }
+
+      if (!usuariosCache[usuarioLogin]) {
+        usuariosCache[usuarioLogin] = await env.DB.prepare('SELECT usuario, nombre, departamento FROM usuarios WHERE usuario=?').bind(usuarioLogin).first();
+      }
+      const targetUser = usuariosCache[usuarioLogin];
+      if (!targetUser) {
+        resultados.push({ usuario: usuarioLogin, asignatura, ok: false, error: 'Usuario no encontrado' });
+        continue;
+      }
+      if (!superadmin && targetUser.departamento !== dept) {
+        resultados.push({ usuario: usuarioLogin, asignatura, ok: false, error: 'No autorizado (otro departamento)' });
+        continue;
+      }
+
+      const targetDept = targetUser.departamento || '';
+      if (!modulosCache[targetDept]) {
+        const r = await env.DB.prepare('SELECT cicloId, modCod, modNombre FROM ciclos WHERE modCod IS NOT NULL AND departamento=?').bind(targetDept).all();
+        modulosCache[targetDept] = r.results || [];
+      }
+      const { match, reason } = matchModuloPorNombre(asignatura, modulosCache[targetDept]);
+      if (!match) {
+        resultados.push({ usuario: usuarioLogin, asignatura, ok: false, error: reason || 'sin coincidencia' });
+        continue;
+      }
+
+      if (!porUsuario[usuarioLogin]) porUsuario[usuarioLogin] = { nombre: targetUser.nombre, departamento: targetDept, modIds: new Set() };
+      porUsuario[usuarioLogin].modIds.add(moduloId(match));
+      resultados.push({ usuario: usuarioLogin, asignatura, ok: true, moduloEncontrado: match.modNombre });
+    }
+
+    // Aplicar asignaciones acumuladas por usuario, fusionando con lo que ya tenían.
+    for (const [usuarioLogin, info] of Object.entries(porUsuario)) {
+      const existentes = await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos WHERE departamento=?').bind(info.departamento).all();
+      for (const row of existentes.results) {
+        const id = moduloId(row);
+        const yaEraSuyo = (row.responsable || '').toLowerCase() === info.nombre.toLowerCase();
+        const debeSerSuyo = info.modIds.has(id) || yaEraSuyo;
+        if (debeSerSuyo && !yaEraSuyo) {
+          await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE cicloId=? AND modCod=? AND departamento=?')
+            .bind(info.nombre, row.cicloId, row.modCod, info.departamento).run();
+        }
+      }
+    }
+
+    const okCount = resultados.filter(r => r.ok).length;
+    await auditLog(env.DB, user, 'importModulosCSV', `Importadas ${okCount}/${resultados.length} asignaciones de módulos por CSV`);
+    return Response.json({ ok: true, resultados, okCount, total: resultados.length });
   }
 
   return Response.json({ ok: false, error: 'Acción desconocida' });
