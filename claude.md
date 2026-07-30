@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v488 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v489 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
@@ -289,7 +289,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v488 actual)
+sw.js                   — Service Worker, VERSION aquí (v489 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -314,6 +314,7 @@ migrations/             — SQL de migraciones D1, ver tabla completa abajo
 | `0015_superadmins_departamento.sql` | Departamento de referencia para los 3 superadmin |
 | `0016_aulas_items_seed.sql` | Ítems de ejemplo: pantalla multimedia + pizarra de tiza en las 70 aulas globales, + 3-4 ítems propios de cada especialidad en las 24 aulas de departamento |
 | `0017_pantallas_pizarras_iesjuanbosco.sql` | Reasigna la pantalla multimedia y la pizarra de tiza de las 70 aulas globales (sembradas en `0016` sin departamento) al departamento compartido `iesjuanbosco` |
+| `0018_google_oauth_columnas.sql` | Añade `google_id`, `auth_method`, `created_at` a `usuarios` — `0004` asumía que ya existían (cierto en el proyecto original, no en esta base D1 sembrada desde cero) |
 
 ---
 
@@ -453,7 +454,17 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   un login de Google en el dominio nuevo. Corregido añadiendo el dominio a
   "Authorized JavaScript origins" del Client ID. v488 volvió a un enfoque
   más estándar: `google.accounts.id.renderButton()` en vez de `prompt()`,
-  con `disableAutoSelect()` llamado una vez al cargar la página.
+  con `disableAutoSelect()` llamado una vez al cargar la página. Con el
+  origen ya autorizado, apareció un segundo fallo encadenado: 1) faltaba
+  la variable de entorno `GOOGLE_OAUTH_CLIENT_ID` en Cloudflare Pages
+  (nunca configurada tras la migración de proyecto — corregida desde el
+  dashboard, Settings → Variables y secretos → Producción); 2) una vez
+  resuelto eso, `login-google.js` fallaba con `D1_ERROR: no such column:
+  google_id` — la migración `0004_google_oauth.sql` asumía que
+  `google_id`/`auth_method`/`created_at` ya existían en `usuarios` (cierto
+  en el proyecto original `inventarioelecfp`), pero esta base D1
+  `boscoinventario` se sembró desde cero y nunca las tuvo. Corregido con
+  la migración `0018` (v489).
 - **30/05/2026 (v468):** servidor Apache restaurado tras 24h de caída por un
   script `observed.service` que mataba procesos de alto CPU y tumbaba
   Docker Desktop. Los 8 contenedores (apache, mysql, n8n, influxdb, nodered,
