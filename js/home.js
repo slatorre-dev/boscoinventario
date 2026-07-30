@@ -58,6 +58,20 @@ function renderHome(){
     </div>`;
   }).join('');
 
+  const secCats = document.getElementById('homeSecCats');
+  if(secCats) secCats.open = homeSectionOpenState('cats', catEntries.length);
+  const secCiclos = document.getElementById('homeSecCiclos');
+  if(secCiclos) secCiclos.open = homeSectionOpenState('ciclos', CICLOS.length);
+}
+
+function homeSectionOpenState(key, count){
+  const stored = localStorage.getItem('home_sec_'+key);
+  if(stored !== null) return stored === '1';
+  return count <= 8;
+}
+
+function onHomeSecToggle(el, key){
+  localStorage.setItem('home_sec_'+key, el.open ? '1' : '0');
 }
 
 function renderLoanBanner(){

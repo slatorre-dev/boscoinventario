@@ -296,17 +296,23 @@
     </div>
     <div class="choice-grid" id="gAulas"></div>
     <div style="height:20px"></div>
-    <div class="sec-label">
-      Por categoría
-      <button class="mini-btn" data-perm="categories.manage" onclick="openCatsModal()">⚙️ Gestionar categorías</button>
-    </div>
-    <div class="choice-grid" id="gCats"></div>
+    <details class="home-sec" id="homeSecCats" ontoggle="onHomeSecToggle(this,'cats')">
+      <summary class="sec-label">
+        Por categoría
+        <span class="sec-label-arrow">▾</span>
+        <button class="mini-btn" data-perm="categories.manage" onclick="event.preventDefault();event.stopPropagation();openCatsModal()">⚙️ Gestionar categorías</button>
+      </summary>
+      <div class="choice-grid" id="gCats"></div>
+    </details>
     <div style="height:20px"></div>
-    <div class="sec-label">
-      Por ciclo/departamento
-      <button class="mini-btn" data-perm="config.manage" onclick="openCiclosModal()">⚙️ Gestionar ciclos</button>
-    </div>
-    <div class="choice-grid" id="gCiclos"></div>
+    <details class="home-sec" id="homeSecCiclos" ontoggle="onHomeSecToggle(this,'ciclos')">
+      <summary class="sec-label">
+        Por ciclo/departamento
+        <span class="sec-label-arrow">▾</span>
+        <button class="mini-btn" data-perm="config.manage" onclick="event.preventDefault();event.stopPropagation();openCiclosModal()">⚙️ Gestionar ciclos</button>
+      </summary>
+      <div class="choice-grid" id="gCiclos"></div>
+    </details>
   </div>
 </div>
 
