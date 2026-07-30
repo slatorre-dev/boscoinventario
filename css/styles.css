@@ -1026,7 +1026,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
 
 /* CICLOS LIST IN MODAL */
 #ciclosList{display:flex;flex-direction:column;gap:8px;max-height:480px;overflow-y:auto;margin-bottom:14px}
-.ciclo-block{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--white)}
+.ciclo-block{flex-shrink:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--white)}
 .ciclo-block.expanded{border-color:var(--accent)}
 .ciclo-hdr{display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;background:var(--bg);user-select:none;transition:background .15s}
 .ciclo-hdr:hover{background:var(--accent-l)}
