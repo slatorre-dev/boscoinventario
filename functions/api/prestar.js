@@ -65,6 +65,34 @@ async function sendGmail(env, to, subject, htmlBody) {
   }).catch(e => console.warn('sendGmail failed', e?.message));
 }
 
+async function notifyResponsableModulo(env, moduloCod, moduloNombre, subject, rowsHtml, extraInfoHtml) {
+  if (!moduloCod) return;
+  try {
+    await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
+    const moduloKey = String(moduloCod);
+    const [cicloId, modCod] = moduloKey.includes('__') ? moduloKey.split('__') : ['', moduloKey];
+    const modRow = cicloId
+      ? await env.DB.prepare('SELECT responsable FROM ciclos WHERE cicloId=? AND modCod=?').bind(cicloId, modCod).first()
+      : await env.DB.prepare('SELECT responsable FROM ciclos WHERE modCod=?').bind(modCod).first();
+    const responsableNombre = modRow?.responsable?.trim();
+    if (!responsableNombre) return;
+    const userRow = await env.DB.prepare('SELECT email FROM usuarios WHERE nombre=?').bind(responsableNombre).first();
+    if (!userRow?.email) return;
+
+    const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+      <h2>Nuevo préstamo de material</h2>
+      <p>Hola ${escHtml(responsableNombre)},</p>
+      <p>Se ha registrado un préstamo de material de tu módulo <strong>${escHtml(moduloNombre || moduloCod)}</strong>:</p>
+      ${rowsHtml}
+      ${extraInfoHtml || ''}
+      <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
+    </div>`;
+    await sendGmail(env, userRow.email, subject, html);
+  } catch (e) {
+    console.warn('notif email failed', e?.message);
+  }
+}
+
 async function auditLog(db, user, accion, itemId, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
@@ -90,6 +118,7 @@ export async function onRequestPost({ request, env, data }) {
     if (!superadmin && !ownsItemDept(await itemDept(env.DB, cajaId), dept, genericDept)) {
       return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     }
+    const caja = await env.DB.prepare('SELECT item, mod FROM inventario WHERE id=?').bind(cajaId).first();
     const hijos = await env.DB.prepare('SELECT * FROM inventario WHERE parent_id=?').bind(cajaId).all();
     if (!hijos.results?.length) return Response.json({ ok: false, error: 'La caja no tiene componentes' });
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();
@@ -111,6 +140,20 @@ export async function onRequestPost({ request, env, data }) {
       nuevos.push(pres);
     }
     await auditLog(env.DB, user, 'prestarCaja', cajaId, `Préstamo de caja ${cajaId} completa a ${profesorNombre}: ${nuevos.length} componentes`);
+
+    // Notificar al responsable del módulo de la caja (mismo criterio que prestar individual)
+    if (caja?.mod && nuevos.length) {
+      const rowsHtml = `<table style="border-collapse:collapse;width:100%;max-width:500px">
+          <tr><td style="padding:6px;font-weight:bold">Caja:</td><td style="padding:6px">${escHtml(caja.item)}</td></tr>
+          <tr><td style="padding:6px;font-weight:bold">Profesor:</td><td style="padding:6px">${escHtml(profesorNombre)}</td></tr>
+          <tr><td style="padding:6px;font-weight:bold">Aula destino:</td><td style="padding:6px">${escHtml(aulaDestino || '-')}</td></tr>
+          <tr><td style="padding:6px;font-weight:bold">Fecha prevista devolución:</td><td style="padding:6px">${escHtml(fechaPrevista || '-')}</td></tr>
+        </table>`;
+      const componentesHtml = `<p style="font-weight:bold;margin-top:10px">Componentes (${nuevos.length}):</p>
+        <ul>${nuevos.map(p => `<li>${escHtml(p.itemNombre)} · ${escHtml(p.cantidad)} ud.</li>`).join('')}</ul>`;
+      await notifyResponsableModulo(env, caja.mod, null, `Préstamo de caja: ${caja.item}`, rowsHtml, componentesHtml);
+    }
+
     return Response.json({ ok: true, prestamos: nuevos });
   }
 
@@ -130,39 +173,14 @@ export async function onRequestPost({ request, env, data }) {
     await auditLog(env.DB, user, 'prestar', pres.itemId, `Préstamo ${pres.id}: ${pres.cantidad}ud a ${pres.profesorNombre}`);
 
     // Notificar al responsable del módulo si existe
-    if (pres.moduloCod) {
-      try {
-        await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
-        const moduloKey = String(pres.moduloCod);
-        const [cicloId, modCod] = moduloKey.includes('__') ? moduloKey.split('__') : ['', moduloKey];
-        const modRow = cicloId
-          ? await env.DB.prepare('SELECT responsable FROM ciclos WHERE cicloId=? AND modCod=?').bind(cicloId, modCod).first()
-          : await env.DB.prepare('SELECT responsable FROM ciclos WHERE modCod=?').bind(modCod).first();
-        const responsableNombre = modRow?.responsable?.trim();
-        if (responsableNombre) {
-          const userRow = await env.DB.prepare('SELECT email FROM usuarios WHERE nombre=?').bind(responsableNombre).first();
-          if (userRow?.email) {
-            const subject = `Préstamo de material: ${pres.itemNombre}`;
-            const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-              <h2>Nuevo préstamo de material</h2>
-              <p>Hola ${escHtml(responsableNombre)},</p>
-              <p>Se ha registrado un préstamo de material de tu módulo <strong>${escHtml(pres.moduloNombre || pres.moduloCod)}</strong>:</p>
-              <table style="border-collapse:collapse;width:100%;max-width:500px">
-                <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(pres.itemNombre)}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Cantidad:</td><td style="padding:6px">${escHtml(pres.cantidad)}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Profesor:</td><td style="padding:6px">${escHtml(pres.profesorNombre)}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Aula destino:</td><td style="padding:6px">${escHtml(pres.aulaDestino || '-')}</td></tr>
-                <tr><td style="padding:6px;font-weight:bold">Fecha prevista devolución:</td><td style="padding:6px">${escHtml(pres.fechaPrevista || '-')}</td></tr>
-              </table>
-              <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
-            </div>`;
-            await sendGmail(env, userRow.email, subject, html);
-          }
-        }
-      } catch (e) {
-        console.warn('notif email failed', e?.message);
-      }
-    }
+    const rowsHtml = `<table style="border-collapse:collapse;width:100%;max-width:500px">
+        <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(pres.itemNombre)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Cantidad:</td><td style="padding:6px">${escHtml(pres.cantidad)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Profesor:</td><td style="padding:6px">${escHtml(pres.profesorNombre)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Aula destino:</td><td style="padding:6px">${escHtml(pres.aulaDestino || '-')}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Fecha prevista devolución:</td><td style="padding:6px">${escHtml(pres.fechaPrevista || '-')}</td></tr>
+      </table>`;
+    await notifyResponsableModulo(env, pres.moduloCod, pres.moduloNombre, `Préstamo de material: ${pres.itemNombre}`, rowsHtml);
 
     return Response.json({ ok: true, prestamo: pres });
   }
