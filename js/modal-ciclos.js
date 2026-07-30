@@ -16,8 +16,13 @@ function openCiclosModal(){
   ciclosEditing  = JSON.parse(JSON.stringify(CICLOS.filter(c=>c.id!=='iesjuanbosco')));
   cicloExpandIdx = null;
   cicloAddingNew = false;
-  _renderCiclos();
   document.getElementById('mCiclos').classList.add('open');
+  // Con listas largas (vista superadmin, 30+ ciclos), pintar decenas de
+  // <input> de golpe mientras el modal todavía está en su transición de
+  // apertura (transform+opacity) deja filas sin texto visible hasta que
+  // el usuario interactúa. Un requestAnimationFrame antes de renderizar
+  // asegura que el modal ya esté visible y en su tamaño final.
+  requestAnimationFrame(() => requestAnimationFrame(_renderCiclos));
 }
 function closeCiclosModal(){ document.getElementById('mCiclos').classList.remove('open'); }
 
@@ -215,4 +220,64 @@ async function saveCiclos(){
   } catch(err){
     toast('Error al sincronizar: '+err.message, 'err');
   }
+}
+
+// Una fila por asignatura/módulo, agrupadas por ciclo/departamento —
+// igual que el CSV de import, para poder editar en hoja de cálculo y
+// reimportar sin perder la agrupación.
+function exportCiclosCSV(){
+  const h = 'CicloId,CicloNombre,Nivel,Icono,ModCodigo,ModNombre,ModHoras';
+  const rows = [];
+  ciclosEditing.forEach(c => {
+    if(!c.modulos.length){ rows.push([c.id,c.name,c.nivel,c.icon,'','',''].map(csvCell).join(',')); return; }
+    c.modulos.forEach(m => rows.push([c.id,c.name,c.nivel,c.icon,m.cod,m.name,m.horas].map(csvCell).join(',')));
+  });
+  downloadText('ciclos.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));
+  toast('CSV exportado', 'ok');
+}
+
+function importCiclosCSV(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const lines = e.target.result.trim().split('\n').filter(l => l.trim());
+    if(!lines.length){ toast('CSV vacío', 'err'); return; }
+
+    const primera = lines[0].toLowerCase().replace(/\s/g,'');
+    const tieneCabecera = primera.includes('ciclo') || primera.includes('mod');
+    const filas = tieneCabecera ? lines.slice(1) : lines;
+
+    const porCiclo = {};
+    const orden = [];
+    let filasValidas = 0;
+    filas.forEach(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+      const cicloId = cols[0], cicloNombre = cols[1];
+      if(!cicloId || !cicloNombre) return;
+      if(!porCiclo[cicloId]){
+        porCiclo[cicloId] = { id: cicloId, name: cicloNombre, nivel: cols[2]||'', icon: cols[3]||'📚', th: 'th-blue', desc: cicloNombre, modulos: [] };
+        orden.push(cicloId);
+      }
+      const modCod = cols[4], modNombre = cols[5];
+      if(modCod && modNombre) porCiclo[cicloId].modulos.push({ cod: modCod, name: modNombre, horas: Number(cols[6])||0 });
+      filasValidas++;
+    });
+
+    if(!filasValidas){ toast('No se encontraron filas válidas en el CSV', 'err'); return; }
+
+    // Reemplaza los ciclos editados (salvo "departamento", que no se toca
+    // desde import) con lo importado, evitando duplicar por id.
+    const dptoIdx = ciclosEditing.findIndex(c => c.id === 'departamento');
+    const dpto = dptoIdx >= 0 ? ciclosEditing[dptoIdx] : null;
+    ciclosEditing = orden.map(id => porCiclo[id]).filter(c => c.id !== 'departamento');
+    if(dpto) ciclosEditing.push(dpto);
+
+    cicloExpandIdx = null;
+    cicloAddingNew = false;
+    _renderCiclos();
+    input.value = '';
+    toast(`${orden.length} ciclo(s)/departamento(s) importado(s). Revisa y pulsa Guardar.`, 'ok');
+  };
+  reader.readAsText(file, 'utf-8');
 }

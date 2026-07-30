@@ -1330,7 +1330,15 @@
     <div class="mh"><div class="mt">⚙️ Gestionar ciclos/departamentos y asignaturas</div><button class="mx" onclick="closeCiclosModal()">✕</button></div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Añade, edita o elimina ciclos formativos (o cursos/departamentos) y sus módulos/asignaturas. El ciclo "Departamento" no se puede eliminar.</p>
     <div id="ciclosList"></div>
-    <button class="add-aula-btn" onclick="showNewCicloForm()">＋ Nuevo ciclo/departamento</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+      <button class="add-aula-btn" onclick="showNewCicloForm()">＋ Nuevo ciclo/departamento</button>
+      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: ciclo_id,ciclo_nombre,nivel,icono,mod_codigo,mod_nombre,mod_horas">
+        📥 Importar CSV
+        <input type="file" accept=".csv,.txt" style="display:none" onchange="importCiclosCSV(this)">
+      </label>
+      <button class="btn" style="font-size:12px" onclick="exportCiclosCSV()">📤 Exportar CSV</button>
+      <span style="font-size:11px;color:var(--muted)">Columnas: <code>ciclo_id,ciclo_nombre,nivel,icono,mod_codigo,mod_nombre,mod_horas</code> (una fila por asignatura/módulo)</span>
+    </div>
     <div class="mf" style="margin-top:18px">
       <div></div>
       <div class="mf-right">
