@@ -37,18 +37,15 @@ async function getGmailAccessToken(env) {
   return data.access_token;
 }
 
-async function sendResetEmail(env, to, resetUrl, userName) {
+function escHtml(v){
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+
+async function sendMail(env, to, subject, htmlBody) {
   const accessToken = await getGmailAccessToken(env);
   const from = env.MAIL_FROM || 'inventarioelec@iesjuanbosco.es';
-  const subject = 'Recuperación de contraseña - Inventario Taller FP';
-  const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-      <h2>Recuperación de contraseña</h2>
-      <p>Hola${userName ? ' ' + userName : ''},</p>
-      <p>Se ha solicitado cambiar la contraseña de tu cuenta en Inventario Taller FP.</p>
-      <p><a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">Cambiar contraseña</a></p>
-      <p>Si no has solicitado este cambio, puedes ignorar este correo.</p>
-      <p style="font-size:12px;color:#6b7280">El enlace caduca en 1 hora.</p>
-    </div>`;
 
   const subjectEncoded = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
   const mime = [
@@ -77,6 +74,46 @@ async function sendResetEmail(env, to, resetUrl, userName) {
   if (!res.ok) {
     throw new Error(data?.error?.message || 'No se pudo enviar el correo');
   }
+}
+
+async function sendResetEmail(env, to, resetUrl, userName) {
+  const subject = 'Recuperación de contraseña - Inventario Taller FP';
+  const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+      <h2>Recuperación de contraseña</h2>
+      <p>Hola${userName ? ' ' + escHtml(userName) : ''},</p>
+      <p>Se ha solicitado cambiar la contraseña de tu cuenta en Inventario Taller FP.</p>
+      <p><a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">Cambiar contraseña</a></p>
+      <p>Si no has solicitado este cambio, puedes ignorar este correo.</p>
+      <p style="font-size:12px;color:#6b7280">El enlace caduca en 1 hora.</p>
+    </div>`;
+  await sendMail(env, to, subject, htmlBody);
+}
+
+async function sendWelcomeEmail(env, to, resetUrl, userName) {
+  const subject = 'Bienvenido/a - Inventario Taller FP';
+  const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+      <h2>Cuenta creada</h2>
+      <p>Hola ${escHtml(userName)},</p>
+      <p>Se ha creado tu cuenta en el Inventario del IES Juan Bosco. Pulsa el siguiente enlace para elegir tu contraseña y empezar a usarla:</p>
+      <p><a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">Elegir contraseña</a></p>
+      <p style="font-size:12px;color:#6b7280">El enlace caduca en 1 hora. Si no has solicitado esta cuenta, ignora este correo.</p>
+    </div>`;
+  await sendMail(env, to, subject, htmlBody);
+}
+
+async function sendNewUserNotification(env, adminEmail, nombre, email, departamentoNombre) {
+  const subject = 'Nueva cuenta creada - Inventario Taller FP';
+  const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+      <h2>Nueva cuenta de profesor/a</h2>
+      <p>Se ha dado de alta una cuenta nueva desde el formulario público de registro:</p>
+      <table style="border-collapse:collapse;width:100%;max-width:500px">
+        <tr><td style="padding:6px;font-weight:bold">Nombre:</td><td style="padding:6px">${escHtml(nombre)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Email:</td><td style="padding:6px">${escHtml(email)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Departamento:</td><td style="padding:6px">${escHtml(departamentoNombre)}</td></tr>
+      </table>
+      <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
+    </div>`;
+  await sendMail(env, adminEmail, subject, htmlBody);
 }
 
 async function ensureResetTable(db) {
@@ -127,6 +164,13 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
+  // Público (sin sesión) — solo lo mínimo para poblar el select del
+  // formulario de alta: slug/nombre/icono, nada sensible.
+  if (action === 'departamentos') {
+    const rows = await env.DB.prepare('SELECT slug, nombre, icono FROM departamentos ORDER BY orden').all();
+    return Response.json({ ok: true, departamentos: rows.results || [] });
+  }
+
   return Response.json({ ok: false, error: 'Acción desconocida' });
 }
 
@@ -158,6 +202,59 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ ok: true });
     } catch (error) {
       console.error('resetPassword error', error?.message || error);
+      return Response.json({ ok: false, error: error?.message || String(error) });
+    }
+  }
+
+  // Alta pública de profesor/a — sin aprobación previa. Crea la cuenta,
+  // manda al profesor un enlace tipo "olvidé contraseña" para elegir su
+  // clave, y avisa al admin del centro por email.
+  if (body.action === 'register') {
+    try {
+      await ensureResetTable(env.DB);
+      const nombre = String(body.nombre || '').trim();
+      const email = String(body.email || '').trim().toLowerCase();
+      const departamento = String(body.departamento || '').trim();
+
+      if (!nombre) return Response.json({ ok: false, error: 'Introduce tu nombre completo' });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Response.json({ ok: false, error: 'Introduce un email válido' });
+      if (!departamento) return Response.json({ ok: false, error: 'Selecciona tu departamento' });
+
+      const dept = await env.DB.prepare('SELECT slug, nombre FROM departamentos WHERE slug=?').bind(departamento).first();
+      if (!dept) return Response.json({ ok: false, error: 'Departamento no válido' });
+
+      const existing = await env.DB.prepare('SELECT usuario FROM usuarios WHERE email=?').bind(email).first();
+      if (existing) {
+        return Response.json({ ok: false, error: 'Ya existe una cuenta con ese email. Usa "¿Olvidaste tu contraseña?" o contacta con tu jefe/a de departamento.' });
+      }
+
+      const [userPart] = email.split('@');
+      let usuario = userPart.replace(/[^a-z0-9._-]/gi, '').toLowerCase();
+      let baseUsuario = usuario, counter = 1;
+      while (await env.DB.prepare('SELECT usuario FROM usuarios WHERE usuario=?').bind(usuario).first()) {
+        usuario = `${baseUsuario}${counter}`;
+        counter++;
+      }
+
+      const randomPass = Math.random().toString(36).slice(2, 15) + Math.random().toString(36).slice(2, 15);
+      await env.DB.prepare(`
+        INSERT INTO usuarios (usuario, nombre, email, password, rol, auth_method, created_at, departamento)
+        VALUES (?, ?, ?, ?, 'Profesor/a', 'local', datetime('now'), ?)
+      `).bind(usuario, nombre, email, randomPass, departamento).run();
+
+      const token = randomToken();
+      const expires = Date.now() + 60 * 60 * 1000;
+      await env.DB.prepare('INSERT OR REPLACE INTO reset_tokens (token,usuario,expires) VALUES (?,?,?)')
+        .bind(token, usuario, expires).run();
+      const resetUrl = appBaseUrl(request, body) + '#reset/' + encodeURIComponent(token);
+
+      await sendWelcomeEmail(env, email, resetUrl, nombre);
+      const adminEmail = env.MAIL_FROM || 'inventarioelec@iesjuanbosco.es';
+      sendNewUserNotification(env, adminEmail, nombre, email, dept.nombre).catch(err => console.warn('notif admin failed', err?.message));
+
+      return Response.json({ ok: true });
+    } catch (error) {
+      console.error('register error', error?.message || error);
       return Response.json({ ok: false, error: error?.message || String(error) });
     }
   }

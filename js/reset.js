@@ -15,7 +15,73 @@ function showRecovery() {
 
 function showLogin() {
   document.getElementById('recoveryForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'none';
   document.getElementById('loginForm').style.display = 'block';
+}
+
+// ─── CREAR CUENTA (profesor/a) ────────────────────────────
+let _registerDeptsLoaded = false;
+
+function showRegister() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'block';
+  document.getElementById('registerError').classList.remove('show');
+  document.getElementById('registerOk').classList.remove('show');
+  document.getElementById('registerNombre').value = '';
+  document.getElementById('registerEmail').value = '';
+  if (!_registerDeptsLoaded) loadRegisterDepartments();
+  document.getElementById('registerNombre').focus();
+}
+
+async function loadRegisterDepartments() {
+  const sel = document.getElementById('registerDept');
+  try {
+    const r = await fetch('/api/auth?action=departamentos');
+    const res = await r.json();
+    if (!res.ok) throw new Error(res.error || 'Error al cargar departamentos');
+    _registerDeptsLoaded = true;
+    sel.innerHTML = '<option value="">Selecciona tu departamento</option>' +
+      res.departamentos.map(d => `<option value="${escHtml(d.slug)}">${escHtml(d.icono || '')} ${escHtml(d.nombre)}</option>`).join('');
+  } catch (err) {
+    sel.innerHTML = '<option value="">Error al cargar — recarga la página</option>';
+  }
+}
+
+async function submitRegister() {
+  const nombre = document.getElementById('registerNombre').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const departamento = document.getElementById('registerDept').value;
+  const errEl = document.getElementById('registerError');
+  const okEl = document.getElementById('registerOk');
+  errEl.classList.remove('show');
+  okEl.classList.remove('show');
+
+  if (!nombre) { errEl.textContent = 'Introduce tu nombre completo'; errEl.classList.add('show'); return; }
+  if (!email) { errEl.textContent = 'Introduce tu correo electrónico'; errEl.classList.add('show'); return; }
+  if (!departamento) { errEl.textContent = 'Selecciona tu departamento'; errEl.classList.add('show'); return; }
+
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true; btn.textContent = 'Creando...';
+  try {
+    const appUrl = window.location.href.split('#')[0];
+    const r = await fetch('/api/auth', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'register', nombre, email, departamento, appUrl }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const res = await r.json();
+    if (!res.ok) throw new Error(res.error || 'Error al crear la cuenta');
+    okEl.textContent = '✓ Cuenta creada. Revisa tu correo para elegir tu contraseña.';
+    okEl.classList.add('show');
+    document.getElementById('registerNombre').value = '';
+    document.getElementById('registerEmail').value = '';
+    document.getElementById('registerDept').value = '';
+  } catch (err) {
+    errEl.textContent = err.message || 'Error de conexión. Inténtalo de nuevo.';
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Crear cuenta';
+  }
 }
 
 // ─── SOLICITAR RECUPERACIÓN ───────────────────────────────
@@ -110,4 +176,5 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('recoveryUser').addEventListener('keydown', e => { if (e.key === 'Enter') requestReset(); });
   document.getElementById('resetPass1').addEventListener('keydown', e => { if (e.key === 'Enter') doResetPassword(); });
   document.getElementById('resetPass2').addEventListener('keydown', e => { if (e.key === 'Enter') doResetPassword(); });
+  document.getElementById('registerEmail').addEventListener('keydown', e => { if (e.key === 'Enter') submitRegister(); });
 });

@@ -197,7 +197,7 @@
         </div>
 
         <div class="login-footer">
-          Si no tienes cuenta, contacta con el administrador del centro
+          <button class="login-link" onclick="showRegister()">¿No tienes cuenta? Crear una</button>
           <br><button class="login-link" onclick="showRecovery()">¿Olvidaste tu contraseña?</button>
         </div>
       </div>
@@ -212,6 +212,29 @@
           <input type="text" id="recoveryUser" autocomplete="username">
         </div>
         <button class="login-btn" id="recoveryBtn" onclick="requestReset()">Enviar correo de recuperación</button>
+        <div class="login-footer">
+          <button class="login-link" onclick="showLogin()">← Volver al inicio de sesión</button>
+        </div>
+      </div>
+
+      <!-- Vista: crear cuenta (profesor/a) -->
+      <div id="registerForm" style="display:none">
+        <p class="login-sub">Crea tu cuenta de profesor/a. Recibirás un email para elegir tu contraseña.</p>
+        <div class="login-error" id="registerError"></div>
+        <div class="login-ok" id="registerOk"></div>
+        <div class="login-field">
+          <label>Nombre completo</label>
+          <input type="text" id="registerNombre" autocomplete="name">
+        </div>
+        <div class="login-field">
+          <label>Correo electrónico</label>
+          <input type="email" id="registerEmail" autocomplete="email">
+        </div>
+        <div class="login-field">
+          <label>Departamento</label>
+          <select id="registerDept"><option value="">Cargando...</option></select>
+        </div>
+        <button class="login-btn" id="registerBtn" onclick="submitRegister()">Crear cuenta</button>
         <div class="login-footer">
           <button class="login-link" onclick="showLogin()">← Volver al inicio de sesión</button>
         </div>
