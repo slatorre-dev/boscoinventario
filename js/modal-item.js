@@ -4,6 +4,14 @@
 let modalHasChanges = false;
 let modalOriginalValues = {};
 
+function modalSectionShouldOpen(m, fields){
+  if(!m) return false;
+  return fields.some(f => {
+    const v = m[f];
+    return v !== undefined && v !== null && v !== '' && v !== 0 && v !== '0';
+  });
+}
+
 function markModalAsChanged(){
   modalHasChanges = true;
   updateModalIndicator();
@@ -798,6 +806,10 @@ function openModal(id=null, src=null){
   document.getElementById('f_obs').value=m?.obs||'';
   const esContenedor = m?.es_contenedor == 1 || m?.es_contenedor === true;
   document.getElementById('f_es_contenedor').checked = esContenedor;
+  const secDetalles = document.getElementById('mSecDetalles');
+  if(secDetalles) secDetalles.open = existing && modalSectionShouldOpen(m, ['util','proveedor','fecha']);
+  const secDocs = document.getElementById('mSecDocumentacion');
+  if(secDocs) secDocs.open = existing && (modalSectionShouldOpen(m, ['obs']) || esContenedor);
   fillParentSelect(id);
   document.getElementById('f_parent_id').value = m?.parent_id || '';
   toggleContenedorFields();

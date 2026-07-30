@@ -592,12 +592,14 @@
       </div>
 
       <!-- 🔧 DETALLES -->
-      <div class="m-section">
-        <div class="m-section-title">🔧 DETALLES</div>
-        <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
-        <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
-        <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
-      </div>
+      <details class="m-section-details" id="mSecDetalles">
+        <summary class="m-section-title">🔧 DETALLES <span class="sec-label-arrow">▾</span></summary>
+        <div class="m-section-details-body">
+          <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
+          <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
+          <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
+        </div>
+      </details>
 
       <!-- 🛠️ MANTENIMIENTO (opcional) -->
       <div class="maint-fields m-section" id="maintFields" style="border:none;padding:0;margin-top:0;background:none;border-top:none">
@@ -629,8 +631,9 @@
       </div>
 
       <!-- 📎 DOCUMENTACIÓN -->
-      <div class="m-section">
-        <div class="m-section-title">📎 DOCUMENTACIÓN</div>
+      <details class="m-section-details" id="mSecDocumentacion">
+        <summary class="m-section-title">📎 DOCUMENTACIÓN <span class="sec-label-arrow">▾</span></summary>
+        <div class="m-section-details-body">
         <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="f_obs" placeholder="Notas, proveedor, nº serie..."></textarea></div>
         <div class="full">
           <label class="fl">Contenedor / Caja</label>
@@ -704,7 +707,8 @@
         </div>
         <div class="doc-list" id="f_doc_list"></div>
       </div>
-    </div>
+        </div>
+      </details>
     </div>
     <div class="mf">
       <div>

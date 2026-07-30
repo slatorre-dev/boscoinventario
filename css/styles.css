@@ -902,6 +902,15 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 #mItem .m-section:has(#f_cat){grid-template-columns:1.3fr 1.7fr 0.5fr 0.5fr}
 #mItem .m-section:has(#f_util){grid-template-columns:1fr 1fr 0.5fr}
 #mItem .m-section:has(#f_foto_preview){grid-template-columns:1fr}
+#mItem .m-section-details{grid-column:1/-1;border-bottom:1px solid var(--border);padding-bottom:18px}
+#mItem .m-section-details:last-of-type{border-bottom:none}
+#mItem .m-section-details>summary{cursor:pointer;list-style:none;margin-bottom:0}
+#mItem .m-section-details>summary::-webkit-details-marker{display:none}
+#mItem .m-section-details[open]>summary{margin-bottom:8px}
+#mItem .m-section-details .sec-label-arrow{transition:transform .2s;display:inline-block}
+#mItem .m-section-details[open] .sec-label-arrow{transform:rotate(180deg)}
+#mItem .m-section-details-body{display:grid;grid-template-columns:1fr 1fr 0.5fr;gap:12px}
+#mItem .m-section-details-body .full{grid-column:1/-1}
 #mItem .maint-fields.m-section:not(.show){display:none}
 #mItem .mf{border-top:1px solid var(--border);padding:16px 26px;background:var(--bg);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
@@ -1314,6 +1323,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
   #mItem .m-section:has(#f_cat){grid-template-columns:1fr 1fr!important}
   #mItem .m-section:has(#f_util){grid-template-columns:1fr 1fr 0.7fr!important}
   #mItem .m-section:has(#f_util) > div{min-width:0}
+  #mItem .m-section-details-body{grid-template-columns:1fr!important}
   #f_fecha{min-width:0;width:100%}
   #mItem .photo-picker{padding:8px}
   .ref-nombre-row,.aula-loc-row{gap:8px}

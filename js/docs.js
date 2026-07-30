@@ -77,6 +77,10 @@ function renderDocList(){
       <button class="dx" onclick="removePendingDoc(${i})" title="Quitar">✕</button>
     </div>`).join('');
   el.innerHTML = ex + pe;
+  if(docsActuales.length > 0){
+    const secDocs = document.getElementById('mSecDocumentacion');
+    if(secDocs) secDocs.open = true;
+  }
 }
 
 function _processFile(file, itemName){
