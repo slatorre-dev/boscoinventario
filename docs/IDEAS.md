@@ -41,12 +41,16 @@ Si otro usuario actualiza un item mientras lo estás viendo, avisarte.
 
 **Prioridad:** Baja
 
-### Merge/Consolidar Items Duplicados
-Detectar y fusionar items iguales accidentalmente creados.
-- Detectar por nombre similar o misma referencia
-- Interfaz para seleccionar y fusionar, consolidando cantidad
+### Merge/Consolidar Items Duplicados — parcialmente implementado (30/07/2026)
+Detección hecha: filtro "⚠ Duplicados" en el modal de Auditoría
+(`js/modal-auditoria.js`, `getDuplicados()`) — mismo nombre normalizado +
+misma aula, excluyendo contenedores/hijos SET-/CONT-. Reusa selección
+múltiple y edición/borrado en lote ya existentes.
+Falta: fusión automática (consolidar cantidad en un solo item y borrar el
+resto) — hoy el usuario debe decidir manualmente cuál conservar y editar/
+borrar el resto desde la barra de bulk actions.
 
-**Prioridad:** Media
+**Prioridad:** Baja (lo urgente ya cubierto por la detección)
 
 ### Control de Acceso por Aula
 Profesores solo ven y editan items de su aula.
@@ -194,14 +198,13 @@ Botón ✏️ por fila en tablas de resultados para editar sin salir del chat.
 
 ## Performance
 
-### Índices en Tabla Items (D1)
-```sql
-CREATE INDEX idx_items_ref ON items(ref);
-CREATE INDEX idx_items_name ON items(item);
-CREATE INDEX idx_items_tags ON items(tags);
-CREATE INDEX idx_items_aula ON items(aula);
-```
-**Prioridad:** Alta — urgente si el inventario crece
+### Índices en Tabla Inventario (D1) — ✅ implementado (30/07/2026)
+`migrations/0020_indices_inventario.sql`. La tabla real es `inventario`
+(no `items`), y casi toda query ya filtra por `departamento` primero (ver
+scoping backend), así que se usaron compuestos en vez de índices simples:
+`departamento` solo, `(departamento, aula)`, `(departamento, ref)`,
+`(departamento, cat)`, y `parent_id` (para contenedores). No se indexó
+`item`/`tags` — la búsqueda usa `LIKE '%x%'`, que no aprovecha índice B-tree.
 
 ### Lazy Loading de Imágenes
 `loading="lazy"` en `<img>` del listado; cargar fotos de modal solo al abrir.
@@ -257,5 +260,5 @@ CSV o PDF con items problemáticos agrupados por aula/categoría.
 
 ## Estado
 
-- **Última actualización:** 29/07/2026
-- **Versión actual:** v476
+- **Última actualización:** 30/07/2026
+- **Versión actual:** v501

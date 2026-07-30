@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v494 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v501 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
@@ -283,13 +283,14 @@ js/
   modal-item.js         — Modal edición/creación items, contenedores SET-/CONT-, renderAulaOptions(), preselección de ciclo único
   modal-ciclos.js       — Gestión de ciclos/asignaturas propios (excluye el compartido iesjuanbosco)
   modal-aulas.js        — Gestión de aulas propias (excluye globales + iesjuanbosco)
+  modal-auditoria.js    — Auditoría de datos: campos faltantes + filtro "Duplicados" (mismo nombre+aula), reusa selección/edición/borrado en lote de inventory.js
   roles.js              — Permisos por rol
   config.js             — CICLOS, AULAS, CATS (se sobreescriben con datos D1 al login, ya filtrados por departamento)
   state.js              — Estado global SESSION (departamento/departamentoNombre/departamentoIcono/passwordTemporal)
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v490 actual)
+sw.js                   — Service Worker, VERSION aquí (v501 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -316,6 +317,7 @@ migrations/             — SQL de migraciones D1, ver tabla completa abajo
 | `0017_pantallas_pizarras_iesjuanbosco.sql` | Reasigna la pantalla multimedia y la pizarra de tiza de las 70 aulas globales (sembradas en `0016` sin departamento) al departamento compartido `iesjuanbosco` |
 | `0018_google_oauth_columnas.sql` | Añade `google_id`, `auth_method`, `created_at` a `usuarios` — `0004` asumía que ya existían (cierto en el proyecto original, no en esta base D1 sembrada desde cero) |
 | `0019_pantallas_pizarras_inventariable.sql` | Marca `tipo_material='inventariable'` en los 222 ítems sembrados en `0016` (habían quedado como `'consumible'` por el default de `item.js`, disparando el aviso de stock bajo con qty=1/min=1) |
+| `0020_indices_inventario.sql` | Índices en `inventario`: `departamento` solo, y compuestos `(departamento, aula)`, `(departamento, ref)`, `(departamento, cat)`, más `parent_id` — tabla no tenía ningún índice salvo la PK |
 
 ---
 
@@ -472,6 +474,43 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   Mosquitto, Grafana, portainer) recuperados con persistencia validada.
   Pendiente: debuguear `inventario-node` (`DB undefined` en `auth.js:13`,
   wrapper mysql2 sin inicializar) — ver detalle en DEVELOPMENT.md.
+- **30/07/2026 (v490-v498):** tras el fix de Google OAuth (v489), sesión de
+  simplificación de UI y varios fixes menores. v491 probó un rediseño de la
+  cabecera de Home (panel de taller + mapa generativo) — revertido en el
+  mismo día (v492) por no encajar con el resto del diseño. v493 unificó
+  confirmaciones/errores/validación inline de formulario en un solo patrón
+  consistente. v494 restringió el departamento compartido `iesjuanbosco` a
+  jefes de departamento y superadmin (antes accesible más ampliamente). v495
+  fue la más grande: colapsables en Home (categorías/ciclos con >8 tarjetas),
+  reducción de tabs de Préstamos de 6 a 2 (+ toggle de vencidos + selector de
+  agrupación), y colapsado de las secciones Detalles/Documentación en el
+  modal de Nuevo ítem — todo para reducir ruido visual en pantallas con
+  mucho contenido. v496 ocultó en Home las aulas sin ítems del propio
+  departamento (ruido para departamentos con poco inventario propio). v497
+  hizo más visible el botón desplegable de categoría/ciclo en Home, y v498
+  sustituyó la flecha diminuta de colapsar/expandir por una pastilla
+  "Ocultar/Mostrar" más clara.
+- **30/07/2026 (v499-v501):** `restoreBackup` (botón de restaurar backup
+  desde JSON, en Config) daba "Acción desconocida" — el endpoint nunca se
+  había implementado en el backend pese a que el frontend ya lo llamaba;
+  v499 lo implementó completo (inventario, aulas, categorías, ciclos,
+  contenedores). Al usarlo por primera vez apareció un bug: aulas globales
+  ya existentes en la base (ej. `aula35`, sin `departamento` propio) se
+  duplicaban en vez de reconocerse, porque el restore trataba cualquier fila
+  sin `departamento` como "hay que crearla en `FALLBACK_DEPT`" en lugar de
+  comprobar si ya existía como aula global — v500 corrigió esto (busca por
+  `id` entre las aulas con `departamento=''` antes de decidir insertar) y de
+  paso se fusionaron a mano las 7 aulas ya duplicadas en producción
+  (`aula35/36/38/39/40/41/44`, items reasignados a la fila del departamento,
+  fila global duplicada borrada; backup previo del `d1 export` guardado
+  fuera del repo, en el scratchpad de la sesión — no versionado). v501 añadió dos
+  mejoras: índices D1 en `inventario` (`migrations/0020`, tabla no tenía
+  ninguno salvo la PK — compuestos `(departamento, aula/ref/cat)` porque casi
+  toda query ya filtra por departamento primero) y un filtro "⚠ Duplicados"
+  en el modal de Auditoría de datos (`js/modal-auditoria.js`) que detecta
+  items con mismo nombre normalizado + misma aula (para no depender de SQL
+  manual la próxima vez que pase algo así) — reusa la selección múltiple y
+  edición/borrado en lote ya existentes, sin fusión automática.
 
 ---
 
