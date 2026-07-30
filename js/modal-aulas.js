@@ -42,11 +42,11 @@ function addAulaRow(){
   renderAulasList();
 }
 
-function removeAulaRow(idx){
+async function removeAulaRow(idx){
   const a = aulasEditing[idx];
   const usadas = items.filter(x=>x.aula===a.id).length;
   if(usadas > 0){
-    if(!confirm(`Esta aula tiene ${usadas} ítem(s) asignados. Si la eliminas, esos ítems quedarán sin aula. ¿Continuar?`)) return;
+    if(!await confirmDialog({message:`Esta aula tiene ${usadas} ítem(s) asignados. Si la eliminas, esos ítems quedarán sin aula. ¿Continuar?`})) return;
   }
   aulasEditing.splice(idx,1);
   renderAulasList();

@@ -42,10 +42,10 @@ function addUbicacionRow(){
   renderUbicacionesList();
 }
 
-function removeUbicacionRow(idx){
+async function removeUbicacionRow(idx){
   const u = ubicacionesEditing[idx];
   const usadas = items.filter(x => String(x.loc || '').trim().toLowerCase() === String(u.name || '').trim().toLowerCase()).length;
-  if(usadas > 0 && !confirm(`Esta ubicacion se usa en ${usadas} item(s). Si la eliminas, esos items conservaran el texto de ubicacion. ¿Continuar?`)) return;
+  if(usadas > 0 && !await confirmDialog({message:`Esta ubicacion se usa en ${usadas} item(s). Si la eliminas, esos items conservaran el texto de ubicacion. ¿Continuar?`})) return;
   ubicacionesEditing.splice(idx, 1);
   renderUbicacionesList();
 }

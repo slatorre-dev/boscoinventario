@@ -50,7 +50,7 @@ async function addDocFiles(files){
 function removePendingDoc(idx){ docsPendientes.splice(idx,1); renderDocList(); }
 
 async function deleteExistingDoc(docId, driveId){
-  if(!confirm('¿Eliminar este documento de Drive?')) return;
+  if(!await confirmDialog({message:'¿Eliminar este documento de Drive?', danger:true, confirmText:'Eliminar'})) return;
   try{
     const res = await apiPost({action:'deleteDoc', docId, driveId});
     if(!res.ok) throw new Error(res.error);
@@ -58,7 +58,7 @@ async function deleteExistingDoc(docId, driveId){
     const fotoInput = document.getElementById('f_foto');
     if(fotoInput?.value && String(fotoInput.value).includes(String(driveId))) renderMainPhoto('');
     renderDocList(); toast('Documento eliminado','ok');
-  }catch(e){ toast('Error: '+e.message,'err'); }
+  }catch(e){ toast(friendlyError(e),'err'); }
 }
 
 function renderDocList(){
@@ -175,13 +175,13 @@ function _renderDmList(){
 }
 
 async function _dmDeleteDoc(docId, driveId){
-  if(!confirm('¿Eliminar este documento de Drive?')) return;
+  if(!await confirmDialog({message:'¿Eliminar este documento de Drive?', danger:true, confirmText:'Eliminar'})) return;
   try {
     const res = await apiPost({action:'deleteDoc', docId, driveId});
     if(!res.ok) throw new Error(res.error);
     _dmActuales = _dmActuales.filter(d=>d.id!==docId);
     _renderDmList(); toast('Documento eliminado','ok');
-  } catch(e){ toast('Error: '+e.message,'err'); }
+  } catch(e){ toast(friendlyError(e),'err'); }
 }
 
 async function saveDocsModal(){

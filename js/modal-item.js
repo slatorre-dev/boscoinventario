@@ -836,9 +836,9 @@ function _autoRef(name){
   const nums = items.filter(x=>x.id!==eid).map(x=>x.ref||'').filter(r=>pat.test(r)).map(r=>parseInt(r.split('-').pop())||0);
   return prefix + '-' + (nums.length ? Math.max(...nums)+1 : 1);
 }
-function closeM(force=false){
+async function closeM(force=false){
   if(!force && modalHasChanges){
-    if(!confirm('Hay cambios sin guardar. ¿Descartar cambios?')) return;
+    if(!await confirmDialog({message:'Hay cambios sin guardar. ¿Descartar cambios?'})) return;
   }
   document.getElementById('mItem').classList.remove('open');
   document.body.style.overflow = '';
@@ -954,10 +954,13 @@ function printBulkItemQrs(){
 }
 
 async function saveItem(){
+  clearFieldErrors();
   const name=document.getElementById('f_item').value.trim();
-  if(!name){toast('El nombre es obligatorio','err');return}
-  if(!document.getElementById('f_ciclo').value){toast('El ciclo/departamento es obligatorio','err');return}
-  if(!document.getElementById('f_mod').value){toast('La asignatura/módulo es obligatoria','err');return}
+  let hasError = false;
+  if(!name){ markFieldError('f_item', 'El nombre es obligatorio'); hasError = true; }
+  if(!document.getElementById('f_ciclo').value){ markFieldError('f_ciclo', 'Selecciona un ciclo/departamento'); hasError = true; }
+  if(!document.getElementById('f_mod').value){ markFieldError('f_mod', 'Selecciona una asignatura/módulo'); hasError = true; }
+  if(hasError){ toast('Revisa los campos marcados','err'); focusFirstError(); return; }
   const refRaw = document.getElementById('f_ref').value.trim();
   const v={
     code: eid ? itemCode(items.find(x=>x.id===eid) || eid) : '',
@@ -1015,7 +1018,7 @@ async function saveItem(){
     } else {
       renderHome();
     }
-  } catch(err) { toast('Error: '+err.message,'err'); }
+  } catch(err) { toast(friendlyError(err),'err'); }
   finally { btn.disabled=false; btn.textContent='💾 Guardar'; }
 }
 
@@ -1039,12 +1042,20 @@ function confDel(id){
       closeConf();
       if(cf){ const all=getBase(); renderInvKeepPage(); renderSubStats(all,all.filter(isLowStock).length); } else renderHome();
       toast('Ítem eliminado','ok');
-    } catch(err) { toast('Error: '+err.message,'err'); }
+    } catch(err) { toast(friendlyError(err),'err'); }
     finally { btn.disabled=false; btn.textContent='Eliminar'; }
   };
   document.getElementById('mConf').classList.add('open');
 }
-function closeConf(){document.getElementById('mConf').classList.remove('open')}
+function closeConf(){
+  const modal = document.getElementById('mConf');
+  modal.classList.remove('open');
+  if (modal._pendingResolve) {
+    const resolve = modal._pendingResolve;
+    modal._pendingResolve = null;
+    resolve(false);
+  }
+}
 
 // ═════════════════════════════════════════════════════════
 // BAJA DE MATERIAL
@@ -1191,8 +1202,8 @@ function removePedido(id){
   if(cf) openSub(); else renderHome();
 }
 
-function clearPedidos(){
-  if(!confirm('¿Vaciar toda la lista de pedido?')) return;
+async function clearPedidos(){
+  if(!await confirmDialog({message:'¿Vaciar toda la lista de pedido?'})) return;
   pedidos = {};
   savePedidosLocal();
   updatePedBadge();

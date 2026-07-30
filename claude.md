@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v490 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v493 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el

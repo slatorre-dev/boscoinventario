@@ -286,10 +286,10 @@ function loanTeacherOptions(){
     .filter(p => isOwnLoanTeacher(p) || isExternalLoanTeacher(p));
 }
 
-function openPrestar(itemId){
+async function openPrestar(itemId){
   if(!requirePerm('loans.write')) return;
   if(!profesores.length){
-    if(confirm('No hay profesores registrados. ¿Quieres añadir alguno ahora?')){ openProfModal(); }
+    if(await confirmDialog({message:'No hay profesores registrados. ¿Quieres añadir alguno ahora?'})){ openProfModal(); }
     return;
   }
 
@@ -590,7 +590,7 @@ async function saveProfesores(){
   // Validación
   const validos = profEditing.filter(p=>p.nombre && p.nombre.trim());
   if(validos.length !== profEditing.length){
-    if(!confirm('Hay profesores sin nombre que se descartarán. ¿Continuar?')) return;
+    if(!await confirmDialog({message:'Hay profesores sin nombre que se descartarán. ¿Continuar?'})) return;
   }
 
   // Calcular cambios respecto a profesores actuales
@@ -765,10 +765,10 @@ function addUsuarioRow(){
   _renderUsuariosList();
 }
 
-function _removeUsuarioRow(i){
+async function _removeUsuarioRow(i){
   const u = _usuariosEditing[i];
   if(u.usuario === SESSION?.usuario){ toast('No puedes eliminar tu propia cuenta','err'); return; }
-  if(!u._nuevo && !confirm(`¿Eliminar el usuario "${u.nombre||u.usuario}"? Esta acción no se puede deshacer.`)) return;
+  if(!u._nuevo && !await confirmDialog({message:`¿Eliminar el usuario "${u.nombre||u.usuario}"? Esta acción no se puede deshacer.`, danger:true, confirmText:'Eliminar'})) return;
   _usuariosEditing.splice(i,1);
   _renderUsuariosList();
 }

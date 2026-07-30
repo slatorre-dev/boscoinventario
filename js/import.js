@@ -122,7 +122,7 @@ async function restoreBackupJson(){
   document.querySelectorAll('.backup-check:checked').forEach(el => sections[el.value] = true);
   if(!Object.keys(sections).length){ toast('Selecciona al menos una sección','err'); return; }
   const names = Object.keys(sections).join(', ');
-  if(!confirm(`Se reemplazarán estas secciones: ${names}. ¿Continuar?`)) return;
+  if(!await confirmDialog({message:`Se reemplazarán estas secciones: ${names}. ¿Continuar?`})) return;
   const btn = document.getElementById('backupRestoreBtn');
   btn.disabled = true;
   btn.textContent = 'Restaurando...';

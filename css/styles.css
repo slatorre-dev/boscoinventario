@@ -2250,3 +2250,7 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
   0%,100% { opacity:1; }
   50%     { opacity:0.5; }
 }
+
+/* FIELD ERROR (validación inline modal ítem) */
+.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(220,38,38,.12)}
+.field-error-msg{color:var(--red);font-size:12px;font-weight:600;margin-top:4px;display:block}

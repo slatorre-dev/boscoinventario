@@ -119,11 +119,11 @@ function toggleCicloExpand(i){
   _renderCiclos();
 }
 
-function removeCicloRow(idx){
+async function removeCicloRow(idx){
   const c = ciclosEditing[idx];
   const usados = items.filter(x => x.mod && x.mod.startsWith(c.id + '__')).length;
   if(usados > 0){
-    if(!confirm(`Este ciclo tiene ${usados} ítem(s) asignados. Si lo eliminas, esos ítems conservarán el valor anterior. ¿Continuar?`)) return;
+    if(!await confirmDialog({message:`Este ciclo tiene ${usados} ítem(s) asignados. Si lo eliminas, esos ítems conservarán el valor anterior. ¿Continuar?`})) return;
   }
   ciclosEditing.splice(idx, 1);
   if(cicloExpandIdx === idx) cicloExpandIdx = null;
@@ -136,12 +136,12 @@ function addModuloRow(cicloIdx){
   _renderCiclos();
 }
 
-function removeModuloRow(cicloIdx, modIdx){
+async function removeModuloRow(cicloIdx, modIdx){
   const c   = ciclosEditing[cicloIdx];
   const mid = c.id + '__' + c.modulos[modIdx].cod;
   const usados = items.filter(x => x.mod === mid).length;
   if(usados > 0){
-    if(!confirm(`Este módulo tiene ${usados} ítem(s) asignados. ¿Continuar?`)) return;
+    if(!await confirmDialog({message:`Este módulo tiene ${usados} ítem(s) asignados. ¿Continuar?`})) return;
   }
   c.modulos.splice(modIdx, 1);
   _renderCiclos();

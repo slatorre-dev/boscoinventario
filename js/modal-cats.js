@@ -55,11 +55,11 @@ function addCatRow(){
   renderCatsList();
 }
 
-function removeCatRow(idx){
+async function removeCatRow(idx){
   const cat = catsEditing[idx];
   const usados = items.filter(x=>x.cat===cat.name).length;
   if(usados > 0){
-    if(!confirm(`Esta categoría tiene ${usados} ítem(s) asignados. Si la eliminas, esos ítems conservarán el nombre de categoría anterior. ¿Continuar?`)) return;
+    if(!await confirmDialog({message:`Esta categoría tiene ${usados} ítem(s) asignados. Si la eliminas, esos ítems conservarán el nombre de categoría anterior. ¿Continuar?`})) return;
   }
   catsEditing.splice(idx,1);
   renderCatsList();
@@ -83,13 +83,13 @@ async function saveCats(){
     closeCatsModal();
     toast('Categorías guardadas y sincronizadas','ok');
   } catch(err) {
-    toast('Error al sincronizar: '+err.message,'err');
+    toast(friendlyError(err),'err');
   }
 }
 
 async function normalizeCategoriesToTags(){
   if(!requirePerm('categories.manage')) return;
-  if(!confirm('Esto reducirá las categorías a grupos principales y moverá categorías como Routers, Fibra óptica, Telecomunicaciones, Ordenadores o Domótica a tags de los ítems. ¿Continuar?')) return;
+  if(!await confirmDialog({message:'Esto reducirá las categorías a grupos principales y moverá categorías como Routers, Fibra óptica, Telecomunicaciones, Ordenadores o Domótica a tags de los ítems. ¿Continuar?'})) return;
   try{
     const res = await apiPost({action:'normalizeCategoriesTags'});
     if(!res.ok) throw new Error(res.error);
@@ -103,13 +103,13 @@ async function normalizeCategoriesToTags(){
     if(cf) renderInv();
     toast(`Categorías normalizadas: ${res.updated||0} ítems actualizados`, 'ok');
   }catch(err){
-    toast('Error al normalizar: ' + err.message, 'err');
+    toast(friendlyError(err), 'err');
   }
 }
 
 async function normalizeTagsCanonicalPersist(){
   if(!requirePerm('categories.manage')) return;
-  if(!confirm('Esto normalizará los tags guardados en D1 (mayúsculas, tildes y variantes como ruedas/ruedas goma/ruedas coche). ¿Continuar?')) return;
+  if(!await confirmDialog({message:'Esto normalizará los tags guardados en D1 (mayúsculas, tildes y variantes como ruedas/ruedas goma/ruedas coche). ¿Continuar?'})) return;
   try{
     const res = await apiPost({action:'normalizeTagsCanonical'});
     if(!res.ok) throw new Error(res.error);
@@ -222,7 +222,7 @@ async function removeTag(tag){
   if(idx === -1) return;
   const usados = items.filter(x => itemTags(x).some(t => t.toLowerCase() === tag.toLowerCase())).length;
   if(usados > 0){
-    if(!confirm(`Este tag se usa en ${usados} ítem(s). ¿Continuar con la eliminación?`)) return;
+    if(!await confirmDialog({message:`Este tag se usa en ${usados} ítem(s). ¿Continuar con la eliminación?`})) return;
   }
   TAGS.splice(idx, 1);
   for(const item of items){

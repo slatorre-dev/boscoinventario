@@ -3822,7 +3822,7 @@
       video.addEventListener('loadedmetadata', loop);
     }).catch(function(e) {
       stop();
-      alert('Error al acceder a la cámara: ' + e.message);
+      toast('Error al acceder a la cámara: ' + e.message, 'err');
     });
   }
 

@@ -1,0 +1,59 @@
+// ═════════════════════════════════════════════════════════
+// UI HELPERS — confirmación unificada, errores traducidos,
+// validación inline de formularios
+// ═════════════════════════════════════════════════════════
+
+function confirmDialog({title, message, confirmText = 'Continuar', danger = false, icon} = {}) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('mConf');
+    document.getElementById('cIcon').textContent = icon ?? (danger ? '🗑️' : '⚠️');
+    document.getElementById('cTitle').textContent = title ?? (danger ? '¿Estás seguro?' : 'Confirmar');
+    document.getElementById('cSub').textContent = message ?? '';
+    const okBtn = document.getElementById('cOk');
+    okBtn.textContent = confirmText;
+    okBtn.classList.toggle('btn-d', danger);
+    okBtn.disabled = false;
+    okBtn.onclick = () => {
+      modal._pendingResolve = null;
+      closeConf();
+      resolve(true);
+    };
+    modal._pendingResolve = resolve;
+    modal.classList.add('open');
+  });
+}
+
+function friendlyError(err) {
+  const msg = String((err && err.message) || err || '');
+  if (/\b401\b/.test(msg)) return 'Sesión caducada. Vuelve a iniciar sesión.';
+  if (/\b403\b/.test(msg)) return 'No tienes permiso para hacer esto.';
+  if (/Failed to fetch|NetworkError|network/i.test(msg)) return 'Sin conexión. Comprueba tu red e inténtalo de nuevo.';
+  console.error(err);
+  return 'No se pudo completar la acción. Inténtalo de nuevo.';
+}
+
+function markFieldError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+  field.classList.add('field-error');
+  let msgEl = field.parentElement.querySelector('.field-error-msg');
+  if (!msgEl) {
+    msgEl = document.createElement('span');
+    msgEl.className = 'field-error-msg';
+    field.insertAdjacentElement('afterend', msgEl);
+  }
+  msgEl.textContent = message;
+  const clear = () => { field.classList.remove('field-error'); if (msgEl) msgEl.remove(); field.removeEventListener('input', clear); field.removeEventListener('change', clear); };
+  field.addEventListener('input', clear);
+  field.addEventListener('change', clear);
+}
+
+function clearFieldErrors() {
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+  document.querySelectorAll('.field-error-msg').forEach(el => el.remove());
+}
+
+function focusFirstError() {
+  const first = document.querySelector('.field-error');
+  if (first) { first.scrollIntoView({behavior:'smooth', block:'center'}); first.focus(); }
+}

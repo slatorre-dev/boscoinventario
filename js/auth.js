@@ -272,8 +272,8 @@ function _startInactivityWatch(){
   _resetInactivityTimer();
 }
 
-function logout(){
-  if(!confirm('¿Cerrar sesión?')) return;
+async function logout(){
+  if(!await confirmDialog({message:'¿Cerrar sesión?'})) return;
   localStorage.removeItem('inv_session');
   SESSION = null;
   items = [];

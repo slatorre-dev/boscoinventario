@@ -778,7 +778,7 @@ async function applyBulkAction(){
     patch = { _tags: tags, _replaceTags: action === 'tagsReplace' };
   }
   if(!patch){ toast('Selecciona una accion en lote','err'); return; }
-  if(!confirm(`Aplicar cambio a ${selected.length} item${selected.length!==1?'s':''}?`)) return;
+  if(!await confirmDialog({message:`Aplicar cambio a ${selected.length} item${selected.length!==1?'s':''}?`})) return;
   let ok = 0;
   for(const it of selected){
     const updated = {...it, ...patch};
