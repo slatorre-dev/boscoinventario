@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v489 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
+**Estado:** v490 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
 completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
 en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
 compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
@@ -289,7 +289,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v489 actual)
+sw.js                   — Service Worker, VERSION aquí (v490 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -315,6 +315,7 @@ migrations/             — SQL de migraciones D1, ver tabla completa abajo
 | `0016_aulas_items_seed.sql` | Ítems de ejemplo: pantalla multimedia + pizarra de tiza en las 70 aulas globales, + 3-4 ítems propios de cada especialidad en las 24 aulas de departamento |
 | `0017_pantallas_pizarras_iesjuanbosco.sql` | Reasigna la pantalla multimedia y la pizarra de tiza de las 70 aulas globales (sembradas en `0016` sin departamento) al departamento compartido `iesjuanbosco` |
 | `0018_google_oauth_columnas.sql` | Añade `google_id`, `auth_method`, `created_at` a `usuarios` — `0004` asumía que ya existían (cierto en el proyecto original, no en esta base D1 sembrada desde cero) |
+| `0019_pantallas_pizarras_inventariable.sql` | Marca `tipo_material='inventariable'` en los 222 ítems sembrados en `0016` (habían quedado como `'consumible'` por el default de `item.js`, disparando el aviso de stock bajo con qty=1/min=1) |
 
 ---
 
