@@ -75,7 +75,9 @@ Usuarios.
 ## Fuera de alcance
 
 - No hay paso de aprobación por un humano (explícitamente pedido así).
-- No se valida que el dominio del email sea `@iesjuanbosco.es` — a
-  diferencia del login de Google, que si lo exige. Se decidió no añadir
-  esa restricción porque no se pidió explícitamente; si en el futuro se
-  quiere, es un cambio de una línea en la validación del backend.
+
+## Actualización 30/07/2026
+
+Se restringió el email a `@iesjuanbosco.es` (mismo criterio que el login
+de Google) — `functions/api/auth.js`, acción `register`, un `endsWith`
+extra tras la validación de formato.

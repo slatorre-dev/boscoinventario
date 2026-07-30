@@ -218,6 +218,7 @@ export async function onRequestPost({ request, env }) {
 
       if (!nombre) return Response.json({ ok: false, error: 'Introduce tu nombre completo' });
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Response.json({ ok: false, error: 'Introduce un email válido' });
+      if (!email.endsWith('@iesjuanbosco.es')) return Response.json({ ok: false, error: 'Solo se aceptan cuentas de correo @iesjuanbosco.es' });
       if (!departamento) return Response.json({ ok: false, error: 'Selecciona tu departamento' });
 
       const dept = await env.DB.prepare('SELECT slug, nombre FROM departamentos WHERE slug=?').bind(departamento).first();
