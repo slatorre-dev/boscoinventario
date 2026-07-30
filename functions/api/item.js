@@ -193,15 +193,27 @@ export async function onRequestPost({ request, env, data }) {
       const rows = Array.isArray(backup.aulas) ? backup.aulas : [];
       await deleteDepts('aulas', deptsIn(rows));
       if (rows.length) {
+        // Si la fila del backup no trae departamento propio, puede ser una
+        // aula global (departamento='') ya existente en esta base (ej. tras
+        // el seed 0008/0016) — reusarla tal cual en vez de duplicarla con
+        // prefijo FALLBACK_DEPT. Solo se prefija cuando la fila SÍ pertenece
+        // a un departamento real, o cuando no existe como aula global aquí.
+        const existingGlobal = await env.DB.prepare("SELECT id FROM aulas WHERE departamento=''").all();
+        const globalIds = new Set((existingGlobal.results || []).map(r => r.id));
         const stmt = env.DB.prepare('INSERT OR REPLACE INTO aulas (id,name,icon,desc,th,orden,departamento) VALUES (?,?,?,?,?,?,?)');
-        const batch = rows.map(r => {
-          const dept = r.departamento || FALLBACK_DEPT;
+        const toInsert = [];
+        for (const r of rows) {
           const oldId = String(r.id || '');
+          if (!r.departamento && globalIds.has(oldId)) {
+            aulaIdMap[oldId] = oldId;
+            continue;
+          }
+          const dept = r.departamento || FALLBACK_DEPT;
           const safeId = oldId.startsWith(dept + '-') ? oldId : `${dept}-${oldId}`;
           aulaIdMap[oldId] = safeId;
-          return stmt.bind(safeId, r.name, r.icon, r.desc, r.th, r.orden || 0, dept);
-        });
-        await env.DB.batch(batch);
+          toInsert.push(stmt.bind(safeId, r.name, r.icon, r.desc, r.th, r.orden || 0, dept));
+        }
+        if (toInsert.length) await env.DB.batch(toInsert);
       }
       restored.aulas = rows.length;
     }
