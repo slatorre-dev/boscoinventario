@@ -36,7 +36,7 @@ function renderCatsList(){
   document.getElementById('catsList').innerHTML = catsEditing.map((cat,i)=>`
     <div class="cat-row">
       <input class="icon-pick" value="${cat.i}" onchange="catsEditing[${i}].i=this.value" maxlength="2" title="Icono emoji">
-      <input class="fi-w name-input" value="${cat.name.replace(/"/g,'&quot;')}" onchange="catsEditing[${i}].name=this.value" placeholder="Nombre categoría">
+      <input class="fi-w name-input" value="${cat.name.replace(/"/g,'&quot;')}" onchange="onCatNameChange(${i},this.value)" placeholder="Nombre categoría">
       <div class="color-col">
         <input type="color" class="color-pick" value="${cat.c}" onchange="catsEditing[${i}].c=this.value" title="Color del texto">
         <span>texto</span>
@@ -51,7 +51,18 @@ function renderCatsList(){
 }
 
 function addCatRow(){
-  catsEditing.push({name:'Nueva categoría', i:'🏷️', c:'#6b7280', bg:'#f9fafb'});
+  catsEditing.push({name:'Nueva categoría', i:CAT_ICON_FALLBACK, c:'#6b7280', bg:'#f9fafb'});
+  renderCatsList();
+}
+
+// Al escribir el nombre de una categoría nueva, sugiere un icono acorde
+// (js/config.js:suggestCatIcon) — solo si el icono sigue siendo el
+// genérico por defecto, para no pisar un icono ya elegido a mano.
+function onCatNameChange(idx, value){
+  const cat = catsEditing[idx];
+  if(!cat) return;
+  if(cat.i === CAT_ICON_FALLBACK) cat.i = suggestCatIcon(value);
+  cat.name = value;
   renderCatsList();
 }
 

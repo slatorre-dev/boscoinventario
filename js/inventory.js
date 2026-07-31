@@ -405,11 +405,11 @@ function renderConsumibleGroups(mc,data,mode){
     const blocks = invGroups.map(g => {
       const k = encodeURIComponent(g.key);
       const isOpen = q ? true : !!_consumibleGroupsOpen[g.key];
-      const catCfg = CATS[g.name] || CATS['Otros'] || { c:'#6b7280', bg:'#f3f4f6', i:'🏷️' };
+      const catCfg = CATS[g.name] || CATS['Otros'] || { c:'#6b7280', bg:'#f3f4f6', i:CAT_ICON_FALLBACK };
       const matchBadge = q ? `<span class="cons-metric cons-metric-match">${fmtNum(g.refs)} coincid.</span>` : '';
       return `<section class="cons-group cons-group-inv${isOpen ? ' open' : ''}${q ? ' cons-group-filtered' : ''}">
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
-          <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || '🏷️'}</span>
+          <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || CAT_ICON_GENERIC_HTML}</span>
           <span class="cons-group-main">
             <span class="cons-group-title">${escHtml(g.name)}</span>
           </span>
@@ -457,11 +457,11 @@ function renderConsumibleGroups(mc,data,mode){
     const k = encodeURIComponent(g.key);
     // Con búsqueda activa: abrir automáticamente los grupos con resultados
     const isOpen = q ? true : !!_consumibleGroupsOpen[g.key];
-    const catCfg = CATS[g.name] || CATS['Otros'] || { c:'#6b7280', bg:'#f3f4f6', i:'🏷️' };
+    const catCfg = CATS[g.name] || CATS['Otros'] || { c:'#6b7280', bg:'#f3f4f6', i:CAT_ICON_FALLBACK };
     const matchBadge = q ? `<span class="cons-metric cons-metric-match">${fmtNum(g.refs)} coincid.</span>` : '';
     return `<section class="cons-group${isOpen ? ' open' : ''}${q ? ' cons-group-filtered' : ''}">
       <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
-        <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || '🏷️'}</span>
+        <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || CAT_ICON_GENERIC_HTML}</span>
         <span class="cons-group-main">
           <span class="cons-group-title">${escHtml(g.name)}</span>
         </span>

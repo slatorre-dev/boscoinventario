@@ -127,7 +127,7 @@ async function handleCatSelectChange(){
     toast('La categoría ya existe', 'ok');
     return;
   }
-  const nextCats = Object.assign({}, CATS, { [name]: { i:'🏷️', c:'#6b7280', bg:'#f9fafb' } });
+  const nextCats = Object.assign({}, CATS, { [name]: { i:suggestCatIcon(name), c:'#6b7280', bg:'#f9fafb' } });
   const payload = sortedCatEntries(nextCats).map(([catName, v], i)=>({ name:catName, c:v.c, bg:v.bg, i:v.i, orden:i+1 }));
   try{
     const res = await apiPost({ action:'catsSync', cats:payload });

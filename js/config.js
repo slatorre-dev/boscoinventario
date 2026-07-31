@@ -175,6 +175,49 @@ const CATS_DEFAULT={
   'Robótica y automatización':{c:'#7e22ce',bg:'#faf5ff',i:'🤖'},
   'Otros':                   {c:'#6b7280',bg:'#f9fafb',i:'🔧'},
 };
+// Icono de fallback para una categoría sin icono propio asignado (campo
+// de texto plano, editable en el input de icono) — distinto de 🏷️
+// (reservado para tags/etiquetas) para no confundir visualmente ambos
+// conceptos en Home.
+const CAT_ICON_FALLBACK = '📁';
+
+// HTML de imagen para "sin categoría" en vistas donde no hay ninguna fila
+// de categoría real detrás (grupo de consumibles huérfano) — a diferencia
+// de CAT_ICON_FALLBACK, este no se guarda nunca en D1, solo se renderiza.
+const CAT_ICON_GENERIC_HTML = '<img src="icons/catgeneral.png" alt="" loading="lazy" style="width:22px;height:22px;object-fit:cover;border-radius:6px">';
+
+// Sugerencias de icono por nombre de categoría común a cualquier
+// departamento (no solo FP eléctrica) — se usan al crear una categoría
+// nueva desde ⚙️ Gestionar categorías; el icono sigue siendo editable
+// a mano después.
+const CAT_ICON_SUGGESTIONS = [
+  { re: /audiovisual|proyector|pantalla|televisi/i, i: '📽️' },
+  { re: /inform[aá]tic|ordenador|pc\b/i, i: '💻' },
+  { re: /material did[aá]ctico|did[aá]ctic/i, i: '📚' },
+  { re: /mobiliario|mueble|silla|mesa/i, i: '🪑' },
+  { re: /herramient/i, i: '🔨' },
+  { re: /electr[oó]nic|componente/i, i: '⚡' },
+  { re: /el[eé]ctric/i, i: '🔌' },
+  { re: /deporte|deportiv/i, i: '🏀' },
+  { re: /music|instrumento/i, i: '🎵' },
+  { re: /arte|pl[aá]stic|dibujo/i, i: '🎨' },
+  { re: /laboratorio|qu[ií]mic/i, i: '🧪' },
+  { re: /cocina|hosteler/i, i: '🍳' },
+  { re: /medida|medici[oó]n/i, i: '📊' },
+  { re: /red(es)?\b|network/i, i: '🌐' },
+  { re: /seguridad|protecci/i, i: '🦺' },
+  { re: /limpieza/i, i: '🧹' },
+  { re: /papel|oficina/i, i: '📄' },
+  { re: /veh[ií]culo|autom[oó]vil|motor/i, i: '🚗' },
+  { re: /textil|costura|tela/i, i: '🧵' },
+  { re: /libro|biblioteca/i, i: '📖' },
+];
+function suggestCatIcon(name){
+  const n = String(name || '');
+  const hit = CAT_ICON_SUGGESTIONS.find(s => s.re.test(n));
+  return hit ? hit.i : CAT_ICON_FALLBACK;
+}
+
 const TAGS_DEFAULT = [
   '230V','Antenas','Arduino','Cables','Condensadores','Conectores','Domótica','ESP32','Ethernet','Fibra óptica','Herramienta','KNX','Medida','Motores','PLC','Protecciones eléctricas','Raspberry Pi','Relés','Robótica','Routers','Seguridad','Sensores','SMD','Soldadura','Switches','Telecomunicaciones','Tornillería','USB','WiFi'
 ];
