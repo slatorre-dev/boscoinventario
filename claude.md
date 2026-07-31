@@ -693,6 +693,39 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   `IF NOT EXISTS` (protegida solo por el error de re-ejecución, no
   destructiva). Implementado con subagent-driven-development en el propio
   repo (sin worktree).
+- **31/07-01/08/2026 (v537-v542): 4 mejoras al modal de ítem.** 1) Fix de
+  solape entre la galería de fotos (v535) y la fila Cantidad/Mínimo/Tipo —
+  el más costoso de la sesión, 5 rondas de fix hasta dar con la causa
+  estructural: `.item-stock-strip` compartía contenedor flex con
+  `.photo-col`, así que cualquier ajuste de anchos/wrap en un viewport
+  concreto rompía otro. Solución final (v541): sacar `.item-stock-strip`
+  del HTML de `.photo-picker` — pasa a ser un bloque hermano en su propia
+  línea, sin relación flex/grid con la galería, eliminando la competencia
+  de espacio de raíz en vez de seguir ajustando parámetros. La revisión
+  final de rama encontró que 2 rondas intermedias (v539/v540) habían dejado
+  sin acotar otras 2 reglas `#mItem .photo-preview` en breakpoints
+  `@media(960px)`/`@media(640px)` (mismo patrón de bug que la causa raíz
+  original) — no reintroducían el solape gracias a la solución estructural,
+  pero descuadraban el tamaño real de las miniaturas; corregido en v542.
+  2) Campo nuevo `fecha_adquisicion` (columna D1 `TEXT`, migración `0025`)
+  junto a Ref./Nombre en IDENTIFICACIÓN. 3) Campo nuevo `precio` (columna
+  D1 `REAL`) junto a Proveedor en DETALLES — cuidado explícito de no
+  confundir un precio real de `0` con "sin dato" (`=== '' ? null :
+  parseFloat(...)`, nunca `||null`). 4) Bloque "Contenedor/Caja" (antes
+  dentro de 📎 DOCUMENTACIÓN) movido a su propia sección colapsable
+  "📦 CONTENEDOR/CAJA", con lógica de apertura automática separada e
+  independiente en `openModal()`. Verificado end-to-end en producción con
+  Playwright en 3 viewports (1280/700/480px) y `wrangler d1 execute` (ítem
+  1097 "100K"). Bug lateral encontrado y corregido en D1 durante la
+  verificación (no parte de este plan): el aula propia de Tecnología
+  aparecía primera en el Home por `orden=0` en vez de `115` —
+  `saveAulas()` (`js/modal-aulas.js:78`) reasigna `orden` por índice del
+  array filtrado del departamento para todas las filas al guardar, no solo
+  las nuevas; con 1 sola aula en el array, `orden` colapsó a 0. Se disparó
+  por un guardado real de "Gestionar aulas" en esta misma sesión (verificación
+  de A/C). Corregido el dato en D1 (`orden=115`); el bug de código en
+  `saveAulas()` queda sin arreglar, pendiente para otra sesión — afecta a
+  cualquier departamento con pocas aulas que guarde desde ese modal.
 
 ---
 
@@ -748,6 +781,18 @@ Próximos pasos concretos:
     proyecto no tiene hoy un permiso `items.read` más laxo. Deuda aceptada
     al cerrar la feature de galería (v535), revisar si conviene crear ese
     permiso más adelante.
+13. ~~Fix modal ítem: solape galería/stock-strip, fecha adquisición,
+    precio, sección contenedor~~ ✅ hecho (v537-v542).
+14. Bug de código real en `js/modal-aulas.js:78` (`saveAulas()`): reasigna
+    `orden = i` (índice del array filtrado del departamento) para TODAS
+    las aulas al guardar desde ⚙️ Gestionar aulas, no solo las nuevas —
+    con pocas aulas en el departamento, esto colapsa su `orden` a valores
+    bajos (0, 1, 2...) que chocan con las 70 aulas globales (`orden` 1-70),
+    alterando el orden de las tarjetas en el Home. Detectado en v542 cuando
+    el aula de Tecnología apareció primera tras un guardado real del modal;
+    corregido el dato en D1 (`UPDATE aulas SET orden=115 WHERE id='dept-
+    tecnologia'`), pero el bug de código sigue sin arreglar — afecta a
+    cualquier departamento con pocas aulas propias que use ese modal.
 
 ---
 
