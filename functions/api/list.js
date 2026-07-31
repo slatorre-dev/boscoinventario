@@ -10,20 +10,65 @@ function isProfesor(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'profesor';
 }
 
+// Colores por hash del nombre — el icono ya no viene de aquí (ver
+// suggestCatIcon), esta paleta solo decide texto/fondo para categorías
+// "huérfanas" (existen en inventario.cat pero nunca se guardaron como
+// fila propia en categorias, típico de un import CSV con una columna de
+// categoría nueva).
 const CAT_PALETTE = [
-  { c:'#2563eb', bg:'#eff6ff', i:'🏷️' },
-  { c:'#0891b2', bg:'#ecfeff', i:'🏷️' },
-  { c:'#059669', bg:'#ecfdf5', i:'🏷️' },
-  { c:'#d97706', bg:'#fffbeb', i:'🏷️' },
-  { c:'#7c3aed', bg:'#f5f3ff', i:'🏷️' },
-  { c:'#db2777', bg:'#fdf2f8', i:'🏷️' },
-  { c:'#6b7280', bg:'#f9fafb', i:'🏷️' },
+  { c:'#2563eb', bg:'#eff6ff' },
+  { c:'#0891b2', bg:'#ecfeff' },
+  { c:'#059669', bg:'#ecfdf5' },
+  { c:'#d97706', bg:'#fffbeb' },
+  { c:'#7c3aed', bg:'#f5f3ff' },
+  { c:'#db2777', bg:'#fdf2f8' },
+  { c:'#6b7280', bg:'#f9fafb' },
 ];
+
+// Mismo criterio que js/config.js:CAT_ICON_SUGGESTIONS (duplicado aquí
+// porque functions/ no puede importar módulos del frontend) — icono
+// representativo por nombre de categoría común, en vez del 🏷️ fijo que
+// usaba antes toda categoría sin fila propia en D1.
+const CAT_ICON_SUGGESTIONS = [
+  { re: /audiovisual|proyector|pantalla|televisi/i, i: '📽️' },
+  { re: /inform[aá]tic|ordenador|pc\b/i, i: '💻' },
+  { re: /material did[aá]ctico|did[aá]ctic/i, i: '📚' },
+  { re: /mobiliario|mueble|silla|mesa/i, i: '🪑' },
+  { re: /herramient/i, i: '🔨' },
+  { re: /componente|electr[oó]nic/i, i: '⚡' },
+  { re: /el[eé]ctric/i, i: '🔌' },
+  { re: /dom[oó]tic/i, i: '🏠' },
+  { re: /audio\b/i, i: '🔊' },
+  { re: /deporte|deportiv/i, i: '🏀' },
+  { re: /music|instrumento/i, i: '🎵' },
+  { re: /arte|pl[aá]stic|dibujo/i, i: '🎨' },
+  { re: /laboratorio|qu[ií]mic/i, i: '🧪' },
+  { re: /cocina|hosteler/i, i: '🍳' },
+  { re: /medida|medici[oó]n/i, i: '📊' },
+  { re: /red(es)?\b|network/i, i: '🌐' },
+  { re: /seguridad|protecci/i, i: '🦺' },
+  { re: /limpieza/i, i: '🧹' },
+  { re: /papel|oficina/i, i: '📄' },
+  { re: /veh[ií]culo|autom[oó]vil|motor|rob[oó]tic/i, i: '🚗' },
+  { re: /textil|costura|tela/i, i: '🧵' },
+  { re: /libro|biblioteca/i, i: '📖' },
+  { re: /taller/i, i: '📦' },
+];
+// Icono neutro de "sin categoría concreta detectada" — distinto de
+// 🏷️ (reservado a tags) para no confundir en Home.
+const CAT_ICON_FALLBACK = '📁';
+
+function suggestCatIcon(name) {
+  const n = String(name || '');
+  const hit = CAT_ICON_SUGGESTIONS.find(s => s.re.test(n));
+  return hit ? hit.i : CAT_ICON_FALLBACK;
+}
 
 function defaultCatStyle(name) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
-  return CAT_PALETTE[Math.abs(hash) % CAT_PALETTE.length];
+  const { c, bg } = CAT_PALETTE[Math.abs(hash) % CAT_PALETTE.length];
+  return { c, bg, i: suggestCatIcon(name) };
 }
 
 function mergeCats(savedCats, items) {
