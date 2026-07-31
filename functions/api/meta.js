@@ -137,7 +137,7 @@ export async function onRequestGet({ request, env, data }) {
   const cicloMap = {}, cicloOrder = [];
   for (const r of ciclosRows.results) {
     if (!cicloMap[r.cicloId]) {
-      cicloMap[r.cicloId] = { id: r.cicloId, name: r.cicloNombre, nivel: r.nivel, icon: r.icon, th: r.th, desc: r.desc, modulos: [] };
+      cicloMap[r.cicloId] = { id: r.cicloId, name: r.cicloNombre, nivel: r.nivel, icon: r.icon, th: r.th, desc: r.desc, departamento: r.departamento || '', modulos: [] };
       cicloOrder.push(r.cicloId);
     }
     if (r.modCod) cicloMap[r.cicloId].modulos.push({ cod: r.modCod, name: r.modNombre, horas: r.modHoras });
