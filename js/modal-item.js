@@ -845,6 +845,7 @@ function openModal(id=null, src=null){
   document.getElementById('f_ref').value = id ? (m?.ref||'') : '';
   document.getElementById('f_aula').value=m?.aula||(cf?.type==='aula'?cf.id:AULAS[0]?.id);
   document.getElementById('f_item').value=m?.item||'';
+  document.getElementById('f_fechaAdquisicion').value = m?.fecha_adquisicion || '';
   renderMainPhoto(m?.foto||'');
   _setFotosEditingFromMain(m?.foto||'');
   if(existing){
@@ -874,6 +875,7 @@ function openModal(id=null, src=null){
   document.getElementById('f_est').value=m?.est||'Bueno';
   document.getElementById('f_util').value=m?.util||'';
   document.getElementById('f_proveedor').value=m?.proveedor||'';
+  document.getElementById('f_precio').value = (m?.precio ?? '') === null ? '' : (m?.precio ?? '');
   document.getElementById('f_tags').value=m?.tags||'';
   document.getElementById('f_fecha').value=m?.fecha||new Date().toISOString().split('T')[0];
   document.getElementById('f_mant').checked=isMaintenanceMarked(m);
@@ -1058,6 +1060,8 @@ async function saveItem(){
     ref: refRaw || _autoRef(name),
     aula:document.getElementById('f_aula').value,
     item:name,
+    fecha_adquisicion: document.getElementById('f_fechaAdquisicion').value,
+    precio: document.getElementById('f_precio').value === '' ? null : parseFloat(document.getElementById('f_precio').value),
     foto:document.getElementById('f_foto').value,
     qty:parseInt(document.getElementById('f_qty').value)||0,
     min:parseInt(document.getElementById('f_min').value)||0,
