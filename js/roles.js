@@ -125,7 +125,8 @@ function applyRoleUI(){
     ['btnPres','loans.write',  'flex'],
     ['btnPed', 'orders.write', 'flex'],
     ['btnPrint', null,         'flex'],
-    ['gsQr',   null,           'inline-flex']
+    ['gsQr',   null,           'inline-flex'],
+    ['gsSerie', null,          'inline-flex']
   ];
   rules.forEach(([id, permission, displayType]) => {
     const el = document.getElementById(id);
