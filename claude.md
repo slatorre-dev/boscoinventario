@@ -174,16 +174,32 @@ lo ya construido:
   `SESSION.departamentoIcono` (resueltos en el login vía join a
   `departamentos`), `SESSION.passwordTemporal`.
 
-### Fase 3 — Frontend, pendiente
-- Selector de departamento visible solo para `superadmin` (hoy ve todo sin
-  poder filtrar/actuar como uno en concreto).
-- Alta de usuarios/profesores desde la UI no expone un campo "departamento"
-  para que `superadmin` elija a qué departamento asignarlos — por ahora hay
-  que hacerlo por SQL directo (`UPDATE usuarios SET departamento=? WHERE
-  usuario=?`).
-- Consecuencia de no tener esto: `superadmin` **no puede** usar ⚙️ Gestionar
-  aulas/categorías/ciclos (bloqueado explícitamente con 403 en `config.js` —
-  ver "Departamento compartido" abajo).
+### Fase 3 — Frontend ✅ hecho (v532)
+- Selector de departamento (`#deptActivoSelect`, junto a `#brandDept` en la
+  barra superior) visible solo para `superadmin`, persistido en
+  `localStorage` (`dept_activo_superadmin`) — `js/config.js:deptActivo`,
+  `js/auth.js:renderDeptActivoSelector()`.
+- `superadmin` ya puede usar ⚙️ Gestionar aulas/categorías/ciclos eligiendo
+  un departamento en el selector: `openAulasModal()`/`openCatsModal()`/
+  `openCiclosModal()` filtran su lista editable por `deptActivo`, y
+  `saveAulas()`/`saveCats()`/`saveCiclos()` mandan `departamentoDestino` al
+  backend (`functions/api/config.js`, valida el slug contra la tabla
+  `departamentos` antes de aplicar). El 403 original solo persiste si
+  `superadmin` no ha elegido departamento todavía.
+- Alcance deliberadamente acotado: el selector **solo** afecta a estos 3
+  modales de gestión — Inicio/Inventario/Préstamos siguen mostrando todo el
+  centro sin filtrar para `superadmin`, sin cambios.
+- Gap resuelto sobre la marcha: `CATS` (objeto plano `{name:{c,bg,i}}`,
+  usado intacto por 7 archivos del frontend) no llevaba `departamento` por
+  entrada, a diferencia de `AULAS`/`CICLOS` — se expone un array separado
+  `catsCrudo` (`meta.js`, solo para superadmin) con las filas crudas
+  incluyendo `departamento`, usado solo por `modal-cats.js` para filtrar sin
+  tocar `CATS`.
+- Alta de usuarios/profesores con campo "departamento" **ya estaba resuelta
+  antes de esta sesión** (contrario a lo que decía esta sección) — el select
+  `.usr-dept` en `js/prestamos.js` (visible solo para `superadmin`) ya
+  persiste correctamente en D1, verificado end-to-end con Playwright contra
+  producción.
 
 ### Departamento "IES Juan Bosco" como bolsa compartida
 - Creado en `0011_departamento_generico.sql`: departamento `iesjuanbosco` +
@@ -577,6 +593,37 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   (`js/roles.js`), gaps que tampoco existían antes de esta sesión.
   Implementado con subagent-driven-development en worktree aislado
   (`worktree-devolucion-vencidos`).
+- **31/07/2026 (v531-v532):** dos piezas de trabajo. 1) Fix rápido: el
+  buscador de préstamos (ítem individual y caja completa) no mostraba en
+  qué aula estaba cada resultado al filtrar por "Todas las aulas" —
+  `js/prestamos.js` (`_buildPresItemOptions`, `_fillPrestarInfo`,
+  `_buildPresCajaOptions`, `_loadCajaIntoModal`) ahora muestra el nombre de
+  aula junto a cada ítem/caja, mismo patrón `AULAS.find(a=>a.id===x.aula)`
+  ya usado en el resto del proyecto. 2) Fase 3 del plan multi-departamento
+  completa para los 3 modales de gestión: selector de departamento activo
+  para `superadmin` (`#deptActivoSelect`, junto a `#brandDept`, persistido
+  en `localStorage`) que desbloquea ⚙️ Gestionar aulas/categorías/ciclos
+  (antes bloqueado con 403 para cualquier `superadmin`); backend
+  (`functions/api/config.js`) acepta `departamentoDestino` explícito,
+  validado contra la tabla `departamentos`. Además, aviso de "categorías
+  genéricas" en ⚙️ Gestionar categorías + botón para crear un set inicial
+  sugerido (Material fungible, Herramientas, Mobiliario, Audiovisual,
+  Informática, Otros) para los 21 departamentos (de 24) que solo tenían la
+  etiqueta genérica "Material didáctico" sin categorías propias en la
+  tabla `categorias` — detectado al inicio de esta sesión al revisar qué
+  categorías había realmente por departamento. Gap resuelto sobre la
+  marcha: `CATS` (objeto plano usado por 7 archivos del frontend) no tenía
+  `departamento` por entrada como sí tienen `AULAS`/`CICLOS` — se expuso
+  `catsCrudo` (solo para `superadmin`) en vez de tocar `CATS`. También se
+  verificó que la alta de usuarios/profesores con campo "departamento" ya
+  estaba resuelta desde antes de esta sesión (el roadmap decía que faltaba,
+  pero el código y una prueba end-to-end con Playwright contra producción
+  confirmaron que ya funcionaba). Implementado con subagent-driven-development
+  en el propio repo (sin worktree — instrucción explícita del usuario tras
+  el incidente de v521/v522); un agente ignoró la instrucción y creó su
+  propio worktree para Task 1, cuyo commit además quedó corrupto (borrado
+  masivo de archivos no relacionados por un bug del entorno de worktree) —
+  se extrajo el diff real y se aplicó a mano en el repo principal.
 
 ---
 
@@ -590,10 +637,12 @@ Próximos pasos concretos:
 1. ~~Icono de fallback del botón de easter egg~~ ✅ hecho (v486):
    sustituido por `icons/imagenbosco.png`, junto con favicon, logo de la
    barra superior y logo del login.
-2. **Fase 3 del plan multi-departamento**: selector de departamento para
-   `superadmin` en el frontend (con persistencia en `localStorage`); campo
-   departamento en alta de usuarios/profesores desde la UI. Esto también
-   desbloquearía que `superadmin` use ⚙️ Gestionar aulas/categorías/ciclos.
+2. ~~Fase 3 del plan multi-departamento~~ ✅ hecho (v532): selector de
+   departamento para `superadmin` en el frontend, con persistencia en
+   `localStorage`; `superadmin` ya puede usar ⚙️ Gestionar
+   aulas/categorías/ciclos. Campo departamento en alta de usuarios/
+   profesores desde la UI ya estaba resuelto desde antes de esta sesión
+   (verificado, no era un gap real).
 3. Scoping por departamento de `docs.js` (documentos adjuntos) y `backup.js`.
 4. Repartir credenciales (`departamentoXXX`/`profe1XXX`) a cada jefe/a de
    departamento real y comprobar que ven solo su propio inventario (más el
