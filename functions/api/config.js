@@ -232,6 +232,14 @@ export async function onRequestPost({ request, env, data }) {
 
   const dept = (superadmin && departamentoDestino) ? departamentoDestino : (user?.departamento || '');
 
+  // Validar que departamentoDestino existe en tabla departamentos
+  if (superadmin && departamentoDestino) {
+    const deptExists = await env.DB.prepare('SELECT slug FROM departamentos WHERE slug=?').bind(departamentoDestino).first();
+    if (!deptExists) {
+      return Response.json({ ok: false, error: 'Departamento no válido' }, { status: 400 });
+    }
+  }
+
   if (action === 'aulasSync') {
     const aulas = body.aulas || [];
     await snapshotBeforeSync(env, 'aulas', dept, user);
