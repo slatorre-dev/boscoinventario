@@ -890,7 +890,9 @@ function openModal(id=null, src=null){
   const secDetalles = document.getElementById('mSecDetalles');
   if(secDetalles) secDetalles.open = existing && modalSectionShouldOpen(m, ['util','proveedor','fecha']);
   const secDocs = document.getElementById('mSecDocumentacion');
-  if(secDocs) secDocs.open = existing && (modalSectionShouldOpen(m, ['obs']) || esContenedor);
+  if(secDocs) secDocs.open = existing && modalSectionShouldOpen(m, ['obs']);
+  const secContenedor = document.getElementById('mSecContenedor');
+  if(secContenedor) secContenedor.open = existing && esContenedor;
   fillParentSelect(id);
   document.getElementById('f_parent_id').value = m?.parent_id || '';
   toggleContenedorFields();
