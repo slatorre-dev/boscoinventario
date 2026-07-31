@@ -32,7 +32,7 @@ function renderHome(){
     return`<div class="ccard ${a.th}" style="--ch:#2563eb" onclick="goAula('${a.id}')">
       ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
       <button class="ccard-edit" onclick="event.stopPropagation();openAulasModal()" title="Editar aulas">✏️</button>
-      <div class="ccard-icon"><img src="icons/iconoaula.png" alt="" loading="lazy"></div>
+      <div class="ccard-icon">${a.departamento ? escHtml(a.icon) : '<img src="icons/iconoaula.png" alt="" loading="lazy">'}</div>
       <div class="ccard-title">${escHtml(a.name)}</div>
       <div class="ccard-desc">${escHtml(a.desc)}${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
     </div>`;
