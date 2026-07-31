@@ -831,6 +831,7 @@
     <div id="prestarItemInfo" style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:10px;padding:12px 14px;margin-bottom:18px"></div>
     <div class="fg">
       <div class="full"><label class="fl">Profesor/a que pide *</label>
+        <input type="text" class="fi-w" id="pres_profFiltQ" placeholder="Buscar por nombre…" autocomplete="off" oninput="filterProfSelect('_presProfOptions','pres_profFiltQ','pres_prof')" style="margin-bottom:6px">
         <select class="fi-w" id="pres_prof"></select>
       </div>
       <div><label class="fl">Cantidad *</label><input class="fi-w" id="pres_cant" type="number" min="1" value="1"></div>
@@ -859,6 +860,7 @@
     </div>
     <div class="fg">
       <div class="full"><label class="fl">Profesor/a que pide *</label>
+        <input type="text" class="fi-w" id="prestarCajaProfFiltQ" placeholder="Buscar por nombre…" autocomplete="off" oninput="filterProfSelect('_cajaProfOptions','prestarCajaProfFiltQ','prestarCajaProf')" style="margin-bottom:6px">
         <select class="fi-w" id="prestarCajaProf"></select>
       </div>
       <div><label class="fl">Aula destino</label><select class="fi-w" id="prestarCajaAulaDest"></select></div>

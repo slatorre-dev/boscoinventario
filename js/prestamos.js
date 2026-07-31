@@ -316,6 +316,22 @@ function loanTeacherOptions(){
     .filter(p => isOwnLoanTeacher(p) || isExternalLoanTeacher(p));
 }
 
+let _presProfOptions = [];
+let _cajaProfOptions = [];
+
+function _renderProfSelectOptions(selectId, list, selectedId){
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+    list.map(p=>`<option value="${p.id}" ${selectedId!==undefined && String(p.id)===String(selectedId)?'selected':''}>${escHtml(p.nombre)}${p.departamento?' ('+escHtml(p.departamento)+')':''}</option>`).join('');
+}
+
+function filterProfSelect(listVarName, inputId, selectId){
+  const full = listVarName === '_presProfOptions' ? _presProfOptions : _cajaProfOptions;
+  const q = normalize(document.getElementById(inputId).value);
+  const filtered = q ? full.filter(p => normalize(p.nombre).includes(q)) : full;
+  _renderProfSelectOptions(selectId, filtered);
+}
+
 async function openPrestar(itemId){
   if(!requirePerm('loans.write')) return;
   if(!profesores.length){
@@ -353,18 +369,11 @@ async function openPrestar(itemId){
   }
 
   // Preseleccionar el usuario logueado si existe como profesor prestatario
-  const profSelect = document.getElementById('pres_prof');
-  const profsFiltrados = loanTeacherOptions();
-  const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
-  if(profPropio){
-    profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${escHtml(p.nombre)}${p.departamento?' ('+escHtml(p.departamento)+')':''}</option>`).join('');
-    profSelect.disabled = false;
-  } else {
-    profSelect.disabled = false;
-    profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}">${escHtml(p.nombre)}${p.departamento?' ('+escHtml(p.departamento)+')':''}</option>`).join('');
-  }
+  document.getElementById('pres_profFiltQ').value = '';
+  _presProfOptions = loanTeacherOptions();
+  const profPropio = _presProfOptions.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
+  document.getElementById('pres_prof').disabled = false;
+  _renderProfSelectOptions('pres_prof', _presProfOptions, profPropio ? profPropio.id : undefined);
 
   const f = new Date(); f.setDate(f.getDate()+7);
   document.getElementById('pres_fecha').value = f.toISOString().split('T')[0];
@@ -393,18 +402,11 @@ function openPrestarCaja(cajaId){
     </div>`
   ).join('');
 
-  const profSelect = document.getElementById('prestarCajaProf');
-  const profsFiltrados = loanTeacherOptions();
-  const profPropio = profsFiltrados.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
-  if(profPropio){
-    profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}" ${String(p.id)===String(profPropio.id)?'selected':''}>${escHtml(p.nombre)}</option>`).join('');
-    profSelect.disabled = false;
-  } else {
-    profSelect.disabled = false;
-    profSelect.innerHTML = '<option value="">— Seleccionar —</option>' +
-      profsFiltrados.map(p=>`<option value="${p.id}">${escHtml(p.nombre)}</option>`).join('');
-  }
+  document.getElementById('prestarCajaProfFiltQ').value = '';
+  _cajaProfOptions = loanTeacherOptions();
+  const profPropioCaja = _cajaProfOptions.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
+  document.getElementById('prestarCajaProf').disabled = false;
+  _renderProfSelectOptions('prestarCajaProf', _cajaProfOptions, profPropioCaja ? profPropioCaja.id : undefined);
 
   document.getElementById('prestarCajaAulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
     renderAulaOptions();
