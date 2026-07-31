@@ -48,11 +48,7 @@ function notificarVencidosAlBackend(){
   if(!can('loans.write')) return; // Silencioso: no muestra error, solo no notifica
   if(getVencidos().length === 0) return; // Sin vencidos, no hay nada que notificar
 
-  fetch('/api/notificarVencidos', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({count: getVencidos().length})
-  }).catch(() => {}); // Silencioso: ignorar errores de red
+  apiPost({action:'notificarVencidos'}).catch(()=>{}); // Silencioso: ignorar errores de red
 }
 
 function goPrestamos(tab){

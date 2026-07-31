@@ -49,6 +49,7 @@ const ACTION_PERMISSIONS = {
   ubicacionesSync: 'config.manage',
   prestar: 'loans.write',
   devolver: 'loans.write',
+  notificarVencidos: 'loans.write',
   getDocs: 'docs.read',
   uploadDoc: 'docs.write',
   deleteDoc: 'docs.write',
