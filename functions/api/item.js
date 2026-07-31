@@ -133,6 +133,42 @@ export async function onRequestPost({ request, env, data }) {
     return Response.json({ ok: true });
   }
 
+  if (action === 'fotosGet') {
+    const itemId = body.itemId;
+    if (!superadmin) {
+      const currentDept = await itemDept(env.DB, itemId);
+      if (currentDept !== dept && currentDept !== genericDept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
+    const rows = await env.DB.prepare('SELECT id, foto, orden FROM item_fotos WHERE item_id=? ORDER BY orden').bind(itemId).all();
+    return Response.json({ ok: true, fotos: rows.results || [] });
+  }
+
+  if (action === 'fotosSync') {
+    const itemId = body.itemId;
+    const fotos = Array.isArray(body.fotos) ? body.fotos : [];
+    if (fotos.length > 3) {
+      return Response.json({ ok: false, error: 'Máximo 3 fotos por ítem' });
+    }
+    if (!superadmin) {
+      const currentDept = await itemDept(env.DB, itemId);
+      if (currentDept !== dept && currentDept !== genericDept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
+    await env.DB.prepare('DELETE FROM item_fotos WHERE item_id=?').bind(itemId).run();
+    if (fotos.length) {
+      const stmt = env.DB.prepare('INSERT INTO item_fotos (item_id, foto, orden) VALUES (?,?,?)');
+      await env.DB.batch(fotos.map((f, i) => stmt.bind(itemId, f.foto, f.orden || (i + 1))));
+    }
+    const principal = fotos.find(f => (f.orden || 1) === 1);
+    const fotoPrincipal = principal ? principal.foto : '';
+    await env.DB.prepare('UPDATE inventario SET foto=? WHERE id=?').bind(fotoPrincipal, itemId).run();
+    await auditLog(env.DB, user, 'fotosSync', itemId, `Fotos actualizadas (${fotos.length})`);
+    return Response.json({ ok: true, fotoPrincipal });
+  }
+
   if (action === 'bulkImport') {
     const newItems = body.items || [];
     if (!newItems.length) return Response.json({ ok: false, error: 'Sin items' });
