@@ -345,6 +345,24 @@ function showUserChip(){
   if(typeof showHistorialButton === 'function') showHistorialButton();
 }
 
+function renderDeptActivoSelector(){
+  const sel = document.getElementById('deptActivoSelect');
+  if(!sel) return;
+  const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+  if(!isSuperAdmin || !Array.isArray(DEPARTAMENTOS) || !DEPARTAMENTOS.length){
+    sel.style.display = 'none';
+    return;
+  }
+  sel.style.display = 'inline-block';
+  sel.innerHTML = '<option value="">— Elige departamento para gestionar —</option>' +
+    DEPARTAMENTOS.map(d => `<option value="${d.slug}" ${deptActivo===d.slug?'selected':''}>${d.icono||''} ${d.nombre}</option>`).join('');
+}
+
+function onDeptActivoChange(value){
+  deptActivo = value || '';
+  localStorage.setItem('dept_activo_superadmin', deptActivo);
+}
+
 function syncSessionUser(user){
   if(!SESSION || !user) return;
   SESSION = {
@@ -410,6 +428,7 @@ async function loadData(){
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
     if(meta.ciclos && meta.ciclos.length) CICLOS = meta.ciclos;
     if(meta.departamentos && meta.departamentos.length) DEPARTAMENTOS = meta.departamentos;
+    renderDeptActivoSelector();
     document.getElementById('btnN').style.display='flex';
     document.getElementById('btnPres').style.display='flex';
     document.getElementById('btnPed').style.display='flex';

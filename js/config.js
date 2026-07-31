@@ -16,6 +16,7 @@ let AULAS = AULAS_DEFAULT.slice(); // se reemplazará al cargar datos del backen
 // Lista de los 24+1 departamentos — solo se rellena para superadmin (ve todos
 // los departamentos), usada en el selector de "departamento de referencia" del perfil.
 let DEPARTAMENTOS = [];
+let deptActivo = localStorage.getItem('dept_activo_superadmin') || '';
 
 const TH_OPTIONS = ['th-blue','th-green','th-amber','th-teal','th-orange','th-pink','th-purple','th-red'];
 
