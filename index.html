@@ -600,7 +600,7 @@
         <div class="full">
           <label class="fl">Foto principal</label>
           <input type="hidden" id="f_foto">
-          <input type="file" id="f_foto_file" accept="image/*" style="display:none" onchange="fotoFileChanged(this)">
+          <input type="file" id="f_foto_file" accept="image/*" capture="environment" style="display:none" onchange="fotoFileChanged(this)">
           <div class="photo-picker">
             <div class="photo-col">
               <div class="photo-preview" id="f_foto_preview" onclick="fotoPreviewClick()" style="cursor:pointer"><span>📷</span></div>
