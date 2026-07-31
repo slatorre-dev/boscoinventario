@@ -321,7 +321,7 @@ export async function onRequestPost({ request, env, data }) {
     if (!imagen) return Response.json({ ok: false, error: 'Falta la imagen' });
     if (!env.GITHUB_TOKEN) return Response.json({ ok: false, error: 'GITHUB_TOKEN no configurado en Cloudflare' });
 
-    let serieLeida = '';
+    let aiData;
     try {
       const aiResp = await fetch('https://models.inference.ai.azure.com/chat/completions', {
         method: 'POST',
@@ -342,7 +342,13 @@ export async function onRequestPost({ request, env, data }) {
         })
       });
       if (!aiResp.ok) return Response.json({ ok: false, error: 'Error del servicio de IA' });
-      const aiData = await aiResp.json();
+      aiData = await aiResp.json();
+    } catch (e) {
+      return Response.json({ ok: false, error: 'Error del servicio de IA' });
+    }
+
+    let serieLeida = '';
+    try {
       const raw = aiData?.choices?.[0]?.message?.content || '';
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
@@ -354,7 +360,7 @@ export async function onRequestPost({ request, env, data }) {
 
     const deptFilter = superadmin
       ? ''
-      : ` AND (departamento=? OR departamento='${genericDept}')`;
+      : ` AND (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}')`;
     const deptBind = superadmin ? [] : [dept];
 
     const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
