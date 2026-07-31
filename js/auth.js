@@ -149,9 +149,19 @@ function _startGoogleSignInTimeout(){
   }, 8000);
 }
 
+let _googleSignInInFlight = false;
 async function handleGoogleSignIn(response) {
   console.log('Google Sign-In response:', response);
   clearTimeout(_googleSignInTimeoutId);
+
+  // GIS puede invocar este callback más de una vez para el mismo login
+  // (One Tap + botón renderizado, o reintentos internos) — cada
+  // invocación regenera session_token en el backend (login-google.js),
+  // así que una segunda llamada solapada puede invalidar el token que
+  // la primera ya guardó en localStorage antes de usarlo, provocando un
+  // 401 en la siguiente petición autenticada. Ignoramos duplicados.
+  if (_googleSignInInFlight) return;
+  _googleSignInInFlight = true;
 
   const errorEl = document.getElementById('loginError');
   const okEl = document.getElementById('loginOk');
@@ -159,6 +169,7 @@ async function handleGoogleSignIn(response) {
   if (!response.credential) {
     errorEl.textContent = 'Error: no se recibió token de Google';
     errorEl.classList.add('show');
+    _googleSignInInFlight = false;
     return;
   }
 
@@ -210,6 +221,8 @@ async function handleGoogleSignIn(response) {
     console.error('Error en Google Sign-In:', err);
     errorEl.textContent = err.message || 'Error al procesar login de Google';
     errorEl.classList.add('show');
+  } finally {
+    _googleSignInInFlight = false;
   }
 }
 
@@ -380,6 +393,11 @@ async function loadData(){
         _hideOverlay();
         show('pLogin');
         setConn('err','Sesión expirada');
+        const errorEl = document.getElementById('loginError');
+        if(errorEl){
+          errorEl.textContent = 'Tu sesión ha caducado o no es válida. Vuelve a iniciar sesión.';
+          errorEl.classList.add('show');
+        }
         bar.className = '';
         return;
       }
@@ -405,13 +423,18 @@ async function loadData(){
     else if(cf) openSub(); else if(currentCiclo) openCiclo(currentCiclo.id); else goHome();
   }catch(err){
     console.error(err);
-    if(err.message && err.message.includes('401')){
+    if(err.message && (err.message.includes('401') || err.message.includes('autorizado'))){
       localStorage.removeItem('inv_session');
       SESSION = null;
       document.getElementById('userChip').style.display = 'none';
       _hideOverlay();
       show('pLogin');
       setConn('err','Sesión expirada');
+      const errorEl = document.getElementById('loginError');
+      if(errorEl){
+        errorEl.textContent = 'Tu sesión ha caducado o no es válida. Vuelve a iniciar sesión.';
+        errorEl.classList.add('show');
+      }
       bar.className = '';
       return;
     }

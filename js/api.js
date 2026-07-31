@@ -35,8 +35,10 @@ async function apiGet(endpoint, params={}){
     delete params.action;
   }
   const r = await fetch(urlWithAuth(endpoint, params));
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  return r.json();
+  let data = null;
+  try { data = await r.json(); } catch(e) {}
+  if(!r.ok) throw new Error(data?.error || 'HTTP '+r.status);
+  return data;
 }
 
 async function apiPost(payload){
