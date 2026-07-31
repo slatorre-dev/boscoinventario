@@ -198,8 +198,13 @@ export async function onRequestPost({ request, env, data }) {
       .bind(fecha, cantidadDevuelta, estado, obs || '', presId).run();
     // Reponer stock
     await env.DB.prepare('UPDATE inventario SET qty = qty + ? WHERE id=?').bind(cantidadDevuelta, pres.itemId).run();
+    const itemRow = await env.DB.prepare('SELECT qty FROM inventario WHERE id=?').bind(pres.itemId).first();
     await auditLog(env.DB, user, 'devolver', pres.itemId, `Devolución préstamo ${presId}: ${cantidadDevuelta}ud`);
-    return Response.json({ ok: true });
+    return Response.json({
+      ok: true,
+      prestamo: { ...pres, fechaDevolucion: fecha, cantidadDevuelta, estado, obs: obs || '' },
+      nuevoQty: itemRow?.qty ?? null,
+    });
   }
 
   return Response.json({ ok: false, error: 'Acción desconocida' });
