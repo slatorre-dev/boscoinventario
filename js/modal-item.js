@@ -1073,6 +1073,8 @@ async function saveItem(){
       const item={...items.find(x=>x.id===eid),...v};
       const res = await apiPost({action:'update', item});
       if(!res.ok) throw new Error(res.error);
+      const fotosRes = await apiPost({action:'fotosSync', itemId:eid, fotos:_fotosEditing});
+      if(fotosRes.ok){ item.foto = fotosRes.fotoPrincipal || ''; }
       const i=items.findIndex(x=>x.id===eid); items[i]=item;
       await uploadPendingDocs(eid, item.item, item.aula);
       if(typeof logHistorial === 'function') logHistorial('itemUpdate', item.id, item.item, `Item actualizado: ${item.item} (${item.ref || item.code || item.id})`);
@@ -1081,6 +1083,10 @@ async function saveItem(){
     } else {
       const res = await apiPost({action:'add', item:v});
       if(!res.ok) throw new Error(res.error);
+      if(_fotosEditing.length){
+        const fotosRes = await apiPost({action:'fotosSync', itemId:res.item.id, fotos:_fotosEditing});
+        if(fotosRes.ok){ res.item.foto = fotosRes.fotoPrincipal || ''; }
+      }
       items.push(res.item);
       await uploadPendingDocs(res.item.id, res.item.item, res.item.aula);
       if(typeof logHistorial === 'function') logHistorial('itemAdd', res.item.id, res.item.item, `Item añadido: ${res.item.item} (${res.item.ref || res.item.code || res.item.id})`);
