@@ -207,5 +207,47 @@ export async function onRequestPost({ request, env, data }) {
     });
   }
 
+  if (action === 'notificarVencidos') {
+    const hoy = new Date().toISOString().split('T')[0];
+    const vencidos = await env.DB.prepare(`
+      SELECT p.* FROM prestamos p
+      JOIN inventario i ON i.id = p.itemId
+      WHERE p.estado IN ('Activo','Parcial')
+        AND p.fechaPrevista != ''
+        AND p.fechaPrevista < ?
+        AND p.notificado_vencido = 0
+        AND i.departamento = ?
+    `).bind(hoy, dept).all();
+
+    if (!vencidos.results || !vencidos.results.length) {
+      return Response.json({ ok: true, enviados: 0 });
+    }
+
+    const ids = vencidos.results.map(p => p.id);
+    const jefeRow = await env.DB.prepare(
+      "SELECT email FROM usuarios WHERE departamento=? AND rol='jefe/a departamento' AND email!='' LIMIT 1"
+    ).bind(dept).first();
+
+    if (jefeRow?.email) {
+      const rowsHtml = '<table style="border-collapse:collapse;width:100%">' +
+        '<tr><th style="text-align:left;padding:6px;border-bottom:1px solid #e5e7eb">Ítem</th><th style="text-align:left;padding:6px;border-bottom:1px solid #e5e7eb">Profesor/a</th><th style="text-align:left;padding:6px;border-bottom:1px solid #e5e7eb">Prevista</th></tr>' +
+        vencidos.results.map(p => `<tr><td style="padding:6px">${escHtml(p.itemNombre)}</td><td style="padding:6px">${escHtml(p.profesorNombre)}</td><td style="padding:6px">${escHtml(p.fechaPrevista)}</td></tr>`).join('') +
+        '</table>';
+      const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+        <h2>Préstamos vencidos</h2>
+        <p>Hay ${vencidos.results.length} préstamo(s) de tu departamento con la devolución vencida:</p>
+        ${rowsHtml}
+        <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
+      </div>`;
+      await sendGmail(env, jefeRow.email, `${vencidos.results.length} préstamo(s) vencido(s)`, html);
+    }
+
+    const placeholders = ids.map(() => '?').join(',');
+    await env.DB.prepare(`UPDATE prestamos SET notificado_vencido=1 WHERE id IN (${placeholders})`)
+      .bind(...ids).run();
+
+    return Response.json({ ok: true, enviados: jefeRow?.email ? vencidos.results.length : 0 });
+  }
+
   return Response.json({ ok: false, error: 'Acción desconocida' });
 }
