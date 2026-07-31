@@ -313,15 +313,6 @@ function addTagFromDropdown(tag){
   hideTagsDropdown();
 }
 
-function viewPhotoModal(){
-  const src = document.getElementById('f_foto')?.value;
-  if(!src) return;
-  const modal = document.getElementById('mPhotoView');
-  if(!modal) return;
-  document.getElementById('photoViewImg').src = src;
-  modal.classList.add('open');
-}
-
 function closePhotoModal(){
   document.getElementById('mPhotoView')?.classList.remove('open');
 }
@@ -612,13 +603,61 @@ function printQuickItemQr(){
   printItemQr(_quickQrItemId);
 }
 
+let _fotosEditing = []; // [{foto, orden}], máx 3
+
 function renderMainPhoto(src){
+  // Compatibilidad: sigue usado por openModal() para pre-rellenar el slot
+  // principal antes de que fotosGet complete la carga de la galería.
   const input = document.getElementById('f_foto');
-  const preview = document.getElementById('f_foto_preview');
   if(input) input.value = src || '';
-  if(!preview) return;
-  preview.innerHTML = src ? `<img src="${src}" alt="Foto principal">` : '<span>📷</span>';
-  preview.classList.toggle('has-photo', !!src);
+  _fotosEditing = src ? [{foto: src, orden: 1}] : [];
+  renderFotosGaleria();
+}
+
+function renderFotosGaleria(){
+  const el = document.getElementById('fotosGaleria');
+  if(!el) return;
+  const slots = [..._fotosEditing].sort((a,b)=>a.orden-b.orden);
+  const html = slots.map((f, i) => `
+    <div class="foto-slot">
+      <div class="photo-preview has-photo" onclick="viewPhotoModalAt(${i})" style="cursor:pointer">
+        <img src="${f.foto}" alt="Foto ${i+1}">
+      </div>
+      <div class="foto-slot-actions">
+        ${i!==0?`<button type="button" class="foto-slot-btn" onclick="hacerFotoPrincipal(${i})" title="Hacer principal">★</button>`:''}
+        <button type="button" class="foto-slot-btn" onclick="eliminarFoto(${i})" title="Eliminar">🗑</button>
+      </div>
+      ${i===0?'<span class="foto-slot-principal-badge">Principal</span>':''}
+    </div>
+  `).join('');
+  const addBtn = slots.length < 3
+    ? `<div class="foto-slot"><div class="photo-preview" onclick="document.getElementById('f_foto_file').click()" style="cursor:pointer"><span>📷</span></div></div>`
+    : '';
+  el.innerHTML = html + addBtn;
+  const hidden = document.getElementById('f_foto');
+  if(hidden) hidden.value = slots[0]?.foto || '';
+}
+
+function eliminarFoto(idx){
+  _fotosEditing.splice(idx, 1);
+  _fotosEditing = _fotosEditing.map((f, i) => ({foto: f.foto, orden: i + 1}));
+  modalHasChanges = true;
+  renderFotosGaleria();
+}
+
+function hacerFotoPrincipal(idx){
+  const [chosen] = _fotosEditing.splice(idx, 1);
+  _fotosEditing.unshift(chosen);
+  _fotosEditing = _fotosEditing.map((f, i) => ({foto: f.foto, orden: i + 1}));
+  modalHasChanges = true;
+  renderFotosGaleria();
+}
+
+function viewPhotoModalAt(idx){
+  const f = _fotosEditing[idx];
+  if(!f) return;
+  document.getElementById('photoViewImg').src = f.foto;
+  document.getElementById('mPhotoView').classList.add('open');
 }
 
 function isMaintenanceMarked(item){
@@ -647,7 +686,8 @@ function toggleMaintFields(){
 
 function setMainPhotoFromFile(file){
   if(!file || !file.type.startsWith('image/')) return Promise.resolve(false);
-  const MAX = 360, QUALITY = 0.45;
+  if(_fotosEditing.length >= 3) return Promise.resolve(false);
+  const MAX = 360, QUALITY = 0.40;
   return new Promise(resolve => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -661,7 +701,9 @@ function setMainPhotoFromFile(file){
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      renderMainPhoto(canvas.toDataURL('image/jpeg', QUALITY));
+      const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+      _fotosEditing.push({foto: dataUrl, orden: _fotosEditing.length + 1});
+      renderFotosGaleria();
       resolve(true);
     };
     img.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
@@ -672,16 +714,12 @@ function setMainPhotoFromFile(file){
 function fotoFileChanged(input) {
   const file = input.files && input.files[0];
   if (!file) return;
+  if(_fotosEditing.length >= 3){ toast('Ya tienes 3 fotos, elimina una antes de añadir otra', 'err'); input.value=''; return; }
   setMainPhotoFromFile(file).then(ok => {
     if (!ok) toast('No se pudo cargar la imagen', 'err');
+    modalHasChanges = true;
     input.value = '';
   });
-}
-
-function fotoPreviewClick() {
-  const src = document.getElementById('f_foto')?.value;
-  if (src) viewPhotoModal();
-  else document.getElementById('f_foto_file')?.click();
 }
 
 function fillParentSelect(currentId){
@@ -796,6 +834,14 @@ function openModal(id=null, src=null){
   document.getElementById('f_aula').value=m?.aula||(cf?.type==='aula'?cf.id:AULAS[0]?.id);
   document.getElementById('f_item').value=m?.item||'';
   renderMainPhoto(m?.foto||'');
+  if(existing){
+    apiPost({action:'fotosGet', itemId:id}).then(res => {
+      if(res.ok && Array.isArray(res.fotos) && res.fotos.length){
+        _fotosEditing = res.fotos.map(f => ({foto:f.foto, orden:f.orden}));
+        renderFotosGaleria();
+      }
+    }).catch(()=>{}); // la galería completa es un extra — si falla, el modal ya se abrió con la foto principal
+  }
   document.getElementById('f_qty').value = id ? (m?.qty??1) : 1;
   document.getElementById('f_min').value=m?.min??0;
   document.getElementById('f_tipo_material').value=materialType(m || src || {});

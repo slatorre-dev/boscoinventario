@@ -599,12 +599,12 @@
       <div class="m-section">
         <div class="m-section-title">📦 INVENTARIO</div>
         <div class="full">
-          <label class="fl">Foto principal</label>
+          <label class="fl">Fotos (máx. 3)</label>
           <input type="hidden" id="f_foto">
           <input type="file" id="f_foto_file" accept="image/*" capture="environment" style="display:none" onchange="fotoFileChanged(this)">
           <div class="photo-picker">
             <div class="photo-col">
-              <div class="photo-preview" id="f_foto_preview" onclick="fotoPreviewClick()" style="cursor:pointer"><span>📷</span></div>
+              <div id="fotosGaleria" class="fotos-galeria"></div>
               <div id="qrButtonContainer" style="display:none">
                 <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:11px;padding:4px 6px;white-space:nowrap;width:100%">🖨️ QR</button>
               </div>
@@ -618,7 +618,6 @@
                   <option value="inventariable">Inventariable</option>
                 </select>
               </div>
-              <div><label class="fl">Foto</label><button type="button" class="btn btn-sm fi-w" onclick="document.getElementById('f_foto_file').click()" style="font-size:12px" title="Subir imagen o hacer foto">📷 Subir</button></div>
             </div>
           </div>
         </div>
