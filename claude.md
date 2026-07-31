@@ -290,7 +290,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v521 actual)
+sw.js                   — Service Worker, VERSION aquí (v522 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -318,7 +318,8 @@ migrations/             — SQL de migraciones D1, ver tabla completa abajo
 | `0018_google_oauth_columnas.sql` | Añade `google_id`, `auth_method`, `created_at` a `usuarios` — `0004` asumía que ya existían (cierto en el proyecto original, no en esta base D1 sembrada desde cero) |
 | `0019_pantallas_pizarras_inventariable.sql` | Marca `tipo_material='inventariable'` en los 222 ítems sembrados en `0016` (habían quedado como `'consumible'` por el default de `item.js`, disparando el aviso de stock bajo con qty=1/min=1) |
 | `0020_indices_inventario.sql` | Índices en `inventario`: `departamento` solo, y compuestos `(departamento, aula)`, `(departamento, ref)`, `(departamento, cat)`, más `parent_id` — tabla no tenía ningún índice salvo la PK |
-| `0021_limpiar_profesores_duplicados.sql` | Borra de `profesores` las filas que ya duplican (por nombre o email normalizado) un usuario de la app — quedaron huérfanas de UI tras convertir el modal 👥 en "solo prestatarios externos" (v521) |
+| `0021_limpiar_profesores_duplicados.sql` | Borra de `profesores` las filas que ya duplican (por nombre o email normalizado) un usuario de la app **del mismo departamento** — quedaron huérfanas de UI tras convertir el modal 👥 en "solo prestatarios externos" (v521) |
+| `0022_notificado_vencido.sql` | Columna `prestamos.notificado_vencido`, evita reenviar el email de recordatorio de vencidos en cada visita a Préstamos (v522) |
 
 ---
 
@@ -535,8 +536,47 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   camino: dos de los agentes despachados crearon su propio worktree
   aislado pese a instrucción explícita de no hacerlo, hubo que traer sus
   commits a mano (`cherry-pick` uno, `reset --soft` + recommit el otro).
-  Migración `0021` pendiente de aplicar en remoto (backup + dry-run +
-  DELETE) con supervisión directa, ver sección Pendiente.
+  Migración `0021` ya aplicada en remoto (backup previo, resultó no-op:
+  tabla `profesores` estaba vacía en producción). La revisión final de
+  rama (antes de mergear) encontró y corrigió 3 problemas invisibles a
+  nivel de tarea individual: la migración `0021` cruzaba departamentos
+  (contradecía el spec, corregido a `WHERE EXISTS` correlacionado por
+  `departamento` antes de aplicarla), elegir caja desde el nuevo selector
+  borraba silenciosamente el profesor/fecha/observaciones ya rellenados
+  (`_loadCajaIntoModal` ganó un parámetro `initForm` para separar "coger
+  datos de la caja" de "inicializar el formulario"), y quedaron 5 sitios
+  más con texto "profesor/a" sin migrar a "prestatario/a externo/a"
+  (menú de departamento, botón de Préstamos, subtítulo del modal, CSV,
+  toast) que dejaban la UI menos consistente que antes del cambio.
+- **31/07/2026 (v522):** 4 mejoras en el flujo de Devolver material y
+  préstamos vencidos, detectadas al revisar el código en la sesión
+  anterior. 1) Aviso "⚠ Vencido desde el DD/MM/YYYY" en el modal Devolver
+  cuando el préstamo está vencido (antes solo se veía en la tabla de
+  fondo). 2) `confirmDevolver()` ya no hace `loadData()` completo tras
+  cada devolución — el backend (`functions/api/prestar.js`, acción
+  `devolver`) ahora devuelve el préstamo actualizado y el nuevo stock del
+  ítem, y el frontend actualiza los arrays locales igual que ya hacían
+  `confirmPrestar`/`confirmPrestarCaja`. 3) Aviso en vivo "⚠ Quedarán N
+  unidad(es) sin devolver" si se deja una devolución parcial, mismo
+  patrón que el aviso de stock bajo de Volt. 4) Recordatorio proactivo de
+  préstamos vencidos: nuevo endpoint `notificarVencidos` en
+  `functions/api/prestar.js` que envía un email (vía Gmail API, mecanismo
+  ya existente) al jefe/a de departamento con la lista de vencidos sin
+  notificar, marcándolos con la nueva columna `prestamos.notificado_vencido`
+  para no reenviar en cada visita — sin cron real (el proyecto no tiene
+  scheduled workers configurados en `wrangler.toml`), se dispara al
+  visitar la página de Préstamos, una vez por sesión de página. Migración
+  `0022_notificado_vencido.sql` aplicada en remoto (backup previo). Un
+  bug Critical se detectó y corrigió en la revisión: la llamada inicial al
+  nuevo endpoint usaba `fetch()` crudo con URL inexistente, payload sin
+  el campo `action`, y sin los query params de autenticación (`?u=&p=`)
+  que exige el resto del proyecto — la feature habría fallado siempre,
+  en silencio (`.catch(()=>{})` tragaba el error sin avisar a nadie).
+  Corregido usando `apiPost()` (ya existente) y registrando la acción
+  nueva en `ENDPOINT_MAP` (`js/api.js`) y `ACTION_PERMISSIONS`
+  (`js/roles.js`), gaps que tampoco existían antes de esta sesión.
+  Implementado con subagent-driven-development en worktree aislado
+  (`worktree-devolucion-vencidos`).
 
 ---
 
@@ -564,18 +604,17 @@ Próximos pasos concretos:
 6. Ver más ideas de usabilidad sugeridas (pendientes) en
    [`docs/IDEAS.md`](docs/IDEAS.md): estado vacío por departamento, alertas
    de stock bajo, modo oscuro, índices D1, etc.
-7. Aplicar en remoto la migración `0021_limpiar_profesores_duplicados.sql`
-   (v521): backup con `wrangler d1 export`, contar filas afectadas antes de
-   borrar, aplicar, verificar conteo tras el DELETE — ver
-   `docs/superpowers/plans/2026-07-31-prestamos-prestatarios-y-buscadores.md`
-   (Task 2) para los comandos exactos.
-8. Devolver material: sin aviso de vencido dentro del propio modal (solo en
-   la tabla de fondo); `confirmDevolver()` hace `loadData()` completo tras
-   cada devolución (recarga todo el inventario) en vez de actualizar estado
-   local como los demás flujos de préstamo, más lento de lo necesario; sin
-   aviso "quedarán N sin devolver" si se deja una devolución parcial por
-   accidente; sin recordatorio proactivo de préstamos vencidos (el badge es
-   pasivo, solo cuenta). Detectado en sesión v521, sin planificar aún.
+7. ~~Migración `0021_limpiar_profesores_duplicados.sql`~~ ✅ aplicada
+   (v521, no-op: tabla `profesores` estaba vacía en producción).
+8. ~~Devolver material: aviso de vencido, quitar `loadData()`, aviso de
+   devolución parcial, recordatorio de vencidos~~ ✅ hecho (v522).
+9. Recordatorio de vencidos (v522) solo actúa sobre el departamento de
+   referencia del actor que visita Préstamos — un `superadmin` no dispara
+   notificaciones de los otros 23 departamentos (mismo patrón de
+   limitación que el resto de acciones de gestión de `superadmin`, ver
+   Fase 3 más arriba). No es un bug de seguridad, es una limitación
+   funcional a revisar si hace falta cobertura completa sin depender de
+   que alguien de cada departamento visite la página.
 
 ---
 
