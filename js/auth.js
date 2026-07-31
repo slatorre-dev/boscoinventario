@@ -425,6 +425,7 @@ async function loadData(){
     showUserChip();
     if(meta.aulas && meta.aulas.length) AULAS = meta.aulas;
     if(meta.cats && meta.cats.length) setCatsFromEntries(meta.cats.map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
+    if(Array.isArray(meta.catsCrudo)) catsCrudo = meta.catsCrudo;
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
     if(meta.ciclos && meta.ciclos.length) CICLOS = meta.ciclos;
     if(meta.departamentos && meta.departamentos.length) DEPARTAMENTOS = meta.departamentos;

@@ -5,10 +5,20 @@ let aulasEditing = [];
 
 function openAulasModal(){
   if(!requirePerm('config.manage')) return;
+  const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+  if(isSuperAdmin && !deptActivo){
+    toast('Elige un departamento en el selector de la barra superior primero', 'err');
+    return;
+  }
   // Solo el aula propia del departamento se gestiona aquí — las aulas
   // globales del centro y la compartida "IES Juan Bosco" no son editables
-  // desde cada departamento (evita duplicarlas al guardar).
-  aulasEditing = JSON.parse(JSON.stringify(AULAS.filter(a=>a.departamento && a.departamento!=='iesjuanbosco'))); // copia profunda
+  // desde cada departamento (evita duplicarlas al guardar). Para superadmin,
+  // "propia" significa el departamento elegido en deptActivo (Fase 3).
+  const filtroDept = isSuperAdmin ? deptActivo : null;
+  aulasEditing = JSON.parse(JSON.stringify(AULAS.filter(a =>
+    a.departamento && a.departamento !== 'iesjuanbosco' &&
+    (filtroDept ? a.departamento === filtroDept : true)
+  ))); // copia profunda
   renderAulasList();
   document.getElementById('mAulas').classList.add('open');
 }
@@ -79,9 +89,21 @@ async function saveAulas(){
   });
 
   try {
-    const res = await apiPost({action:'aulasSync', aulas:aulasEditing});
+    const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+    const payload = {action:'aulasSync', aulas:aulasEditing};
+    if(isSuperAdmin && deptActivo) payload.departamentoDestino = deptActivo;
+    const res = await apiPost(payload);
     if(!res.ok) throw new Error(res.error);
-    AULAS = aulasEditing;
+    if(isSuperAdmin && deptActivo){
+      // AULAS de superadmin mezcla TODOS los departamentos (meta.js no
+      // filtra para su rol) — reemplazar el array entero con solo las
+      // del departamento activo rompería la vista global. En su lugar,
+      // sustituir solo las filas de ese departamento dentro del array
+      // ya existente.
+      AULAS = AULAS.filter(a => a.departamento !== deptActivo).concat(aulasEditing);
+    } else {
+      AULAS = aulasEditing;
+    }
     closeAulasModal();
     renderHome();
     toast('Aulas guardadas y sincronizadas','ok');

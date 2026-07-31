@@ -11,9 +11,20 @@ let cicloAddingNew = false;
 
 function openCiclosModal(){
   if(!requirePerm('config.manage')) return;
+  const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+  if(isSuperAdmin && !deptActivo){
+    toast('Elige un departamento en el selector de la barra superior primero', 'err');
+    return;
+  }
+  const filtroDept = isSuperAdmin ? deptActivo : null;
   // "IES Juan Bosco" es un ciclo compartido entre departamentos — no se
-  // gestiona desde aquí (evita duplicarlo bajo el departamento propio al guardar).
-  ciclosEditing  = JSON.parse(JSON.stringify(CICLOS.filter(c=>c.id!=='iesjuanbosco')));
+  // gestiona desde aquí (evita duplicarlo bajo el departamento propio al
+  // guardar). Para superadmin, filtra además por el departamento activo
+  // (Fase 3) — cada ciclo agrupado ya trae su `departamento` (meta.js).
+  ciclosEditing  = JSON.parse(JSON.stringify(CICLOS.filter(c =>
+    c.id !== 'iesjuanbosco' &&
+    (filtroDept ? c.departamento === filtroDept : true)
+  )));
   cicloExpandIdx = null;
   cicloAddingNew = false;
   document.getElementById('mCiclos').classList.add('open');
@@ -211,9 +222,21 @@ async function saveCiclos(){
     }
   }
   try {
-    const res = await apiPost({action:'ciclosSync', ciclos:ciclosEditing});
+    const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+    const payload = {action:'ciclosSync', ciclos:ciclosEditing};
+    if(isSuperAdmin && deptActivo) payload.departamentoDestino = deptActivo;
+    const res = await apiPost(payload);
     if(!res.ok) throw new Error(res.error);
-    CICLOS = ciclosEditing;
+    if(isSuperAdmin && deptActivo){
+      // CICLOS de superadmin mezcla TODOS los departamentos (meta.js no
+      // filtra para su rol) — reemplazar el array entero con solo los
+      // del departamento activo rompería la vista global. En su lugar,
+      // sustituir solo las entradas de ese departamento dentro del array
+      // ya existente.
+      CICLOS = CICLOS.filter(c => c.departamento !== deptActivo).concat(ciclosEditing);
+    } else {
+      CICLOS = ciclosEditing;
+    }
     closeCiclosModal();
     renderHome();
     toast('Ciclos guardados y sincronizados', 'ok');

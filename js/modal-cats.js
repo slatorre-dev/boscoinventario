@@ -23,12 +23,33 @@ function syncTagsFromItems(){
 function openCatsModal(){
   if(!requirePerm('categories.manage')) return;
   syncTagsFromItems();
-  catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
+  const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+  if(isSuperAdmin && !deptActivo){
+    toast('Elige un departamento en el selector de la barra superior primero', 'err');
+    return;
+  }
+  if(isSuperAdmin){
+    // CATS (objeto global fusionado) mezcla todos los departamentos sin
+    // distinguir origen — para superadmin usamos catsCrudo (Task 3 de
+    // meta.js), que sí trae `departamento` por fila, filtrado por deptActivo.
+    catsEditing = catsCrudo
+      .filter(c => c.departamento === deptActivo)
+      .map(c => ({name:c.name, c:c.c, bg:c.bg, i:c.i}));
+  } else {
+    catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
+  }
   sortCatsEditing();
   renderCatsList();
   renderTagsList();
+  _renderCatsAviso();
   document.getElementById('mCats').classList.add('open');
 }
+
+// No-op temporal: la implementación real llega en Task 7 (aviso de
+// categorías sugeridas/pendientes en el modal). Se añade aquí vacía para
+// que la llamada en openCatsModal() no rompa en runtime mientras Task 7
+// no se haya ejecutado todavía — Task 7 sobreescribirá esta función.
+function _renderCatsAviso(){}
 function closeCatsModal(){document.getElementById('mCats').classList.remove('open')}
 
 function renderCatsList(){
@@ -85,9 +106,19 @@ async function saveCats(){
   const clean = catsEditing.map(c=>({name:c.name.trim(), c:c.c, bg:c.bg, i:c.i})).sort((a,b)=>catNameCompare(a.name,b.name));
   const payload = clean.map((c,i)=>({name:c.name, c:c.c, bg:c.bg, i:c.i, orden:i+1}));
   try {
-    const res = await apiPost({action:'catsSync', cats:payload});
+    const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+    const body = {action:'catsSync', cats:payload};
+    if(isSuperAdmin && deptActivo) body.departamentoDestino = deptActivo;
+    const res = await apiPost(body);
     if(!res.ok) throw new Error(res.error);
-    setCatsFromEntries(clean.map(c=>[c.name, {c:c.c, bg:c.bg, i:c.i}]));
+    if(isSuperAdmin && deptActivo){
+      // CATS global mezcla todos los departamentos — no reemplazar entero.
+      // catsCrudo sí se puede reconstruir por completo para ese departamento.
+      catsCrudo = catsCrudo.filter(c => c.departamento !== deptActivo)
+        .concat(payload.map(c => ({...c, departamento: deptActivo})));
+    } else {
+      setCatsFromEntries(clean.map(c=>[c.name, {c:c.c, bg:c.bg, i:c.i}]));
+    }
     fillCatFilter();
     fillModalSelects();
     if(typeof renderHome === 'function') renderHome();

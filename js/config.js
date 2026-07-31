@@ -17,6 +17,11 @@ let AULAS = AULAS_DEFAULT.slice(); // se reemplazará al cargar datos del backen
 // los departamentos), usada en el selector de "departamento de referencia" del perfil.
 let DEPARTAMENTOS = [];
 let deptActivo = localStorage.getItem('dept_activo_superadmin') || '';
+// Filas crudas de `categorias` (con su `departamento`), solo pobladas para
+// superadmin (meta.js:catsCrudo, Task 3) — usadas por modal-cats.js para
+// filtrar/guardar por deptActivo sin tocar CATS (objeto global fusionado
+// usado por 7 archivos del frontend, sin campo departamento por entrada).
+let catsCrudo = [];
 
 const TH_OPTIONS = ['th-blue','th-green','th-amber','th-teal','th-orange','th-pink','th-purple','th-red'];
 
