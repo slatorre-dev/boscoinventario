@@ -386,12 +386,71 @@ function closePrestar(){ document.getElementById('mPrestar').classList.remove('o
 // ─── PRÉSTAMO DE CAJA COMPLETA ────────────────────────────
 let _prestarCajaId = null;
 
+function _cajasConStock(){
+  return items.filter(x => x.es_contenedor &&
+    items.some(h => Number(h.parent_id)===Number(x.id) && Number(h.qty)>0)
+  );
+}
+
+function _buildPresCajaOptions(filtered){
+  document.getElementById('pres_cajaSelect').innerHTML =
+    '<option value="">— Seleccionar caja —</option>' +
+    filtered.map(x=>`<option value="${x.id}">${x.item}${x.ref?' ['+x.ref+']':''}</option>`).join('');
+}
+
+function filterPresCajaItems(){
+  const aulaVal = document.getElementById('pres_cajaFiltAula').value;
+  const q = normalize(document.getElementById('pres_cajaFiltQ').value);
+  let filtered = _cajasConStock();
+  if(aulaVal) filtered = filtered.filter(x=>String(x.aula)===String(aulaVal));
+  if(q) filtered = filtered.filter(x=>normalize(x.item+' '+(x.ref||'')).includes(q));
+  filtered.sort((a,b)=>a.item.localeCompare(b.item));
+  _buildPresCajaOptions(filtered);
+}
+
+function onPresCajaSelectChange(val){
+  if(!val) return;
+  _loadCajaIntoModal(Number(val));
+}
+
 function openPrestarCaja(cajaId){
   if(!requirePerm('loans.write')) return;
+  const selector = document.getElementById('prestarCajaSelector');
+
+  if(cajaId!==undefined && cajaId!==null){
+    selector.style.display = 'none';
+    if(!_loadCajaIntoModal(Number(cajaId))) return;
+  } else {
+    selector.style.display = '';
+    _prestarCajaId = null;
+    document.getElementById('pres_cajaFiltAula').innerHTML = '<option value="">Todas las aulas</option>' +
+      renderAulaOptions();
+    document.getElementById('pres_cajaFiltQ').value = '';
+    _buildPresCajaOptions(_cajasConStock().sort((a,b)=>a.item.localeCompare(b.item)));
+    document.getElementById('prestarCajaNombre').textContent = '';
+    document.getElementById('prestarCajaComponentes').innerHTML = '<div style="color:var(--muted);font-size:13px">Selecciona una caja para ver sus componentes</div>';
+
+    document.getElementById('prestarCajaProfFiltQ').value = '';
+    _cajaProfOptions = loanTeacherOptions();
+    document.getElementById('prestarCajaProf').disabled = false;
+    _renderProfSelectOptions('prestarCajaProf', _cajaProfOptions, undefined);
+
+    document.getElementById('prestarCajaAulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
+      renderAulaOptions();
+
+    const f = new Date(); f.setDate(f.getDate()+7);
+    document.getElementById('prestarCajaFecha').value = f.toISOString().split('T')[0];
+    document.getElementById('prestarCajaObs').value = '';
+  }
+
+  document.getElementById('mPrestarCaja').classList.add('open');
+}
+
+function _loadCajaIntoModal(cajaId){
   const caja = items.find(x=>Number(x.id)===Number(cajaId));
-  if(!caja) return;
+  if(!caja) return false;
   const hijos = items.filter(x=>Number(x.parent_id)===Number(cajaId) && Number(x.qty)>0);
-  if(!hijos.length){ toast('La caja no tiene componentes con stock','err'); return; }
+  if(!hijos.length){ toast('La caja no tiene componentes con stock','err'); return false; }
   _prestarCajaId = cajaId;
 
   document.getElementById('prestarCajaNombre').textContent = `${caja.ref ? caja.ref+' · ' : ''}${caja.item}`;
@@ -414,7 +473,7 @@ function openPrestarCaja(cajaId){
   const f = new Date(); f.setDate(f.getDate()+7);
   document.getElementById('prestarCajaFecha').value = f.toISOString().split('T')[0];
   document.getElementById('prestarCajaObs').value = '';
-  document.getElementById('mPrestarCaja').classList.add('open');
+  return true;
 }
 
 function closePrestarCaja(){ document.getElementById('mPrestarCaja').classList.remove('open'); _prestarCajaId = null; }
