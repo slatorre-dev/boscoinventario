@@ -1,6 +1,8 @@
 // ═════════════════════════════════════════════════════════
 // PRÉSTAMOS
 // ═════════════════════════════════════════════════════════
+let _vencidosNotifCheckDone = false; // Bandera para notificar vencidos solo una vez por sesión
+
 function getPrestamosActivos(){
   return prestamos.filter(p=>p.estado==='Activo'||p.estado==='Parcial');
 }
@@ -39,6 +41,18 @@ function updatePresVencBadge(){
   } else {
     badge.style.display = 'none';
   }
+}
+
+function notificarVencidosAlBackend(){
+  // Fire-and-forget: notificar al backend sobre vencidos, sin bloquear el render
+  if(!can('loans.write')) return; // Silencioso: no muestra error, solo no notifica
+  if(getVencidos().length === 0) return; // Sin vencidos, no hay nada que notificar
+
+  fetch('/api/notificarVencidos', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({count: getVencidos().length})
+  }).catch(() => {}); // Silencioso: ignorar errores de red
 }
 
 function goPrestamos(tab){
@@ -85,6 +99,12 @@ function goPrestamos(tab){
 
   show('pPres');
   renderPrestamos();
+
+  // Notificar al backend sobre vencidos, una sola vez por sesión de página
+  if(!_vencidosNotifCheckDone){
+    _vencidosNotifCheckDone = true;
+    notificarVencidosAlBackend();
+  }
 }
 
 function setPresTab(tab){
