@@ -414,7 +414,7 @@ function filterPresCajaItems(){
 
 function onPresCajaSelectChange(val){
   if(!val) return;
-  _loadCajaIntoModal(Number(val));
+  _loadCajaIntoModal(Number(val), false);
 }
 
 function openPrestarCaja(cajaId){
@@ -423,7 +423,7 @@ function openPrestarCaja(cajaId){
 
   if(cajaId!==undefined && cajaId!==null){
     selector.style.display = 'none';
-    if(!_loadCajaIntoModal(Number(cajaId))) return;
+    if(!_loadCajaIntoModal(Number(cajaId), true)) return;
   } else {
     selector.style.display = '';
     _prestarCajaId = null;
@@ -450,7 +450,7 @@ function openPrestarCaja(cajaId){
   document.getElementById('mPrestarCaja').classList.add('open');
 }
 
-function _loadCajaIntoModal(cajaId){
+function _loadCajaIntoModal(cajaId, initForm){
   const caja = items.find(x=>Number(x.id)===Number(cajaId));
   if(!caja) return false;
   const hijos = items.filter(x=>Number(x.parent_id)===Number(cajaId) && Number(x.qty)>0);
@@ -465,18 +465,22 @@ function _loadCajaIntoModal(cajaId){
     </div>`
   ).join('');
 
-  document.getElementById('prestarCajaProfFiltQ').value = '';
-  _cajaProfOptions = loanTeacherOptions();
-  const profPropioCaja = _cajaProfOptions.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
-  document.getElementById('prestarCajaProf').disabled = false;
-  _renderProfSelectOptions('prestarCajaProf', _cajaProfOptions, profPropioCaja ? profPropioCaja.id : undefined);
+  if(initForm){
+    document.getElementById('prestarCajaProfFiltQ').value = '';
+    _cajaProfOptions = loanTeacherOptions();
+    const profPropioCaja = _cajaProfOptions.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim());
+    document.getElementById('prestarCajaProf').disabled = false;
+    _renderProfSelectOptions('prestarCajaProf', _cajaProfOptions, profPropioCaja ? profPropioCaja.id : undefined);
+  }
 
   document.getElementById('prestarCajaAulaDest').innerHTML = '<option value="">— Sin especificar —</option>' +
     renderAulaOptions();
 
-  const f = new Date(); f.setDate(f.getDate()+7);
-  document.getElementById('prestarCajaFecha').value = f.toISOString().split('T')[0];
-  document.getElementById('prestarCajaObs').value = '';
+  if(initForm){
+    const f = new Date(); f.setDate(f.getDate()+7);
+    document.getElementById('prestarCajaFecha').value = f.toISOString().split('T')[0];
+    document.getElementById('prestarCajaObs').value = '';
+  }
   return true;
 }
 
@@ -672,7 +676,7 @@ function importProfesoresCSV(input){
 
 function exportProfesoresCSV(){
   const h = 'Nombre,Departamento,Email,Origen';
-  const rows = profEditing.map(p => [p.nombre, p.departamento, p.email, p.source==='usuarios'?'Usuario app':'Profesor/a'].map(csvCell).join(','));
+  const rows = profEditing.map(p => [p.nombre, p.departamento, p.email, p.source==='usuarios'?'Usuario app':'Externo'].map(csvCell).join(','));
   downloadText('profesores.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));
   toast('CSV exportado', 'ok');
 }
@@ -729,7 +733,7 @@ async function saveProfesores(){
       profesores = profesores.filter(x=>Number(x.id)!==Number(p.id));
     }
     closeProfModal();
-    toast('Profesores/as actualizados/as','ok');
+    toast('Prestatarios externos actualizados','ok');
     if(document.getElementById('pPres').classList.contains('active')) goPrestamos();
   } catch(err){
     toast('Error: '+err.message,'err');

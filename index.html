@@ -74,7 +74,7 @@
           <button class="dept-menu-item" onclick="closeDeptMenu();openCatsModal()">🏷️ Gestionar categorías</button>
           <button class="dept-menu-item" onclick="closeDeptMenu();openCiclosModal()">📚 Gestionar ciclos y módulos</button>
           <div class="dept-menu-sep"></div>
-          <button class="dept-menu-item" onclick="closeDeptMenu();openProfModal()">👥 Gestionar profesores prestatarios</button>
+          <button class="dept-menu-item" onclick="closeDeptMenu();openProfModal()">👥 Gestionar prestatarios externos</button>
           <button class="dept-menu-item" onclick="closeDeptMenu();openUsuariosModal()">🔐 Gestionar usuarios de la app</button>
           <div class="dept-menu-sep"></div>
           <button class="dept-menu-item" onclick="closeDeptMenu();openImportModal()">📤 Importar CSV / Backup</button>
@@ -424,7 +424,7 @@
       </label>
       <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestarCaja()">📦 <span class="btn-text">Prestar caja</span></button>
-      <button class="btn icon-btn" data-perm="profesores.manage" onclick="openProfModal()">👥 <span class="btn-text">Gestionar profesores</span></button>
+      <button class="btn icon-btn" data-perm="profesores.manage" onclick="openProfModal()">👥 <span class="btn-text">Gestionar prestatarios externos</span></button>
       <button class="btn icon-btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 <span class="btn-text">Gestionar usuarios</span></button>
     </div>
     <div id="presContent"></div>
@@ -1214,7 +1214,7 @@
 <div class="mbg" id="mProf" onclick="if(event.target===this)closeProfModal()">
   <div class="modal">
     <div class="mh"><div class="mt">👥 Prestatarios externos</div><button class="mx" onclick="closeProfModal()">✕</button></div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Lista de profesores/as que pueden pedir material prestado</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Lista de prestatarios externos que pueden pedir material prestado</p>
     <div class="prof-list" id="profList"></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
       <button class="add-aula-btn" onclick="addProfRow()">＋ Añadir prestatario externo</button>
