@@ -217,17 +217,20 @@ export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
   const user = data?.user || request.user;
-  const dept = user?.departamento || '';
+  const superadmin = isSuperAdmin(user);
+  const departamentoDestino = String(body.departamentoDestino || '').trim();
 
-  if (isSuperAdmin(user) && SYNC_ACTIONS_NEED_DEPT.has(action)) {
-    // Aunque un superadmin tenga un departamento "propio" asignado (para
-    // el badge y futuro uso), meta.js/list.js le siguen devolviendo TODAS
-    // las aulas/ciclos sin filtrar (así ve todo el centro) — su AULAS/CICLOS
-    // en el frontend no está scoped a un solo departamento. Sincronizar
-    // desde aquí mezclaría/corrompería datos de varios departamentos.
-    // Pendiente de resolverse con el selector de departamento (Fase 3).
-    return Response.json({ ok: false, error: 'Superadmin no puede gestionar aulas/categorías/ciclos directamente todavía — hazlo con un usuario del departamento correspondiente.' }, { status: 403 });
+  if (superadmin && SYNC_ACTIONS_NEED_DEPT.has(action) && !departamentoDestino) {
+    // superadmin ve TODAS las aulas/categorías/ciclos sin filtrar (meta.js
+    // no scopea para su rol) — sin un departamentoDestino explícito no hay
+    // forma de saber a qué departamento debería aplicarse el guardado.
+    // El frontend soluciona esto con el selector de departamento de la
+    // barra superior (js/auth.js:renderDeptActivoSelector) — ver
+    // docs/superpowers/specs/2026-07-31-selector-departamento-superadmin-y-categorias-sugeridas-design.md
+    return Response.json({ ok: false, error: 'Elige un departamento en el selector de la barra superior antes de gestionar aulas/categorías/ciclos.' }, { status: 403 });
   }
+
+  const dept = (superadmin && departamentoDestino) ? departamentoDestino : (user?.departamento || '');
 
   if (action === 'aulasSync') {
     const aulas = body.aulas || [];
