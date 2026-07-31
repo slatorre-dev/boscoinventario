@@ -290,7 +290,7 @@ js/
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
 
-sw.js                   — Service Worker, VERSION aquí (v501 actual)
+sw.js                   — Service Worker, VERSION aquí (v521 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -318,6 +318,7 @@ migrations/             — SQL de migraciones D1, ver tabla completa abajo
 | `0018_google_oauth_columnas.sql` | Añade `google_id`, `auth_method`, `created_at` a `usuarios` — `0004` asumía que ya existían (cierto en el proyecto original, no en esta base D1 sembrada desde cero) |
 | `0019_pantallas_pizarras_inventariable.sql` | Marca `tipo_material='inventariable'` en los 222 ítems sembrados en `0016` (habían quedado como `'consumible'` por el default de `item.js`, disparando el aviso de stock bajo con qty=1/min=1) |
 | `0020_indices_inventario.sql` | Índices en `inventario`: `departamento` solo, y compuestos `(departamento, aula)`, `(departamento, ref)`, `(departamento, cat)`, más `parent_id` — tabla no tenía ningún índice salvo la PK |
+| `0021_limpiar_profesores_duplicados.sql` | Borra de `profesores` las filas que ya duplican (por nombre o email normalizado) un usuario de la app — quedaron huérfanas de UI tras convertir el modal 👥 en "solo prestatarios externos" (v521) |
 
 ---
 
@@ -511,6 +512,31 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   items con mismo nombre normalizado + misma aula (para no depender de SQL
   manual la próxima vez que pase algo así) — reusa la selección múltiple y
   edición/borrado en lote ya existentes, sin fusión automática.
+- **31/07/2026 (v520-v521):** v520 corrigió que la cámara no se abría al
+  añadir foto en "Nuevo ítem" (solo el selector de archivos genérico) — al
+  input `f_foto_file` le faltaba `capture="environment"`, presente en los
+  demás inputs de foto del proyecto (QR, docs, formulario de Volt). v521
+  reorganizó el sistema de préstamos: 1) el modal 👥 pasa de "gestión de
+  profesores" (mezclaba usuarios de la app + tabla `profesores` propia,
+  con duplicidad de mantenimiento) a "solo prestatarios externos" (gente
+  sin cuenta de login) — el selector de préstamo sigue viendo a todos
+  (usuarios de la app + externos) porque el backend ya los fusiona sin
+  duplicados (`list.js:mergeProfesores`, sin cambios); migración `0021`
+  limpia de la tabla `profesores` las filas que ya duplicaban un usuario
+  de la app. 2) Buscador de texto añadido al selector de profesor/a en
+  ambos modales de préstamo (individual y caja completa), mismo patrón
+  que el buscador de ítem ya existente. 3) El modal de "préstamo de caja
+  completa" (antes solo abría con una caja ya fijada desde la fila del
+  inventario) ganó un modo alternativo: botón nuevo "📦 Prestar caja"
+  junto a "⌛ Nuevo préstamo" que abre el mismo modal con un selector
+  propio (filtro de aula + buscador de texto) para elegir la caja sin
+  partir de una fila. Implementado con subagent-driven-development en
+  worktree aislado (`worktree-prestamos-prestatarios`) — incidencia en el
+  camino: dos de los agentes despachados crearon su propio worktree
+  aislado pese a instrucción explícita de no hacerlo, hubo que traer sus
+  commits a mano (`cherry-pick` uno, `reset --soft` + recommit el otro).
+  Migración `0021` pendiente de aplicar en remoto (backup + dry-run +
+  DELETE) con supervisión directa, ver sección Pendiente.
 
 ---
 
@@ -538,6 +564,18 @@ Próximos pasos concretos:
 6. Ver más ideas de usabilidad sugeridas (pendientes) en
    [`docs/IDEAS.md`](docs/IDEAS.md): estado vacío por departamento, alertas
    de stock bajo, modo oscuro, índices D1, etc.
+7. Aplicar en remoto la migración `0021_limpiar_profesores_duplicados.sql`
+   (v521): backup con `wrangler d1 export`, contar filas afectadas antes de
+   borrar, aplicar, verificar conteo tras el DELETE — ver
+   `docs/superpowers/plans/2026-07-31-prestamos-prestatarios-y-buscadores.md`
+   (Task 2) para los comandos exactos.
+8. Devolver material: sin aviso de vencido dentro del propio modal (solo en
+   la tabla de fondo); `confirmDevolver()` hace `loadData()` completo tras
+   cada devolución (recarga todo el inventario) en vez de actualizar estado
+   local como los demás flujos de préstamo, más lento de lo necesario; sin
+   aviso "quedarán N sin devolver" si se deja una devolución parcial por
+   accidente; sin recordatorio proactivo de préstamos vencidos (el badge es
+   pasivo, solo cuenta). Detectado en sesión v521, sin planificar aún.
 
 ---
 
