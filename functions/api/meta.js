@@ -147,6 +147,8 @@ export async function onRequestGet({ request, env, data }) {
     ok: true,
     aulas: aulas.results,
     cats: mergeCats(cats.results, invCats.results),
+    catsPropias: cats.results.length > 0,
+    catsCrudo: superadmin ? cats.results : undefined,
     ubicaciones: mergeUbicaciones(ubicaciones.results, invLocs.results),
     ciclos: cicloOrder.map(id => cicloMap[id]),
     departamentos: superadmin ? departamentosRows.results : undefined,
