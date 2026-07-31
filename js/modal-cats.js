@@ -105,9 +105,13 @@ const CATS_SUGERIDAS_GENERICO = [
   { name: 'Otros',             i: '📁', c: '#6b7280', bg: '#f9fafb' },
 ];
 
+function _normCatName(s){
+  return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+
 function addCategoriasSugeridas(){
-  const existentes = new Set(catsEditing.map(c => c.name.trim().toLowerCase()));
-  const nuevas = CATS_SUGERIDAS_GENERICO.filter(c => !existentes.has(c.name.toLowerCase()));
+  const existentes = new Set(catsEditing.map(c => _normCatName(c.name)));
+  const nuevas = CATS_SUGERIDAS_GENERICO.filter(c => !existentes.has(_normCatName(c.name)));
   if(!nuevas.length){
     toast('Ya tienes todas las categorías sugeridas', 'ok');
     return;
@@ -159,6 +163,7 @@ async function saveCats(){
         .concat(payload.map(c => ({...c, departamento: deptActivo})));
     } else {
       setCatsFromEntries(clean.map(c=>[c.name, {c:c.c, bg:c.bg, i:c.i}]));
+      catsPropias = payload.length > 0;
     }
     fillCatFilter();
     fillModalSelects();
