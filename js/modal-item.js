@@ -606,10 +606,22 @@ function printQuickItemQr(){
 let _fotosEditing = []; // [{foto, orden}], máx 3
 
 function renderMainPhoto(src){
-  // Compatibilidad: sigue usado por openModal() para pre-rellenar el slot
-  // principal antes de que fotosGet complete la carga de la galería.
+  // Compatibilidad visual únicamente — usado también por js/docs.js
+  // (syncMainPhotoFromDocs/deleteExistingDoc) para reflejar una foto
+  // proveniente de Drive, o vaciarla. NO debe tocar _fotosEditing/la
+  // galería: docs.js corre de forma asíncrona (initDocSection) igual
+  // que fotosGet, y antes de esta separación una carrera entre ambas
+  // podía borrar las fotos reales de la galería (deleteExistingDoc ->
+  // renderMainPhoto('')) o colar una URL de Drive como foto de galería
+  // (syncMainPhotoFromDocs -> renderMainPhoto(driveThumbSrc(...))).
   const input = document.getElementById('f_foto');
   if(input) input.value = src || '';
+}
+
+// Único punto que inicializa _fotosEditing a partir de la foto principal
+// del ítem — llamado explícitamente desde openModal(), nunca desde
+// renderMainPhoto() (ver nota arriba).
+function _setFotosEditingFromMain(src){
   _fotosEditing = src ? [{foto: src, orden: 1}] : [];
   renderFotosGaleria();
 }
@@ -834,6 +846,7 @@ function openModal(id=null, src=null){
   document.getElementById('f_aula').value=m?.aula||(cf?.type==='aula'?cf.id:AULAS[0]?.id);
   document.getElementById('f_item').value=m?.item||'';
   renderMainPhoto(m?.foto||'');
+  _setFotosEditingFromMain(m?.foto||'');
   if(existing){
     apiPost({action:'fotosGet', itemId:id}).then(res => {
       if(res.ok && Array.isArray(res.fotos) && res.fotos.length){
