@@ -44,10 +44,17 @@ function updatePresVencBadge(){
 }
 
 function notificarVencidosAlBackend(){
-  // Fire-and-forget: notificar al backend sobre vencidos, sin bloquear el render
+  // Fire-and-forget: notificar al backend sobre vencidos, sin bloquear el render.
+  // El flag _vencidosNotifCheckDone solo se marca en el momento exacto en que se
+  // decide de verdad disparar la llamada — nunca antes, para no perder la
+  // oportunidad de notificar en una visita posterior si los datos aún no
+  // estaban cargados (ver loadData() en js/auth.js, fase 1 vs fase 2).
+  if(_vencidosNotifCheckDone) return; // Ya notificado (o descartado) en esta carga de página
+  if(!itemsLoaded) return; // Datos de préstamos aún no cargados (fase 2 de loadData() no ha terminado) — no marcar el flag
   if(!can('loans.write')) return; // Silencioso: no muestra error, solo no notifica
   if(getVencidos().length === 0) return; // Sin vencidos, no hay nada que notificar
 
+  _vencidosNotifCheckDone = true;
   apiPost({action:'notificarVencidos'}).catch(()=>{}); // Silencioso: ignorar errores de red
 }
 
@@ -97,10 +104,9 @@ function goPrestamos(tab){
   renderPrestamos();
 
   // Notificar al backend sobre vencidos, una sola vez por sesión de página
-  if(!_vencidosNotifCheckDone){
-    _vencidosNotifCheckDone = true;
-    notificarVencidosAlBackend();
-  }
+  // (toda la lógica de decisión, incluido el marcado del flag, vive dentro
+  // de la función — ver notificarVencidosAlBackend())
+  notificarVencidosAlBackend();
 }
 
 function setPresTab(tab){
