@@ -950,10 +950,11 @@ textarea.fi-w{resize:vertical;min-height:60px}
 .foto-slot .foto-slot-principal-badge{position:absolute;bottom:2px;left:2px;background:var(--accent);color:#fff;font-size:9px;padding:1px 4px;border-radius:4px}
 .photo-help{font-size:12px;color:var(--muted);line-height:1.4}
 #mItem .photo-picker{align-items:end;flex-wrap:wrap}
-#mItem .photo-preview{width:120px;flex:0 0 120px}
+#mItem .photo-col .photo-preview{width:120px;flex:0 0 120px}
 #mItem .photo-col{display:flex;flex-direction:column;gap:6px;align-items:center;flex:0 0 auto;max-width:100%}
-#mItem .item-stock-strip{display:grid;grid-template-columns:minmax(0,.55fr) minmax(0,.55fr) minmax(0,1.4fr);gap:10px;align-items:end;flex:1 1 220px;min-width:220px}
-#mItem .item-stock-strip .fi-w{padding:8px 10px}
+#mItem .item-stock-strip{display:grid;grid-template-columns:minmax(0,.4fr) minmax(0,.4fr) minmax(0,1fr);gap:6px;align-items:end;flex:1 1 180px;min-width:180px}
+#mItem .item-stock-strip .fi-w{padding:6px 8px;font-size:12px}
+#mItem .item-stock-strip .fl{font-size:10px}
 .check-row{display:flex;align-items:flex-start;gap:10px;background:var(--amber-l);border:1px solid #fde68a;border-radius:10px;padding:11px 12px;color:#854d0e;cursor:pointer}
 .check-row input{width:18px;height:18px;flex:0 0 auto;margin-top:1px;accent-color:var(--amber)}
 .check-row span{display:flex;flex-direction:column;gap:2px;font-size:13px;line-height:1.3}
