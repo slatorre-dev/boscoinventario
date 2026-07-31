@@ -646,6 +646,53 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   ocultaban el selector de departamento (quedaba visible sobre la pantalla
   de login y sobrevivía a un cambio de usuario en el mismo navegador), y
   `.brand-dept-select` no tenía ninguna regla CSS (ni base ni responsive).
+- **31/07/2026 (v535-v536): Galería de hasta 3 fotos por ítem.** Comparación
+  del proyecto contra apps de inventario comerciales (Sortly, Snipe-IT)
+  identificó que solo se permitía 1 foto por ítem — se implementó galería
+  de hasta 3, gestionable desde el modal de editar/crear ítem. Arquitectura:
+  tabla nueva `item_fotos(id, item_id, foto, orden)` (base64, mismo patrón
+  que ya usaba `inventario.foto`), migración (`migrations/0024`) copió las
+  386 fotos ya existentes como `orden=1`. La fila `orden=1` se espeja
+  siempre en `inventario.foto` para que los 10+ sitios del frontend que ya
+  muestran esa columna como miniatura (tabla, tarjetas, QR, impresión de
+  etiquetas) no necesitaran ningún cambio — solo el modal de edición gestiona
+  la galería completa. Backend nuevo: `fotosGet`/`fotosSync` en
+  `functions/api/item.js`, con el mismo check de propiedad por departamento
+  que ya usan `update`/`delete`, y registradas en `ENDPOINT_MAP`/
+  `ACTION_PERMISSIONS` (lección de v522 aplicada desde el principio esta
+  vez). Calidad de compresión bajada de 0.45 a 0.40. La galería completa se
+  carga bajo demanda (`fotosGet`, no bloqueante) al abrir un ítem existente
+  — `list.js` no cambia, sigue sin incluirla en la carga masiva. La revisión
+  final de rama (modelo más capaz, diff completo de las 6 tareas) encontró
+  un hallazgo Important que ninguna revisión por tarea podía ver:
+  `js/docs.js` (archivo que este plan no tocó) llama a `renderMainPhoto()`
+  para su propia lógica de sincronización con documentos de Drive
+  (`syncMainPhotoFromDocs()`, `deleteExistingDoc()`) — pero esa función
+  había pasado a reescribir también el estado completo de la galería
+  (`_fotosEditing`), así que borrar un documento de Drive marcado como
+  foto principal podía vaciar las 3 fotos reales al guardar, y sincronizar
+  una foto desde un documento de Drive podía colar su URL (no base64) como
+  si fuera una foto real de la galería — por una carrera entre la petición
+  asíncrona `fotosGet` y la petición asíncrona `getDocs`, ambas disparadas
+  sin orden garantizado dentro de `openModal()`. Corregido separando
+  responsabilidades: `renderMainPhoto()` vuelve a ser solo compatibilidad
+  visual (rellena `#f_foto`), y una función nueva `_setFotosEditingFromMain()`
+  es el único punto que inicializa la galería, llamada explícitamente desde
+  `openModal()`. Verificado end-to-end en producción con Playwright +
+  `wrangler d1 execute` (ítem 1097 "100K"): añadir/eliminar/reordenar fotos,
+  límite de 3, sincronización con `inventario.foto`, todo confirmado en D1
+  real. Un ítem de prueba inicial (225, "Estaciones Soldadura") reveló un
+  bug preexistente y no relacionado con esta feature: su campo `mod` no
+  corresponde a ningún ciclo/asignatura activo, así que `saveItem()` lo
+  bloquea con un error de validación al guardar, con o sin fotos — pendiente
+  de investigar por separado, no se tocó como parte de esta sesión. Gaps
+  conocidos, documentados y no corregidos (deuda aceptada explícitamente):
+  el rol `Consulta` (solo lectura) nunca ve la galería completa porque
+  `fotosGet` exige el permiso `items.write` y el proyecto no tiene hoy un
+  permiso `items.read` más laxo; la migración `0024` no lleva
+  `IF NOT EXISTS` (protegida solo por el error de re-ejecución, no
+  destructiva). Implementado con subagent-driven-development en el propio
+  repo (sin worktree).
 
 ---
 
@@ -686,6 +733,21 @@ Próximos pasos concretos:
    Fase 3 más arriba). No es un bug de seguridad, es una limitación
    funcional a revisar si hace falta cobertura completa sin depender de
    que alguien de cada departamento visite la página.
+10. ~~Galería de hasta 3 fotos por ítem~~ ✅ hecho (v535-v536).
+11. Bug preexistente descubierto al verificar la galería de fotos (v535):
+    el ítem `225` ("Estaciones Soldadura") tiene un campo `mod` que no
+    corresponde a ningún ciclo/asignatura activo — `saveItem()` bloquea
+    cualquier guardado de ese ítem (con o sin fotos) con un error de
+    validación silencioso (el modal simplemente no se cierra, sin toast
+    claro). Puede haber más ítems en la misma situación tras algún cambio
+    histórico en `ciclos`/`migrations` — pendiente de auditar cuántos y
+    decidir si `saveItem()` debería dar un mensaje más claro en vez de
+    solo marcar el campo en rojo.
+12. Rol `Consulta` (solo lectura) nunca ve la galería completa de fotos
+    (solo la principal) porque `fotosGet` exige `items.write` — el
+    proyecto no tiene hoy un permiso `items.read` más laxo. Deuda aceptada
+    al cerrar la feature de galería (v535), revisar si conviene crear ese
+    permiso más adelante.
 
 ---
 
