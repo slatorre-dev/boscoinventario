@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v525';
+const VERSION = 'v526';
 const CACHE_SHELL   = 'inventario-fp-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-fp-runtime-' + VERSION;
 
@@ -44,6 +44,7 @@ const SHELL = [
   './js/agente-widget.js',
   './icons/qr-code.svg',
   './icons/imagenbosco.png',
+  './icons/iconoaula.png',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap'
 ];
 
