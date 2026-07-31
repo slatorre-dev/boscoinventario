@@ -907,7 +907,7 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 #mItem .m-section .full{grid-column:1/-1}
 #mItem .m-section:has(#f_cat){grid-template-columns:1.3fr 1.7fr 0.5fr 0.5fr}
 #mItem .m-section:has(#f_util){grid-template-columns:1fr 1fr 0.5fr}
-#mItem .m-section:has(#f_foto_preview){grid-template-columns:1fr}
+#mItem .m-section:has(#fotosGaleria){grid-template-columns:1fr}
 #mItem .m-section-details{grid-column:1/-1;border-bottom:1px solid var(--border);padding-bottom:18px}
 #mItem .m-section-details:last-of-type{border-bottom:none}
 #mItem .m-section-details>summary{cursor:pointer;list-style:none;margin-bottom:0}
