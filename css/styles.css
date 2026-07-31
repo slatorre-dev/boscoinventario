@@ -1237,7 +1237,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .fg{grid-template-columns:1fr}
   #mItem .fg{grid-template-columns:1fr}
   #mItem .photo-col .photo-preview{width:72px!important;flex:0 0 72px!important}
-  #mItem .item-stock-strip{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  #mItem .item-stock-strip{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
   .maint-fields{grid-template-columns:1fr}
 
   /* ── STATS ── */
@@ -1319,7 +1319,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
   #mItem .modal{width:min(680px,100%)}
   #mItem .fg{grid-template-columns:1fr 1fr}
   .photo-preview{width:36.8px!important;flex-basis:36.8px!important}
-  #mItem .photo-preview{width:48px!important;flex-basis:48px!important}
+  #mItem .photo-col .photo-preview{width:48px!important;flex-basis:48px!important}
 }
 
 @media(max-width:640px){
@@ -1348,7 +1348,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
   #itemQrBox .qr-panel{align-items:flex-start}
   #itemQrBox .qr-img{width:96px;height:96px}
   .photo-preview{width:46px!important;flex-basis:46px!important}
-  #mItem .photo-preview{width:60px!important;flex-basis:60px!important}
+  #mItem .photo-col .photo-preview{width:60px!important;flex-basis:60px!important}
 }
 
 @media (max-width:1200px){
