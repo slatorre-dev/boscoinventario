@@ -607,9 +607,14 @@ async function confirmDevolver(){
   try {
     const res = await apiPost({action:'devolver', presId:devolverPresId, cantidadDevuelta:cant});
     if(!res.ok) throw new Error(res.error);
+    const idx = prestamos.findIndex(x=>Number(x.id)===Number(devolverPresId));
+    if(idx>=0) prestamos[idx] = res.prestamo;
+    if(res.nuevoQty !== null && res.nuevoQty !== undefined){
+      const itemIdx = items.findIndex(x=>Number(x.id)===Number(res.prestamo.itemId));
+      if(itemIdx>=0) items[itemIdx].qty = res.nuevoQty;
+    }
     closeDevolver();
     toast('Devolución registrada','ok');
-    await loadData(); // recargar todo
     goPrestamos();
   } catch(err){ toast('Error: '+err.message,'err'); btn.disabled=false; btn.textContent='📥 Confirmar devolución'; }
 }
