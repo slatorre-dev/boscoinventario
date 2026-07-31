@@ -317,6 +317,9 @@
           <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
         </svg>
       </button>
+      <button class="gsearch-qr" id="gsSerie" onclick="openCamaraSerie()" title="Buscar por número de serie">
+        📷
+      </button>
       <div class="gsr" id="gsResults" role="listbox"></div>
     </div>
   </div>
@@ -678,6 +681,7 @@
         <div class="m-section-details-body">
           <div><label class="fl">Utilidad</label><input class="fi-w" id="f_util" placeholder="Para qué se usa"></div>
           <div><label class="fl">Proveedor</label><input class="fi-w" id="f_proveedor" placeholder="Proveedor, tienda o URL"></div>
+          <div><label class="fl">Nº de serie</label><input class="fi-w" id="f_serie" placeholder="S/N de fábrica"></div>
           <div><label class="fl">Precio (€)</label><input class="fi-w" id="f_precio" type="number" step="0.01" min="0" placeholder="0.00"></div>
           <div><label class="fl">Última revisión</label><input class="fi-w" id="f_fecha" type="date"></div>
         </div>
@@ -1532,6 +1536,20 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   </div>
 </div>
 
+<!-- ══ CÁMARA BÚSQUEDA POR NÚMERO DE SERIE ══ -->
+<div class="mbg" id="mCamaraSerie" onclick="if(event.target===this)closeCamaraSerie()">
+  <div class="modal" style="max-width:600px">
+    <div class="mh"><div class="mt">📷 Buscar por número de serie</div><button class="mx" onclick="closeCamaraSerie()">✕</button></div>
+    <video id="serieVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px;display:none" autoplay playsinline></video>
+    <div id="serieEstado" style="display:none;font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Leyendo etiqueta...</div>
+    <div id="serieResultado" style="display:none"></div>
+    <div class="mf" style="margin-top:16px;gap:8px">
+      <button class="btn btn-p" id="serieCapturarBtn" style="display:none" onclick="capturarSerie()">Capturar</button>
+      <button class="btn" onclick="closeCamaraSerie()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL HISTORIAL (SOLO SEBA) ══ -->
 <div class="mbg" id="mHistorial" onclick="if(event.target===this)closeHistorialModal()" style="display:none">
   <div class="modal historial-modal">
@@ -1705,6 +1723,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/profile.js"></script>
 <script defer src="js/reset.js"></script>
 <script defer src="js/qr-scanner.js"></script>
+<script defer src="js/camara-serie.js"></script>
 <script defer src="js/audit-log.js"></script>
 <script defer src="js/modal-historial.js"></script>
 <script defer src="js/modal-auditoria.js"></script>

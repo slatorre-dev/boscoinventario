@@ -38,6 +38,7 @@ const ACTION_PERMISSIONS = {
   restoreBackup: 'import.write',
   fotosGet: 'items.write',
   fotosSync: 'items.write',
+  buscarPorSerie: 'serie.read',
   profAdd: 'profesores.manage',
   profUpdate: 'profesores.manage',
   profDelete: 'profesores.manage',
@@ -84,7 +85,7 @@ const SUPERADMIN_ONLY = ['visibility.manage'];
 
 function can(permission){
   if(!SESSION) return false;
-  if(permission === 'docs.read') return true;
+  if(permission === 'docs.read' || permission === 'serie.read') return true;
   if(SUPERADMIN_ONLY.includes(permission)) return userRole() === 'superadmin';
   const perms = ROLE_PERMISSIONS[userRole()] || ROLE_PERMISSIONS.consulta;
   return perms.includes('*') || perms.includes(permission);
@@ -124,7 +125,8 @@ function applyRoleUI(){
     ['btnPres','loans.write',  'flex'],
     ['btnPed', 'orders.write', 'flex'],
     ['btnPrint', null,         'flex'],
-    ['gsQr',   null,           'inline-flex']
+    ['gsQr',   null,           'inline-flex'],
+    ['gsSerie', null,          'inline-flex']
   ];
   rules.forEach(([id, permission, displayType]) => {
     const el = document.getElementById(id);
