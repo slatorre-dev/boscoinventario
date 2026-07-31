@@ -316,5 +316,79 @@ export async function onRequestPost({ request, env, data }) {
     return Response.json({ ok: true, restored });
   }
 
+  if (action === 'buscarPorSerie') {
+    const imagen = body.imagen;
+    if (!imagen) return Response.json({ ok: false, error: 'Falta la imagen' });
+    if (!env.GITHUB_TOKEN) return Response.json({ ok: false, error: 'GITHUB_TOKEN no configurado en Cloudflare' });
+
+    let serieLeida = '';
+    try {
+      const aiResp = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.GITHUB_TOKEN}` },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.' },
+                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imagen}` } }
+              ]
+            }
+          ],
+          temperature: 0,
+          max_tokens: 100
+        })
+      });
+      if (!aiResp.ok) return Response.json({ ok: false, error: 'Error del servicio de IA' });
+      const aiData = await aiResp.json();
+      const raw = aiData?.choices?.[0]?.message?.content || '';
+      const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      serieLeida = String(parsed.serie || '').trim();
+    } catch (e) {
+      return Response.json({ ok: true, match: 'sin_lectura' });
+    }
+
+    if (!serieLeida) return Response.json({ ok: true, match: 'sin_lectura' });
+
+    const deptFilter = superadmin
+      ? ''
+      : ` AND (departamento=? OR departamento='${genericDept}')`;
+    const deptBind = superadmin ? [] : [dept];
+
+    const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
+      .bind(serieLeida, ...deptBind).first();
+    if (exact) return Response.json({ ok: true, match: 'exacto', item: exact });
+
+    const candidatesRes = await env.DB.prepare(`SELECT id, item, ref, aula, serie FROM inventario WHERE serie != ''${deptFilter}`)
+      .bind(...deptBind).all();
+    const candidatos = (candidatesRes.results || [])
+      .map(r => ({ ...r, _dist: levenshtein(r.serie, serieLeida) }))
+      .filter(r => r._dist <= 2)
+      .sort((a, b) => a._dist - b._dist)
+      .slice(0, 5)
+      .map(({ _dist, ...r }) => r);
+
+    if (candidatos.length) return Response.json({ ok: true, match: 'fuzzy', candidatos });
+    return Response.json({ ok: true, match: 'ninguno', serieLeida });
+  }
+
   return Response.json({ ok: false, error: 'Accion desconocida' });
+}
+
+function levenshtein(a, b) {
+  a = String(a || '').toUpperCase();
+  b = String(b || '').toUpperCase();
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[m][n];
 }
