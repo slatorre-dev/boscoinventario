@@ -37,7 +37,7 @@ function resetModalChanges(){
 }
 
 function captureModalOriginalValues(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
   modalOriginalValues = {};
   fields.forEach(field => {
     const el = document.getElementById(field);
@@ -53,7 +53,7 @@ function captureModalOriginalValues(){
 }
 
 function attachModalChangeListeners(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
   fields.forEach(field => {
     const el = document.getElementById(field);
     if(el){
@@ -66,7 +66,7 @@ function attachModalChangeListeners(){
 }
 
 function checkModalForChanges(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
   let hasChanges = false;
 
   for(let field of fields){
@@ -822,7 +822,7 @@ async function saveHijosCaja(){
 function setItemModalReadonly(readonly){
   const modal = document.querySelector('#mItem .modal');
   modal?.classList.toggle('item-readonly', !!readonly);
-  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_tags','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
+  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_serie','f_tags','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
@@ -843,6 +843,7 @@ function openModal(id=null, src=null){
   initTagsAutocomplete();
   document.getElementById('mT').textContent = existing ? (readonly ? 'Ver ítem' : 'Editar ítem') : src ? '📋 Duplicar ítem' : 'Nuevo ítem';
   document.getElementById('f_ref').value = id ? (m?.ref||'') : '';
+  document.getElementById('f_serie').value = id ? (m?.serie||'') : '';
   document.getElementById('f_aula').value=m?.aula||(cf?.type==='aula'?cf.id:AULAS[0]?.id);
   document.getElementById('f_item').value=m?.item||'';
   document.getElementById('f_fechaAdquisicion').value = m?.fecha_adquisicion || '';
@@ -1074,6 +1075,7 @@ async function saveItem(){
     est:document.getElementById('f_est').value,
     util:document.getElementById('f_util').value.trim(),
     proveedor:document.getElementById('f_proveedor').value.trim(),
+    serie:document.getElementById('f_serie').value.trim(),
     tags:document.getElementById('f_tags').value.trim(),
     fecha:document.getElementById('f_fecha').value,
     mant:document.getElementById('f_mant').checked ? '1' : '',
