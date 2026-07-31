@@ -623,7 +623,29 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   el incidente de v521/v522); un agente ignoró la instrucción y creó su
   propio worktree para Task 1, cuyo commit además quedó corrupto (borrado
   masivo de archivos no relacionados por un bug del entorno de worktree) —
-  se extrajo el diff real y se aplicó a mano en el repo principal.
+  se extrajo el diff real y se aplicó a mano en el repo principal. La
+  verificación end-to-end en producción (Playwright + `wrangler d1
+  execute` contra la D1 remota) encontró un bug real antes de dar la
+  sesión por cerrada: `catsPropias` (el flag que oculta el aviso de
+  categorías genéricas) nunca se actualizaba tras guardar, solo en el
+  siguiente login — el aviso seguía visible al reabrir el modal en la
+  misma sesión tras crear las categorías sugeridas. Corregido y
+  redesplegado (v533), reverificado en vivo confirmando el arreglo.
+- **31/07/2026 (v534):** revisión final de rama (todo el diff de v531-v533
+  junto, no solo por tarea) encontró un hallazgo Important que ninguna
+  revisión individual podía ver: `js/modal-item.js` (`handleCatSelectChange`,
+  crear categoría inline desde "＋ Añadir categoría..." en el formulario de
+  Nuevo ítem) era un **cuarto** llamante de `catsSync` que ninguna tarea
+  de v532 había migrado — para `superadmin` construía el payload desde
+  `CATS` (mezcla de los 24 departamentos) sin mandar `departamentoDestino`,
+  con riesgo de que una futura corrección ingenua del 403 volcase
+  categorías de todo el centro en un solo departamento. Corregido con el
+  mismo patrón ya usado en `modal-cats.js` (`catsCrudo` filtrado por
+  `deptActivo`). De paso, 2 hallazgos Minor que se habían diferido durante
+  la sesión: `logout()`/`_doAutoLogout()` no limpiaban `deptActivo` ni
+  ocultaban el selector de departamento (quedaba visible sobre la pantalla
+  de login y sobrevivía a un cambio de usuario en el mismo navegador), y
+  `.brand-dept-select` no tenía ninguna regla CSS (ni base ni responsive).
 
 ---
 
