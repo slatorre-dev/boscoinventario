@@ -274,10 +274,12 @@ function renderPrestamos(){
 
 // ─── PRESTAR ─────────────────────────────────────────────
 function _fillPrestarInfo(item){
+  const aulaNombre = AULAS.find(a=>a.id===item.aula)?.name || item.aula || '—';
   document.getElementById('prestarItemInfo').innerHTML = `
     <div style="font-weight:700;font-size:14px;margin-bottom:4px">${item.item}</div>
     <div style="font-size:12px;color:var(--muted)">
       ${item.ref?`<span style="font-family:var(--mono);background:var(--white);padding:2px 6px;border-radius:4px;margin-right:8px">${item.ref}</span>`:''}
+      📍 ${escHtml(aulaNombre)} &nbsp;·&nbsp;
       Stock disponible: <strong style="color:var(--accent)">${item.qty} unidades</strong>
     </div>`;
 }
@@ -285,7 +287,10 @@ function _fillPrestarInfo(item){
 function _buildPresItemOptions(filtered){
   document.getElementById('pres_item').innerHTML =
     '<option value="">— Seleccionar ítem —</option>' +
-    filtered.map(x=>`<option value="${x.id}">${x.item}${x.ref?' ['+x.ref+']':''} · ${x.qty} uds.</option>`).join('');
+    filtered.map(x=>{
+      const aulaNombre = AULAS.find(a=>a.id===x.aula)?.name || x.aula || '—';
+      return `<option value="${x.id}">${x.item}${x.ref?' ['+x.ref+']':''} · ${aulaNombre} · ${x.qty} uds.</option>`;
+    }).join('');
 }
 
 function filterPresItems(){
@@ -423,7 +428,10 @@ function _cajasConStock(){
 function _buildPresCajaOptions(filtered){
   document.getElementById('pres_cajaSelect').innerHTML =
     '<option value="">— Seleccionar caja —</option>' +
-    filtered.map(x=>`<option value="${x.id}">${x.item}${x.ref?' ['+x.ref+']':''}</option>`).join('');
+    filtered.map(x=>{
+      const aulaNombre = AULAS.find(a=>a.id===x.aula)?.name || x.aula || '—';
+      return `<option value="${x.id}">${x.item}${x.ref?' ['+x.ref+']':''} · ${aulaNombre}</option>`;
+    }).join('');
 }
 
 function filterPresCajaItems(){
@@ -485,7 +493,8 @@ function _loadCajaIntoModal(cajaId, initForm){
   if(!hijos.length){ toast('La caja no tiene componentes con stock','err'); return false; }
   _prestarCajaId = cajaId;
 
-  document.getElementById('prestarCajaNombre').textContent = `${caja.ref ? caja.ref+' · ' : ''}${caja.item}`;
+  const cajaAulaNombre = AULAS.find(a=>a.id===caja.aula)?.name || caja.aula || '—';
+  document.getElementById('prestarCajaNombre').textContent = `${caja.ref ? caja.ref+' · ' : ''}${caja.item} · 📍 ${cajaAulaNombre}`;
   document.getElementById('prestarCajaComponentes').innerHTML = hijos.map(h=>
     `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)">
       <span style="font-weight:600">${escHtml(h.item)}</span>
