@@ -563,6 +563,12 @@ async function confirmPrestar(){
 }
 
 // ─── DEVOLVER ────────────────────────────────────────────
+function formatFechaEs(iso){
+  if(!iso) return '';
+  const [y,m,d] = String(iso).split('-');
+  return `${d}/${m}/${y}`;
+}
+
 function openDevolver(presId){
   if(!requirePerm('loans.write')) return;
   const p = prestamos.find(x=>Number(x.id)===Number(presId));
@@ -571,13 +577,17 @@ function openDevolver(presId){
   const btn = document.getElementById('btnDevolverSave');
   btn.disabled = false; btn.textContent = '📥 Confirmar devolución';
   const pendiente = Number(p.cantidad) - Number(p.cantidadDevuelta||0);
+  const vencidoHtml = isVencido(p)
+    ? `<div style="color:var(--red);font-weight:600;margin-top:6px">⚠ Vencido desde el ${formatFechaEs(p.fechaPrevista)}</div>`
+    : '';
 
   document.getElementById('devolverInfo').innerHTML = `
     <div style="font-weight:700;font-size:14px;margin-bottom:4px">${p.itemNombre}</div>
     <div style="font-size:12px;color:var(--muted)">
       Profesor: <strong>${p.profesorNombre}</strong><br>
       Pendiente de devolver: <strong style="color:var(--green)">${pendiente} unidad${pendiente!==1?'es':''}</strong>${Number(p.cantidadDevuelta)>0?` (de ${p.cantidad} prestadas)`:''}
-    </div>`;
+    </div>
+    ${vencidoHtml}`;
 
   const cantInput = document.getElementById('dev_cant');
   cantInput.value = pendiente;
