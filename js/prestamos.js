@@ -541,7 +541,11 @@ let profEditing = [];
 function openProfModal(){
   if(!requirePerm('profesores.manage')) return;
   profEditing = JSON.parse(JSON.stringify(
-    profesores.filter(p => String(p.nombre||'').trim() && String(p.nombre||'').trim().toLowerCase() !== 'departamento')
+    profesores.filter(p =>
+      String(p.nombre||'').trim() &&
+      String(p.nombre||'').trim().toLowerCase() !== 'departamento' &&
+      p.source !== 'usuarios'
+    )
   ));
   renderProfList();
   document.getElementById('mProf').classList.add('open');
@@ -550,13 +554,13 @@ function closeProfModal(){ document.getElementById('mProf').classList.remove('op
 
 function renderProfList(){
   if(!profEditing.length){
-    document.getElementById('profList').innerHTML='<div class="empty" style="padding:20px"><div class="et" style="font-size:13px">Aún no hay profesores/as. Pulsa "+ Añadir profesor/a" para empezar.</div></div>';
+    document.getElementById('profList').innerHTML='<div class="empty" style="padding:20px"><div class="et" style="font-size:13px">Aún no hay prestatarios externos. Pulsa "+ Añadir prestatario externo" para empezar.</div></div>';
     return;
   }
   document.getElementById('profList').innerHTML = profEditing.map((p,i)=>`
     <div class="prof-row">
-      <input class="fi-w name-input" value="${escHtml(p.nombre||'')}" onchange="profEditing[${i}].nombre=this.value" placeholder="Nombre completo" ${p.source==='usuarios'?'readonly title="Usuario de la app: se gestiona desde Usuarios"':''}>
-      <input class="fi-w dept-input" value="${escHtml(p.departamento||'')}" onchange="profEditing[${i}].departamento=this.value" placeholder="Departamento" ${p.source==='usuarios'?'readonly':''}>
+      <input class="fi-w name-input" value="${escHtml(p.nombre||'')}" onchange="profEditing[${i}].nombre=this.value" placeholder="Nombre completo">
+      <input class="fi-w dept-input" value="${escHtml(p.departamento||'')}" onchange="profEditing[${i}].departamento=this.value" placeholder="Departamento (opcional)">
       <button class="del-btn" onclick="removeProfRow(${i})" title="Eliminar">🗑</button>
     </div>
   `).join('');
@@ -610,10 +614,6 @@ function exportProfesoresCSV(){
 
 function removeProfRow(idx){
   const p = profEditing[idx];
-  if(p.source === 'usuarios'){
-    toast('Los usuarios de la app se gestionan desde Usuarios, no desde Profesores/as','err');
-    return;
-  }
   const usados = prestamos.filter(pr=>String(pr.profesorId)===String(p.id) && (pr.estado==='Activo'||pr.estado==='Parcial')).length;
   if(usados > 0){
     toast(`No puedes eliminar: tiene ${usados} préstamo(s) activo(s)`,'err');
@@ -630,17 +630,16 @@ async function saveProfesores(){
     if(!await confirmDialog({message:'Hay profesores sin nombre que se descartarán. ¿Continuar?'})) return;
   }
 
-  // Calcular cambios respecto a profesores actuales
-  const editable = validos.filter(p=>p.source !== 'usuarios');
-  const toAdd = editable.filter(p=>!p.id);
+  // Calcular cambios respecto a profesores actuales (profEditing ya es
+  // solo externos, ver openProfModal — todo aquí es editable)
+  const toAdd = validos.filter(p=>!p.id);
   const toUpdate = validos.filter(p=>{
-    if(p.source === 'usuarios') return false;
     if(!p.id) return false;
     const orig = profesores.find(x=>Number(x.id)===Number(p.id));
     if(!orig) return false;
     return orig.nombre!==p.nombre || orig.departamento!==p.departamento || orig.email!==p.email;
   });
-  const idsValidos = new Set(editable.filter(p=>p.id).map(p=>String(p.id)));
+  const idsValidos = new Set(validos.filter(p=>p.id).map(p=>String(p.id)));
   const toDelete = profesores.filter(p=>p.source !== 'usuarios' && !idsValidos.has(String(p.id)));
 
   if(!toAdd.length && !toUpdate.length && !toDelete.length){
