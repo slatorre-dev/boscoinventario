@@ -127,12 +127,31 @@ async function handleCatSelectChange(){
     toast('La categoría ya existe', 'ok');
     return;
   }
-  const nextCats = Object.assign({}, CATS, { [name]: { i:suggestCatIcon(name), c:'#6b7280', bg:'#f9fafb' } });
+  const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+  if(isSuperAdmin && !deptActivo){
+    sel.value = previous;
+    toast('Elige un departamento en el selector de la barra superior primero', 'err');
+    return;
+  }
+  // CATS (objeto global fusionado) mezcla todos los departamentos para
+  // superadmin — igual que en modal-cats.js, usar catsCrudo filtrado por
+  // deptActivo para no volcar categorías de todo el centro en uno solo.
+  const nextCats = isSuperAdmin
+    ? Object.assign({}, ...catsCrudo.filter(c => c.departamento === deptActivo).map(c => ({[c.name]: {c:c.c, bg:c.bg, i:c.i}})), { [name]: { i:suggestCatIcon(name), c:'#6b7280', bg:'#f9fafb' } })
+    : Object.assign({}, CATS, { [name]: { i:suggestCatIcon(name), c:'#6b7280', bg:'#f9fafb' } });
   const payload = sortedCatEntries(nextCats).map(([catName, v], i)=>({ name:catName, c:v.c, bg:v.bg, i:v.i, orden:i+1 }));
   try{
-    const res = await apiPost({ action:'catsSync', cats:payload });
+    const body = { action:'catsSync', cats:payload };
+    if(isSuperAdmin && deptActivo) body.departamentoDestino = deptActivo;
+    const res = await apiPost(body);
     if(!res.ok) throw new Error(res.error);
-    setCatsFromEntries(sortedCatEntries(nextCats));
+    if(isSuperAdmin && deptActivo){
+      catsCrudo = catsCrudo.filter(c => c.departamento !== deptActivo)
+        .concat(payload.map(c => ({...c, departamento: deptActivo})));
+    } else {
+      setCatsFromEntries(sortedCatEntries(nextCats));
+      catsPropias = payload.length > 0;
+    }
     fillModalSelects();
     sel.value = name;
     sel.dataset.prev = name;
