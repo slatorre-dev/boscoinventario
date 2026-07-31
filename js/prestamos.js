@@ -406,6 +406,10 @@ function filterPresCajaItems(){
   if(q) filtered = filtered.filter(x=>normalize(x.item+' '+(x.ref||'')).includes(q));
   filtered.sort((a,b)=>a.item.localeCompare(b.item));
   _buildPresCajaOptions(filtered);
+  // reset selection
+  _prestarCajaId = null;
+  document.getElementById('prestarCajaNombre').textContent = '';
+  document.getElementById('prestarCajaComponentes').innerHTML = '<div style="color:var(--muted);font-size:13px">Selecciona una caja para ver sus componentes</div>';
 }
 
 function onPresCajaSelectChange(val){
