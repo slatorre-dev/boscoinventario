@@ -354,6 +354,12 @@ function filterProfSelect(listVarName, inputId, selectId){
   _renderProfSelectOptions(selectId, filtered);
 }
 
+function openPrestarPicker(){
+  if(!requirePerm('loans.write')) return;
+  document.getElementById('mPrestarPicker').classList.add('open');
+}
+function closePrestarPicker(){ document.getElementById('mPrestarPicker').classList.remove('open'); }
+
 async function openPrestar(itemId){
   if(!requirePerm('loans.write')) return;
   if(!profesores.length){

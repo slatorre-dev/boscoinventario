@@ -297,8 +297,7 @@
     <p>Selecciona un aula o un ciclo formativo para ver su inventario</p>
     <div class="action-strip" style="justify-content:center;gap:10px;margin-top:18px">
       <button class="btn btn-p icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem rápido</span></button>
-      <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
-      <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestarCaja()">📦 <span class="btn-text">Prestar caja</span></button>
+      <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestarPicker()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-d icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
       <a class="btn icon-btn" href="javascript:void(0)" onclick="goDocsDpto()" style="display:inline-flex;padding:11px 24px;font-size:14px;border-color:#0891b2;color:#0891b2;text-decoration:none">📂 <span class="btn-text">Documentación</span></a>
       <button class="btn icon-btn" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="goMaintenance()">🛠️ <span class="btn-text">Mantenimiento</span></button>
@@ -422,8 +421,7 @@
           <option value="material">Material</option>
         </select>
       </label>
-      <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
-      <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestarCaja()">📦 <span class="btn-text">Prestar caja</span></button>
+      <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestarPicker()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn icon-btn" data-perm="profesores.manage" onclick="openProfModal()">👥 <span class="btn-text">Gestionar prestatarios externos</span></button>
       <button class="btn icon-btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 <span class="btn-text">Gestionar usuarios</span></button>
     </div>
@@ -455,8 +453,7 @@
     <div class="sub-meta" id="sMeta"></div>
     <div class="action-strip">
       <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
-      <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestar()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
-      <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestarCaja()">📦 <span class="btn-text">Prestar caja</span></button>
+      <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestarPicker()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
       <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px" onclick="openPrintChoiceModal()">🖨️ <span class="btn-text">Imprimir</span></button>
     </div>
@@ -884,6 +881,17 @@
         <button class="btn" onclick="closePrestarCaja()">Cancelar</button>
         <button class="btn btn-loan" id="btnPrestarCajaSave" onclick="confirmPrestarCaja()">📦 Registrar préstamo de caja</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PICKER TIPO DE PRÉSTAMO -->
+<div class="mbg" id="mPrestarPicker" onclick="if(event.target===this)closePrestarPicker()">
+  <div class="modal" style="width:min(380px,100%)">
+    <div class="mh"><div class="mt">⌛ Nuevo préstamo</div><button class="mx" onclick="closePrestarPicker()">✕</button></div>
+    <div style="padding:4px 0 8px;display:flex;flex-direction:column;gap:10px">
+      <button class="btn" style="width:100%;justify-content:center;padding:13px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="closePrestarPicker();openPrestar()">🔧 Un material</button>
+      <button class="btn" style="width:100%;justify-content:center;padding:13px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="closePrestarPicker();openPrestarCaja()">📦 Caja completa</button>
     </div>
   </div>
 </div>
