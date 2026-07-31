@@ -78,6 +78,9 @@ async function capturarSerie() {
     }
     if (res.match === 'exacto') {
       closeCamaraSerie();
+      if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === res.item.id)) {
+        items.push(res.item);
+      }
       openItemRoute(res.item.id);
       return;
     }
