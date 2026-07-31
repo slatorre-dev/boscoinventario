@@ -126,16 +126,36 @@ function initGoogleButton() {
       theme: 'outline',
       width: 300,
     });
+    // El popup de Google (accounts.google.com/gsi/transform) a veces se
+    // queda colgado en blanco sin completar el callback — problema
+    // conocido de Google Identity Services (bloqueo de cookies de
+    // terceros / conflictos con FedCM), no de este código. Sin aviso,
+    // el usuario se queda mirando la pantalla sin límite. Arrancamos un
+    // timeout al pulsar el botón (GIS abre el popup de forma síncrona al
+    // click) que se cancela en cuanto handleGoogleSignIn recibe respuesta.
+    container.addEventListener('click', _startGoogleSignInTimeout, true);
   }
 }
 window.addEventListener('load', initGoogleButton);
 
+let _googleSignInTimeoutId = null;
+function _startGoogleSignInTimeout(){
+  clearTimeout(_googleSignInTimeoutId);
+  _googleSignInTimeoutId = setTimeout(() => {
+    const errorEl = document.getElementById('loginError');
+    if (!errorEl) return;
+    errorEl.textContent = 'El login con Google está tardando más de lo normal. Cierra la ventana emergente e inténtalo de nuevo, o usa usuario/contraseña.';
+    errorEl.classList.add('show');
+  }, 8000);
+}
+
 async function handleGoogleSignIn(response) {
   console.log('Google Sign-In response:', response);
-  
+  clearTimeout(_googleSignInTimeoutId);
+
   const errorEl = document.getElementById('loginError');
   const okEl = document.getElementById('loginOk');
-  
+
   if (!response.credential) {
     errorEl.textContent = 'Error: no se recibió token de Google';
     errorEl.classList.add('show');
