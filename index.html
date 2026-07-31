@@ -922,7 +922,11 @@
     <div class="mh"><div class="mt">📥 Devolver material</div><button class="mx" onclick="closeDevolver()">✕</button></div>
     <div id="devolverInfo" style="background:var(--green-l);border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;margin-bottom:18px"></div>
     <div class="fg">
-      <div class="full"><label class="fl">Cantidad a devolver *</label><input class="fi-w" id="dev_cant" type="number" min="1" value="1"></div>
+      <div class="full">
+        <label class="fl">Cantidad a devolver *</label>
+        <input class="fi-w" id="dev_cant" type="number" min="1" value="1" oninput="checkDevolucionParcialWarn()">
+        <div id="dev_parcial_warn" style="display:none;margin-top:6px;padding:6px 10px;border-radius:8px;background:#78350f;color:#fcd34d;font-size:12px"></div>
+      </div>
       <div class="full"><label class="fl">Observaciones (opcional)</label><textarea class="fi-w" id="dev_obs" placeholder="Estado en que se devuelve..."></textarea></div>
     </div>
     <div class="mf">

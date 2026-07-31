@@ -594,9 +594,25 @@ function openDevolver(presId){
   cantInput.max = pendiente;
   document.getElementById('dev_obs').value = '';
 
+  checkDevolucionParcialWarn();
   document.getElementById('mDevolver').classList.add('open');
 }
 function closeDevolver(){ document.getElementById('mDevolver').classList.remove('open'); }
+
+function checkDevolucionParcialWarn(){
+  const warn = document.getElementById('dev_parcial_warn');
+  const input = document.getElementById('dev_cant');
+  if(!warn || !input) return;
+  const cant = parseInt(input.value)||0;
+  const max = parseInt(input.max)||0;
+  const restante = max - cant;
+  if(cant > 0 && restante > 0){
+    warn.style.display = 'block';
+    warn.textContent = `⚠ Quedarán ${restante} unidad${restante!==1?'es':''} sin devolver`;
+  } else {
+    warn.style.display = 'none';
+  }
+}
 
 async function confirmDevolver(){
   const cant = parseInt(document.getElementById('dev_cant').value)||0;
