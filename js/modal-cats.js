@@ -45,11 +45,26 @@ function openCatsModal(){
   document.getElementById('mCats').classList.add('open');
 }
 
-// No-op temporal: la implementación real llega en Task 7 (aviso de
-// categorías sugeridas/pendientes en el modal). Se añade aquí vacía para
-// que la llamada en openCatsModal() no rompa en runtime mientras Task 7
-// no se haya ejecutado todavía — Task 7 sobreescribirá esta función.
-function _renderCatsAviso(){}
+// Aviso "tu departamento aún no tiene categorías propias" — solo para
+// jefes/as de departamento y profesores (no superadmin, que siempre está
+// viendo un departamento con datos ajenos o el suyo de referencia ya
+// resuelto por deptActivo) cuando catsPropias es false (meta.js).
+function _renderCatsAviso(){
+  const el = document.getElementById('catsAvisoGenerico');
+  if(!el) return;
+  const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
+  if(catsPropias || isSuperAdmin){
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px">
+      <strong>Tu departamento aún no tiene categorías propias</strong> — tus ítems usan solo la etiqueta genérica.
+      <button class="btn btn-sm" style="margin-left:8px" onclick="addCategoriasSugeridas()">✨ Crear categorías sugeridas</button>
+    </div>`;
+}
 function closeCatsModal(){document.getElementById('mCats').classList.remove('open')}
 
 function renderCatsList(){
@@ -74,6 +89,32 @@ function renderCatsList(){
 function addCatRow(){
   catsEditing.push({name:'Nueva categoría', i:CAT_ICON_FALLBACK, c:'#6b7280', bg:'#f9fafb'});
   renderCatsList();
+}
+
+// Set fijo de categorías sugeridas para departamentos sin categorías
+// propias todavía (ver _renderCatsAviso) — icono/color explícitos por
+// entrada en vez de suggestCatIcon() (js/config.js:215): más simple para
+// 6 nombres fijos y no depende de que calcen con las regex de
+// CAT_ICON_SUGGESTIONS. Decisión acordada con el usuario, no cambiar sin motivo.
+const CATS_SUGERIDAS_GENERICO = [
+  { name: 'Material fungible', i: '📦', c: '#d97706', bg: '#fffbeb' },
+  { name: 'Herramientas',      i: '🔨', c: '#2563eb', bg: '#eff6ff' },
+  { name: 'Mobiliario',        i: '🪑', c: '#059669', bg: '#ecfdf5' },
+  { name: 'Audiovisual',       i: '📽️', c: '#7c3aed', bg: '#f5f3ff' },
+  { name: 'Informática',       i: '💻', c: '#0891b2', bg: '#ecfeff' },
+  { name: 'Otros',             i: '📁', c: '#6b7280', bg: '#f9fafb' },
+];
+
+function addCategoriasSugeridas(){
+  const existentes = new Set(catsEditing.map(c => c.name.trim().toLowerCase()));
+  const nuevas = CATS_SUGERIDAS_GENERICO.filter(c => !existentes.has(c.name.toLowerCase()));
+  if(!nuevas.length){
+    toast('Ya tienes todas las categorías sugeridas', 'ok');
+    return;
+  }
+  catsEditing.push(...nuevas.map(c => ({name:c.name, i:c.i, c:c.c, bg:c.bg})));
+  renderCatsList();
+  toast(`${nuevas.length} categorías sugeridas añadidas — pulsa Guardar para aplicar`, 'ok');
 }
 
 // Al escribir el nombre de una categoría nueva, sugiere un icono acorde

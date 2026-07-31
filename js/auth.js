@@ -428,6 +428,7 @@ async function loadData(){
     if(Array.isArray(meta.catsCrudo)) catsCrudo = meta.catsCrudo;
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
     if(meta.ciclos && meta.ciclos.length) CICLOS = meta.ciclos;
+    catsPropias = !!meta.catsPropias;
     if(meta.departamentos && meta.departamentos.length) DEPARTAMENTOS = meta.departamentos;
     renderDeptActivoSelector();
     document.getElementById('btnN').style.display='flex';

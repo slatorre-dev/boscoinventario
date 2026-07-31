@@ -22,6 +22,10 @@ let deptActivo = localStorage.getItem('dept_activo_superadmin') || '';
 // filtrar/guardar por deptActivo sin tocar CATS (objeto global fusionado
 // usado por 7 archivos del frontend, sin campo departamento por entrada).
 let catsCrudo = [];
+// true si el propio departamento ya tiene categorías propias en D1
+// (meta.js:catsPropias) — inicial `true` para no mostrar el aviso de
+// "categorías genéricas" antes de que `meta` cargue (modal-cats.js).
+let catsPropias = true;
 
 const TH_OPTIONS = ['th-blue','th-green','th-amber','th-teal','th-orange','th-pink','th-purple','th-red'];
 
