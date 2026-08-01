@@ -42,7 +42,7 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ error: 'Error del servicio de IA: ' + String(e?.message || e) }, { status: 500 });
   }
 
-  const content = aiData?.response || aiData?.result?.response || (aiData?.response === '' ? JSON.stringify(aiData).slice(0, 500) : '');
+  const content = aiData?.response || aiData?.result?.response || '[DEBUG aiData]: ' + JSON.stringify(aiData).slice(0, 500);
   const chunk = { choices: [{ delta: { content } }] };
   const sse = `data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`;
 
