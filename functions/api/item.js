@@ -336,15 +336,14 @@ export async function onRequestPost({ request, env, data }) {
     }
 
     let serieLeida = '';
+    const raw = aiData?.answer || aiData?.response || '';
     try {
-      const raw = aiData?.answer || aiData?.response || '';
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
     } catch (e) {
-      return Response.json({ ok: true, match: 'sin_lectura' });
+      return Response.json({ ok: true, match: 'sin_lectura', debugRaw: raw });
     }
-
-    if (!serieLeida) return Response.json({ ok: true, match: 'sin_lectura' });
+    if (!serieLeida) return Response.json({ ok: true, match: 'sin_lectura', debugRaw: raw });
 
     const deptFilter = superadmin
       ? ''
