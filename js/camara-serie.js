@@ -88,6 +88,16 @@ async function capturarSerie() {
       _mostrarSerieCandidatos(res.candidatos);
       return;
     }
+    if (res.match === 'texto') {
+      closeCamaraSerie();
+      const gsInput = document.getElementById('gsInput');
+      if (gsInput) {
+        gsInput.value = res.textoLibre;
+        if (typeof globalSearch === 'function') globalSearch(res.textoLibre);
+        gsInput.focus();
+      }
+      return;
+    }
     if (res.match === 'ninguno') {
       _mostrarSerieCrearNuevo(res.serieLeida, res.marca, res.modelo);
       return;
