@@ -732,10 +732,12 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   features, resuelto en la misma sesión. Idea propuesta por el usuario:
   "Modo Cámara Inteligente" con 10 sub-ideas
   (buscar por S/N, alta automática desde etiqueta, reconocimiento visual,
-  modo "Inspector" en vivo, etc.) — esta sesión implementó solo la primera
-  pieza (#1: foto de etiqueta → OCR extrae el número de serie → busca el
-  ítem). El resto del roadmap del usuario queda documentado como backlog,
-  no implementado.
+  modo "Inspector" en vivo, etc.) — esta sesión implementó las piezas #1
+  (buscar por S/N), #2 (autocompletar marca/modelo, añadido más tarde en
+  la misma sesión) y #8 (S/N como identificador único, consecuencia
+  directa de #1). Roadmap completo de las 10 ideas, con las 3 hechas y las
+  7 pendientes, en
+  [`docs/IDEAS.md`](docs/IDEAS.md#inventario-por-cámara--modo-cámara-inteligente).
 
   **Diseño y plan:** brainstorming + writing-plans completos, guardados en
   `docs/superpowers/specs/2026-08-01-busqueda-por-numero-serie-design.md` y

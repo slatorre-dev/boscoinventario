@@ -111,30 +111,100 @@ el primer uso real de cada jefe/a de departamento.
 
 ---
 
-## Inventario por Cámara
+## Inventario por Cámara — "Modo Cámara Inteligente"
 
-### Reconocimiento de Equipos con Modelo Local (Roboflow + ONNX)
-Pasar la cámara del móvil por el taller para generar/actualizar el inventario automáticamente, sin API externa ni coste por uso.
+Roadmap de 10 sub-ideas propuesto por el usuario (31/07/2026), pensado como
+posible diferenciador de Bosco Inventario frente a otros inventarios
+comerciales. Implementado con Cloudflare Workers AI (modelo
+`@cf/moondream/moondream3.1-9B-A2B`, gratuito, sin API externa de pago) en
+vez del enfoque local Roboflow+ONNX que se había considerado antes —
+detalle técnico completo de la primera pieza en `claude.md`, sesión del
+01/08/2026.
 
-**Enfoque técnico:**
-- Modelo de detección basado en dataset público de **Roboflow Universe** (equipos de laboratorio electrónica: multímetros, osciloscopios, fuentes de alimentación...)
-- Fine-tuning con fotos de los equipos específicos del taller (~20-30 fotos por tipo)
-- Exportar como **ONNX** e integrar con `onnxruntime-web` — inferencia 100% local en el navegador
-- **OCR complementario** con Tesseract.js para leer etiquetas (número de serie, modelo)
-- Flujo: cámara detecta equipo → rellena campos del formulario → usuario confirma → guarda en D1
+### 1. Buscar por número de serie — ✅ implementado (01/08/2026)
+Foto de etiqueta → OCR extrae el S/N → busca el ítem (match exacto, fuzzy
+por distancia de Levenshtein, o crea uno nuevo si no existe). Botón
+"Buscar por Nº de serie" en el Home, junto al de QR. Columna
+`inventario.serie` nueva (migración `0026`). Backend: acción `buscarPorSerie`
+en `functions/api/item.js`. Spec:
+`docs/superpowers/specs/2026-08-01-busqueda-por-numero-serie-design.md`.
 
-**Por qué sin API externa:**
-- Sin coste por inferencia (todo local en el navegador)
-- Sin dependencia de terceros para uso masivo en el instituto
+### 2. Alta automática de artículos (marca/modelo) — ✅ implementado (01/08/2026)
+Ampliación de la idea #1: la misma foto también extrae marca y modelo del
+fabricante (una sola llamada a la IA, sin coste extra) y precarga el
+nombre del ítem y el proveedor en el modal de alta cuando no se encuentra
+el S/N. Spec:
+`docs/superpowers/specs/2026-08-01-autocompletado-marca-modelo-design.md`.
 
-**Pasos de implementación:**
-1. Buscar dataset en Roboflow Universe ("electronics lab", "multimeter", "oscilloscope")
-2. Añadir fotos propias de cada equipo del taller para fine-tune
-3. Entrenar y exportar modelo ONNX
-4. Nuevo módulo "Inventario por cámara" en la app (separado de Volt)
-5. Integrar OCR para números de serie
+### 8. Número de serie como identificador único — ✅ implementado (01/08/2026)
+Consecuencia directa de la idea #1: al buscar por S/N con match exacto, se
+evita crear un duplicado — se encuentra y abre el ítem ya existente en vez
+de darlo de alta otra vez.
+
+### 3. Reconocimiento visual (categoría/nombre sin S/N) — pendiente
+Fotografiar un objeto (osciloscopio, PLC, Arduino, polímetro, Raspberry
+Pi, soldador...) y que la IA proponga categoría, nombre y foto principal
+sin depender de leer ninguna etiqueta. Mismo proveedor (Workers AI,
+modelo de visión) que ya funciona para #1/#2 — el reto real es el prompt
+y decidir cómo mapear la respuesta libre de la IA a las categorías reales
+ya existentes en cada departamento (`categorias`, scoped por departamento).
 
 **Prioridad:** Media-Alta
+
+### 4. Buscar cualquier texto con la cámara — pendiente
+Apuntar a un objeto o etiqueta con texto (ej. "Arduino UNO R3", "Cisco
+2960") y buscarlo directamente en el inventario, sin que tenga que ser
+específicamente un número de serie. Requiere generalizar `buscarPorSerie`
+(o crear una acción hermana) para no asumir que el texto detectado es
+siempre un S/N — el resto de la búsqueda (fuzzy, scoping por
+departamento) ya es reutilizable tal cual.
+
+**Prioridad:** Media
+
+### 5. Inventario andando (revisión rápida por aula) — pendiente
+Recorrer el taller apuntando la cámara a cada equipo, confirmando
+ubicación/estado uno tras otro sin abrir el modal completo cada vez. Se
+apoya en #1/#4 (identificar el ítem) + una UI nueva de "modo revisión"
+más ligera que el modal de edición normal.
+
+**Prioridad:** Media
+
+### 6. Añadir múltiples equipos de una foto — pendiente
+Fotografiar una mesa con varios objetos (4 fuentes de alimentación, 2
+multímetros, 1 osciloscopio) y que la IA proponga crear varios ítems de
+golpe, con cantidades agrupadas. Necesita detección de múltiples objetos
+en una imagen (no solo lectura de texto/etiqueta como #1/#2), un modelo o
+prompt más complejo que los ya probados.
+
+**Prioridad:** Baja-Media
+
+### 7. Buscar manuales/datasheets del equipo detectado — pendiente
+Una vez identificado el modelo de un equipo (vía #2 o #3), ofrecer enlaces
+a su manual/datasheet/vídeos. Necesita decidir la fuente (búsqueda web
+real vía alguna API, o una base de enlaces curada a mano por el centro) —
+no es solo un cambio de prompt, es una pieza nueva de infraestructura.
+
+**Prioridad:** Baja
+
+### 9. Generar QR automáticamente tras el alta — pendiente
+Tras crear un ítem nuevo desde el flujo de cámara (#1/#2), ofrecer
+generar e imprimir su etiqueta QR en el mismo flujo, sin tener que ir
+aparte al QR scanner existente. Cambio pequeño de UX, reutiliza QR ya
+implementado (`js/qr-scanner.js` y la impresión de etiquetas ya
+existente) — no requiere IA nueva.
+
+**Prioridad:** Media (barato de implementar cuando se retome)
+
+### 10. Modo "Inspector" (cámara en vivo, verde/rojo/amarillo) — pendiente
+Cámara abierta en bucle, cada equipo detectado se marca en vivo como
+"inventariado en su aula" (verde), "no inventariado" (rojo), o
+"inventariado pero en otra aula" (amarillo) — permite auditar un taller
+entero en minutos. Es la idea más ambiciosa técnicamente: requiere
+detección continua (no una foto fija como el resto), y decidir el
+presupuesto de llamadas a la IA por segundo/minuto para que sea usable
+sin disparar costes ni latencia.
+
+**Prioridad:** Baja (la más compleja del roadmap, dejar para el final)
 
 ---
 
@@ -260,5 +330,5 @@ CSV o PDF con items problemáticos agrupados por aula/categoría.
 
 ## Estado
 
-- **Última actualización:** 30/07/2026
-- **Versión actual:** v501
+- **Última actualización:** 01/08/2026
+- **Versión actual:** v543+
