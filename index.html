@@ -462,6 +462,7 @@
     <div class="action-strip">
       <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
       <button class="btn btn-p icon-btn print-no" id="btnRevisionAula" style="padding:6px 10px;font-size:12px;display:none" onclick="openRevisionAula()">📷 <span class="btn-text">Revisar aula</span></button>
+      <button class="btn btn-p icon-btn print-no" id="btnMultiEquipo" style="padding:6px 10px;font-size:12px;display:none" onclick="openMultiEquipo()">📸 <span class="btn-text">Añadir varios</span></button>
       <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestarPicker()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
       <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px" onclick="openPrintChoiceModal()">🖨️ <span class="btn-text">Imprimir</span></button>
@@ -1566,6 +1567,33 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       <button class="btn btn-p" id="revisionCapturarBtn" style="display:none" onclick="capturarRevision()">Capturar</button>
       <button class="btn" id="revisionResumenBtn" style="display:none" onclick="terminarRevisionAula()">Terminar revisión</button>
       <button class="btn" onclick="closeRevisionAula()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ALTA MASIVA MULTI-EQUIPO DESDE UNA FOTO ══ -->
+<div class="mbg" id="mMultiEquipo" onclick="if(event.target===this)closeMultiEquipo()">
+  <div class="modal" style="max-width:700px">
+    <div class="mh"><div class="mt">📸 Fotografía la mesa con los equipos</div><button class="mx" onclick="closeMultiEquipo()">✕</button></div>
+    <video id="multiVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px;display:none" autoplay playsinline></video>
+    <div id="multiEstado" style="display:none;font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Identificando equipos...</div>
+    <div id="multiListaWrap" style="display:none">
+      <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
+        <thead>
+          <tr style="text-align:left;font-size:12px;color:var(--muted)">
+            <th style="padding:6px 4px">Nombre</th>
+            <th style="padding:6px 4px;width:70px">Cant.</th>
+            <th style="padding:6px 4px;width:160px">Categoría</th>
+            <th style="padding:6px 4px;width:30px"></th>
+          </tr>
+        </thead>
+        <tbody id="multiListaBody"></tbody>
+      </table>
+    </div>
+    <div class="mf" style="margin-top:16px;gap:8px">
+      <button class="btn btn-p" id="multiCapturarBtn" style="display:none" onclick="capturarMulti()">Capturar</button>
+      <button class="btn btn-p" id="multiCrearBtn" style="display:none" onclick="confirmarCrearMulti()">Crear ítems</button>
+      <button class="btn" onclick="closeMultiEquipo()">Cerrar</button>
     </div>
   </div>
 </div>
