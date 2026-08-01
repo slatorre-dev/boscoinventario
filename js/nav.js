@@ -193,6 +193,8 @@ function openSub(){
   const noActions = cf.type==='lowstock' || cf.type==='maintenance' || cf.type==='caja';
   document.getElementById('btnN').style.display = noActions ? 'none' : 'flex';
   document.getElementById('btnE').style.display = noActions ? 'none' : 'flex';
+  const btnRevision = document.getElementById('btnRevisionAula');
+  if (btnRevision) btnRevision.style.display = (cf.type === 'aula' && typeof can === 'function' && can('items.write')) ? 'flex' : 'none';
   _hideHomeButtons();
   if(typeof applyRoleUI === 'function') applyRoleUI();
   const _fab=document.getElementById('fabNuevo');
