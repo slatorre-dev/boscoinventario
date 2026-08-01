@@ -330,7 +330,7 @@ export async function onRequestPost({ request, env, data }) {
         max_tokens: 100
       });
     } catch (e) {
-      return Response.json({ ok: false, error: 'Error del servicio de IA' });
+      return Response.json({ ok: false, error: 'Error del servicio de IA (debug): ' + String(e?.message || e) });
     }
 
     let serieLeida = '';
