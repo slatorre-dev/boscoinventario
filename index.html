@@ -461,6 +461,7 @@
     <div class="sub-meta" id="sMeta"></div>
     <div class="action-strip">
       <button class="btn btn-p icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem</span></button>
+      <button class="btn btn-p icon-btn print-no" id="btnRevisionAula" data-perm="items.write" style="padding:6px 10px;font-size:12px;display:none" onclick="openRevisionAula()">📷 <span class="btn-text">Revisar aula</span></button>
       <button class="btn icon-btn print-no" data-perm="loans.write" style="padding:6px 10px;font-size:12px;border-color:var(--amber);color:var(--amber)" onclick="openPrestarPicker()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
       <button class="btn btn-d icon-btn print-no" data-perm="items.write" style="padding:6px 10px;font-size:12px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
       <button class="btn icon-btn print-no" style="padding:6px 10px;font-size:12px" onclick="openPrintChoiceModal()">🖨️ <span class="btn-text">Imprimir</span></button>
@@ -1550,6 +1551,21 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
     <div class="mf" style="margin-top:16px;gap:8px">
       <button class="btn btn-p" id="serieCapturarBtn" style="display:none" onclick="capturarSerie()">Capturar</button>
       <button class="btn" onclick="closeCamaraSerie()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODO REVISIÓN RÁPIDA POR AULA (INVENTARIO ANDANDO) ══ -->
+<div class="mbg" id="mRevisionAula" onclick="if(event.target===this)closeRevisionAula()">
+  <div class="modal" style="max-width:600px">
+    <div class="mh"><div class="mt" id="revisionTitulo">📷 Revisando aula</div><button class="mx" onclick="closeRevisionAula()">✕</button></div>
+    <video id="revisionVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px;display:none" autoplay playsinline></video>
+    <div id="revisionEstado" style="display:none;font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Identificando equipo...</div>
+    <div id="revisionResultado" style="display:none"></div>
+    <div class="mf" style="margin-top:16px;gap:8px">
+      <button class="btn btn-p" id="revisionCapturarBtn" style="display:none" onclick="capturarRevision()">Capturar</button>
+      <button class="btn" id="revisionResumenBtn" style="display:none" onclick="terminarRevisionAula()">Terminar revisión</button>
+      <button class="btn" onclick="closeRevisionAula()">Cerrar</button>
     </div>
   </div>
 </div>
