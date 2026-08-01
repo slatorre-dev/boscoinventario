@@ -1,17 +1,19 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v501 | 30/07/2026 | Multi-departamento (Fases 0, 1 y 2 del plan)
-completamente implementado y desplegado. Repo `slatorre-dev/boscoinventario`
-en marcha, D1 propia (`boscoinventario`) con 24 departamentos + 1 genérico
-compartido (`iesjuanbosco`), aislamiento real por departamento en todo el
-backend, ciclos formativos/asignaturas reales sembrados para los 24
-departamentos, 3 usuarios `superadmin`, cambio de contraseña obligatorio en
-cuentas genéricas. Inventario sembrado con datos de ejemplo: pantalla
-multimedia + pizarra de tiza en las 70 aulas genéricas (archivadas bajo el
-departamento compartido `iesjuanbosco`, migraciones `0016`+`0017`) e ítems
-propios en las 24 aulas de departamento. Falta Fase 3 (selector de
-departamento para superadmin en el frontend) — ver
-[Pendiente](#pendiente-próximas-sesiones) al final.
+**Estado:** v543+ | 01/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+plan) completamente implementado y desplegado. Repo
+`slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
+24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
+por departamento en todo el backend. Feature nueva en curso: **búsqueda de
+ítems por número de serie vía cámara** (foto de etiqueta → OCR → busca en
+inventario) — código completo y desplegado, **pendiente de verificar en
+producción** por un problema de proveedor de IA en curso de resolución, ver
+sesión del 01/08/2026 más abajo y [Pendiente](#pendiente-próximas-sesiones).
+**IMPORTANTE si retomas desde otro PC:** hay un `console.log`/mensaje de
+debug temporal en `functions/api/item.js` (acción `buscarPorSerie`) que
+expone el error real de `env.AI.run()` — quitar en cuanto la causa esté
+confirmada y funcionando, no dejarlo desplegado a largo plazo (ver detalle
+en la sesión de abajo).
 
 Inventario general del **IES El Bosco**: cada departamento gestiona su
 propio inventario (aulas, categorías, ciclos, profesores, préstamos) desde
@@ -726,15 +728,249 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   de A/C). Corregido el dato en D1 (`orden=115`); el bug de código en
   `saveAulas()` queda sin arreglar, pendiente para otra sesión — afecta a
   cualquier departamento con pocas aulas que guarde desde ese modal.
+- **01/08/2026 (v543): Búsqueda de ítems por número de serie vía cámara —
+  EN CURSO, con un bloqueo de proveedor de IA a medio resolver.** Idea
+  propuesta por el usuario: "Modo Cámara Inteligente" con 10 sub-ideas
+  (buscar por S/N, alta automática desde etiqueta, reconocimiento visual,
+  modo "Inspector" en vivo, etc.) — esta sesión implementó solo la primera
+  pieza (#1: foto de etiqueta → OCR extrae el número de serie → busca el
+  ítem). El resto del roadmap del usuario queda documentado como backlog,
+  no implementado.
+
+  **Diseño y plan:** brainstorming + writing-plans completos, guardados en
+  `docs/superpowers/specs/2026-08-01-busqueda-por-numero-serie-design.md` y
+  `docs/superpowers/plans/2026-08-01-busqueda-por-numero-serie.md`.
+  Implementado con subagent-driven-development en worktree aislado
+  (`.claude/worktrees/busqueda-serie`, rama `worktree-busqueda-serie`),
+  6 tareas, todas revisadas individualmente + revisión final de rama.
+
+  **Lo construido (código ya en `main`, desplegado):**
+  1. Migración `migrations/0026_inventario_serie.sql` — columna
+     `inventario.serie` (`TEXT DEFAULT ''`) + índice compuesto
+     `(departamento, serie)`. Aplicada en remoto.
+  2. Campo `serie` editable a mano en el modal de ítem (`f_serie`, junto a
+     Proveedor en la sección Detalles) — funciona independientemente de la
+     IA, ya operativo.
+  3. Backend `functions/api/item.js`, acción nueva `buscarPorSerie`: recibe
+     una foto en base64, pide a un modelo de IA con visión que extraiga el
+     número de serie, busca en `inventario` (match exacto, fuzzy por
+     distancia de Levenshtein ≤2, o "ninguno"), respetando scoping por
+     departamento (+ `iesjuanbosco`) y excluyendo ítems `oculto=1` para
+     no-superadmin. Registrada en `ENDPOINT_MAP` (`js/api.js`) y
+     `ACTION_PERMISSIONS` (`js/roles.js`, permiso `serie.read` tratado como
+     lectura universal igual que `docs.read` — lección de v522 aplicada
+     desde el principio esta vez).
+  4. Frontend `js/camara-serie.js` (módulo nuevo, mismo patrón de
+     `getUserMedia`/canvas que `js/qr-scanner.js` pero captura una foto fija
+     en vez de leer frames continuos) + modal HTML `#mCamaraSerie`.
+  5. Botón nuevo visible tras login (`applyRoleUI()` en `js/roles.js`).
+
+  **Hallazgos de la revisión final de rama (whole-branch), corregidos antes
+  de mergear:** 1 Critical real — `functions/api/list.js` tiene su **propia
+  copia independiente** de la constante `HEADERS_INV` (separada de la de
+  `item.js`), y la Task 2 solo había añadido `'serie'` a la de `item.js` —
+  como resultado, el campo nunca llegaba al frontend tras recargar (el
+  `SELECT *` de `list.js` sí trae la columna, pero se proyecta a través de
+  su `HEADERS_INV` local antes de mandarse al cliente), y peor: varias
+  funciones de `js/modal-item.js` que hacen `update` con spread de una fila
+  de `items` (ej. asignar un ítem a una caja/contenedor) mandaban
+  `serie: undefined` → `NULL` en D1, **borrando silenciosamente el número de
+  serie ya guardado**. Corregido añadiendo `'serie'` también al
+  `HEADERS_INV` de `list.js`. 1 Important — `openItemRoute()` tras un match
+  exacto podía fallar con "Ítem no encontrado" si el array local `items` no
+  tenía aún ese ítem (creado en otra sesión tras el login); corregido
+  empujando `res.item` al array `items` antes de llamar a `openItemRoute`.
+  **Lección para futuras sesiones:** cuando una tabla tiene una constante
+  tipo `HEADERS_INV` duplicada en más de un archivo backend (`item.js` vs
+  `list.js`), un campo nuevo hay que añadirlo a AMBAS copias — ninguna
+  revisión por tarea individual detecta esto si las tareas no tocan los dos
+  archivos a la vez; solo la revisión final de rama lo vio. Recomendado a
+  futuro: extraer `HEADERS_INV` a un módulo compartido en vez de mantener
+  dos copias, o al menos dejar un comentario cruzado en cada archivo.
+
+  **Bug de UX encontrado por el usuario ya en producción (v543, corregido
+  sobre la marcha):** el botón nuevo (`#gsSerie`) y el botón de QR ya
+  existente (`#gsQr`) compartían la misma clase CSS `.gsearch-qr`, con
+  `position:absolute; right:52px` fijo — ambos quedaban exactamente
+  superpuestos en vez de uno al lado del otro (el plan/spec nunca
+  contempló que hubiera más de un botón en ese contenedor). Corregido en
+  dos pasos: primero un ajuste rápido de `right` distinto para cada uno
+  (insuficiente, seguía siendo confuso con dos iconos de cámara distintos
+  muy juntos), y luego, a petición del usuario, un rediseño: ambos botones
+  se sacaron **fuera** del cuadro de búsqueda (`.gsearch-wrap`) a una fila
+  nueva `.gsearch-extra-btns` debajo, cada uno con icono + texto
+  (`Escanear QR` / `Buscar por Nº de serie`), y el icono de serie cambió de
+  📷 (se confundía con el de QR) a 🔢.
+
+  **BLOQUEO grande encontrado durante la verificación en producción:
+  GitHub Models fue retirado.** El plan original usaba GitHub Models
+  (`https://models.inference.ai.azure.com`, mismo mecanismo que ya usaba
+  `functions/api/proxy-ai.js` para el chatbot Volt desde hacía meses) para
+  el OCR. Al probar en producción con una foto real (etiqueta de un router
+  TP-Link, S/N `220A4S1002886`, proporcionada por el usuario), el endpoint
+  devolvía `GITHUB_TOKEN no configurado en Cloudflare` — pero
+  `wrangler pages secret list` confirmó que **ningún secret** estaba
+  configurado en el proyecto de producción, ni siquiera para Volt (que por
+  tanto llevaba tiempo roto en producción también, sin que nadie lo hubiera
+  notado). Se generó un GitHub Personal Access Token nuevo y se subió como
+  secret — pero siguió fallando con `non_ascii_header_value` (causado por
+  cómo `Get-Content -Raw | wrangler pages secret put` en PowerShell
+  manejaba el pipe; se corrigió subiendo el secret vía redirección de
+  archivo `cmd /c "... < archivo.txt"` en vez de pipe). Tras corregir eso,
+  el error cambió a `unauthorized` — y ahí se encontró la causa raíz real:
+  **GitHub Models se retiró oficialmente el 30/07/2026**
+  (`https://github.blog/changelog/2026-07-30-github-models-is-now-retired/`),
+  un día antes de esta sesión. No era un problema de token, encoding, ni
+  configuración — el servicio ya no existe. Afecta a **dos cosas**: esta
+  feature nueva y Volt (`proxy-ai.js`), que llevaba roto en producción
+  desde esa fecha sin que nadie lo detectara (nadie había usado el chat de
+  Volt en ese día y medio, o el fallo pasó desapercibido).
+
+  **Migración de proveedor (en curso):** se decidió migrar a
+  **Cloudflare Workers AI** en vez de OpenAI/Anthropic/DeepSeek — mismo
+  proveedor que ya se usa para D1/Pages, tier gratuito con límite generoso
+  para uso de instituto, sin necesitar ninguna cuenta ni token externo
+  nuevo. Cambios: `wrangler.toml` ganó un binding `[ai]` (aunque **este
+  archivo resultó NO ser lo que rige producción** — Cloudflare Pages con
+  deploy automático vía Git no lee `wrangler.toml` para bindings de
+  recursos, a diferencia de un deploy con `wrangler pages deploy` directo;
+  el binding real hay que añadirlo a mano en el dashboard del proyecto,
+  Cloudflare dashboard → Workers & Pages → `boscoinventario` → Settings →
+  Vinculaciones → "+ Agregar" → tipo "Workers AI" → nombre de variable
+  exactamente `AI`, igual que ya existía el binding `DB` de D1 ahí mismo).
+  `functions/api/item.js` (acción `buscarPorSerie`) se reescribió para usar
+  `env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {prompt, image,
+  max_tokens})` en vez de la llamada `fetch` a GitHub Models. Confirmado que
+  el binding ya se detecta (`env.AI` ya no da "no configurado"), pero la
+  llamada real a `env.AI.run()` seguía fallando con un error genérico
+  ("Error del servicio de IA") al cierre de esta sesión — se añadió un
+  **debug temporal** (el mensaje de error incluye ahora
+  `String(e?.message || e)` del catch) para ver la causa exacta en el
+  siguiente intento; probablemente el formato del parámetro `image` (array
+  de bytes) o `prompt` no es el que espera ese modelo concreto en Workers
+  AI (puede necesitar `messages` con roles en vez de `prompt` simple, como
+  los modelos de chat, o el campo de imagen con otro nombre) — **pendiente
+  de diagnosticar y corregir en la próxima sesión**, ver
+  [Pendiente](#pendiente-próximas-sesiones).
+
+  **IMPORTANTE — limpiar antes de dar la feature por cerrada:** el mensaje
+  de debug en `functions/api/item.js` (`'Error del servicio de IA (debug): '
+  + String(e?.message || e)`) expone el mensaje de error interno de
+  Cloudflare al usuario final — quitarlo y volver al mensaje genérico
+  `'Error del servicio de IA'` en cuanto la causa esté confirmada y
+  arreglada, antes de considerar la feature terminada.
+
+  **Volt (`proxy-ai.js`) sigue roto, migración pendiente para otra
+  sesión.** Usa streaming SSE en formato OpenAI (`stream:true`, chunks
+  `data: {choices[0].delta.content}`, parseados en
+  `js/agente-widget.js:streamAI()`) — Workers AI también soporta streaming
+  pero con formato de respuesta distinto, así que migrarlo es un cambio más
+  grande que el de `buscarPorSerie` (que era una sola llamada no-streaming)
+  y no se abordó en esta sesión a propósito, para no mezclar dos
+  migraciones de proveedor de riesgo distinto en el mismo push sin
+  verificar la primera con calma.
+
+  **Incidente de seguridad menor durante la sesión:** el primer GitHub
+  Personal Access Token generado se pegó en texto plano en el chat de
+  Claude Code — el usuario lo revocó y generó uno nuevo en cuanto se señaló
+  el riesgo. Ninguno de los dos tokens de GitHub Models importa ya, dado
+  que el servicio fue retirado, pero queda como recordatorio: **nunca pegar
+  tokens/secrets en el chat**, pasarlos por un canal que no quede en el
+  historial de la conversación si es posible, o revocarlos inmediatamente
+  después de usarlos una vez expuestos.
+
+  **Mejora suelta, no relacionada con la cámara, hecha en medio de la
+  sesión:** el campo `fecha_adquisicion` (de la migración `0025`, sesión
+  anterior) no se precargaba con ningún valor por defecto al dar de alta un
+  ítem nuevo — el usuario pidió que se precargara con la fecha del día.
+  Corregido en `js/modal-item.js` (línea de precarga de `f_fechaAdquisicion`
+  en `openModal()`): si es alta nueva (`id` ausente), usa
+  `new Date().toISOString().slice(0,10)`; si es edición de un ítem
+  existente, sigue mostrando el valor guardado (o vacío si nunca se rellenó,
+  sin forzar una fecha falsa).
 
 ---
 
 ## Pendiente (Próximas sesiones)
 
-Backlog corto en [`docs/ROADMAP.md`](docs/ROADMAP.md), ideas de usabilidad en
-[`docs/IDEAS.md`](docs/IDEAS.md), seguridad en [`docs/SECURITY.md`](docs/SECURITY.md),
-plan multi-departamento en [`docs/PLAN_MULTIDEPARTAMENTO.md`](docs/PLAN_MULTIDEPARTAMENTO.md).
-Próximos pasos concretos:
+### 🔴 URGENTE — retomar esto primero al abrir sesión nueva (búsqueda por serie)
+
+1. **Diagnosticar por qué `env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', ...)`
+   sigue fallando** en `functions/api/item.js` (acción `buscarPorSerie`), pese a
+   que el binding `AI` ya está confirmado y configurado en el dashboard de
+   Cloudflare (Workers & Pages → `boscoinventario` → Settings → Vinculaciones).
+   Hay un **debug temporal ya desplegado** que expone el mensaje de error real
+   (`'Error del servicio de IA (debug): ' + String(e?.message || e)`) — el
+   primer paso es simplemente volver a llamar al endpoint y leer ese mensaje:
+   ```powershell
+   $env:NODE_TLS_REJECT_UNAUTHORIZED="0"
+   Invoke-RestMethod -Method Post -Uri "https://boscoinventario.pages.dev/api/item?u=Seba&p=Seba" -InFile "$env:TEMP\serie_body.json" -ContentType "application/json"
+   ```
+   (si `$env:TEMP\serie_body.json` ya no existe por ser otro PC/sesión, hay
+   que regenerar el body con una foto de etiqueta real convertida a base64 —
+   ver el propio archivo `js/camara-serie.js` para el formato exacto del
+   payload: `{action:'buscarPorSerie', imagen:'<base64 sin prefijo data:>'}`).
+   Sospecha principal: el modelo `@cf/meta/llama-3.2-11b-vision-instruct` de
+   Cloudflare Workers AI puede esperar el formato de mensajes tipo chat
+   (`messages:[{role,content:[...]}]`, como los modelos de OpenAI) en vez del
+   `{prompt, image}` simple que se le está mandando — revisar la
+   [documentación oficial de Workers AI para modelos de visión](https://developers.cloudflare.com/workers-ai/models/llama-3.2-11b-vision-instruct/)
+   para confirmar el schema exacto de entrada antes de seguir probando a ciegas.
+2. **Una vez funcione**, quitar el debug temporal (volver el mensaje de
+   `catch` a solo `'Error del servicio de IA'`, sin concatenar
+   `e?.message`) — no dejar mensajes de error internos de Cloudflare
+   expuestos al usuario final en producción.
+3. **Completar la verificación pendiente** (Task 6 del plan, nunca se
+   terminó por el bloqueo de IA): los 4 casos de `match`
+   (`exacto`/`fuzzy`/`ninguno`/`sin_lectura`), scoping por departamento
+   (un usuario de un departamento no debe encontrar por S/N un ítem de otro
+   departamento que no sea `iesjuanbosco`), y confirmar visualmente en el
+   navegador que los botones "Escanear QR" / "Buscar por Nº de serie" se ven
+   bien (ya reubicados fuera del cuadro de búsqueda, fila propia debajo).
+4. **Cerrar la rama del worktree** una vez todo lo anterior esté verificado:
+   `H:\Mi unidad\Github\boscoinventario\.claude\worktrees\busqueda-serie`
+   (rama `worktree-busqueda-serie`) — usar el skill
+   `superpowers:finishing-a-development-branch` para decidir si hace falta
+   algún merge/limpieza adicional (el grueso de la feature ya se mergeó a
+   `main` a mitad de sesión; el worktree puede tener commits de debug
+   sueltos que revisar antes de borrarlo).
+5. **Migrar Volt (`js/agente-widget.js` + `functions/api/proxy-ai.js`) a
+   Cloudflare Workers AI también** — sigue roto en producción por el mismo
+   motivo (GitHub Models retirado el 30/07/2026). Cambio más grande que
+   `buscarPorSerie` porque usa streaming SSE en formato OpenAI; no
+   abordado esta sesión a propósito. Sin Volt funcionando, el chatbot del
+   inventario no responde a los usuarios — probablemente el hallazgo más
+   urgente después de cerrar la búsqueda por serie.
+
+### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
+
+Claude Code en este PC tiene instalados los siguientes plugins/skills
+(viven en `~/.claude/plugins/`, **configuración de perfil de Claude Code,
+no del repo** — si el PC nuevo usa una cuenta/perfil distinto de Claude Code,
+puede que no estén disponibles automáticamente y haya que reinstalarlos):
+- **superpowers** (`superpowers-dev`): skills de brainstorming, writing-plans,
+  subagent-driven-development, systematic-debugging, using-git-worktrees,
+  code-review, etc. — usado extensamente en toda esta sesión y en las
+  anteriores documentadas en este archivo.
+- **caveman**: modo de comunicación ultra-comprimido (activo en esta sesión
+  vía `/caveman full`).
+- **supermemory**: memoria persistente cross-sesión indexada (búsqueda,
+  guardado de contexto de proyecto).
+- **playwright-skill**: automatización de navegador, usado en sesiones
+  anteriores para verificación end-to-end en producción.
+- **claude-code-plugins**: marketplace con `frontend-design` y otros skills
+  de propósito general.
+
+Credenciales/tokens usados en esta sesión que hay que tener en cuenta:
+- El **GitHub Personal Access Token** generado y subido como secret
+  `GITHUB_TOKEN` en Cloudflare Pages **ya no sirve para nada** (GitHub
+  Models, el servicio al que apuntaba, fue retirado) — puede dejarse o
+  borrarse del dashboard de Cloudflare, es indistinto.
+- El **binding `AI`** de Cloudflare Workers AI (Vinculaciones del proyecto
+  Pages, no un secret) es el que hay que verificar que sigue existiendo si
+  algo deja de funcionar — nombre de variable exactamente `AI`.
+
+Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
 
 1. ~~Icono de fallback del botón de easter egg~~ ✅ hecho (v486):
    sustituido por `icons/imagenbosco.png`, junto con favicon, logo de la
