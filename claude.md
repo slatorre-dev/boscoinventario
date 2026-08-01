@@ -4,16 +4,13 @@
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
-por departamento en todo el backend. Feature nueva en curso: **búsqueda de
-ítems por número de serie vía cámara** (foto de etiqueta → OCR → busca en
-inventario) — código completo y desplegado, **pendiente de verificar en
-producción** por un problema de proveedor de IA en curso de resolución, ver
-sesión del 01/08/2026 más abajo y [Pendiente](#pendiente-próximas-sesiones).
-**IMPORTANTE si retomas desde otro PC:** hay un `console.log`/mensaje de
-debug temporal en `functions/api/item.js` (acción `buscarPorSerie`) que
-expone el error real de `env.AI.run()` — quitar en cuanto la causa esté
-confirmada y funcionando, no dejarlo desplegado a largo plazo (ver detalle
-en la sesión de abajo).
+por departamento en todo el backend. Feature nueva completa y verificada en
+producción: **búsqueda de ítems por número de serie vía cámara** (foto de
+etiqueta → OCR con Cloudflare Workers AI → busca en inventario), ver sesión
+del 01/08/2026 más abajo. **Pendiente urgente:** GitHub Models (proveedor de
+IA usado por Volt, el chatbot) fue retirado el 30/07/2026 — Volt sigue roto
+en producción, migración a Workers AI pendiente para otra sesión, ver
+[Pendiente](#pendiente-próximas-sesiones).
 
 Inventario general del **IES El Bosco**: cada departamento gestiona su
 propio inventario (aulas, categorías, ciclos, profesores, préstamos) desde
@@ -729,8 +726,10 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   `saveAulas()` queda sin arreglar, pendiente para otra sesión — afecta a
   cualquier departamento con pocas aulas que guarde desde ese modal.
 - **01/08/2026 (v543): Búsqueda de ítems por número de serie vía cámara —
-  EN CURSO, con un bloqueo de proveedor de IA a medio resolver.** Idea
-  propuesta por el usuario: "Modo Cámara Inteligente" con 10 sub-ideas
+  ✅ completada y verificada end-to-end en producción**, tras un bloqueo
+  largo por retirada de proveedor de IA (GitHub Models) resuelto en la
+  misma sesión. Idea propuesta por el usuario: "Modo Cámara Inteligente"
+  con 10 sub-ideas
   (buscar por S/N, alta automática desde etiqueta, reconocimiento visual,
   modo "Inspector" en vivo, etc.) — esta sesión implementó solo la primera
   pieza (#1: foto de etiqueta → OCR extrae el número de serie → busca el
@@ -826,49 +825,93 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   desde esa fecha sin que nadie lo detectara (nadie había usado el chat de
   Volt en ese día y medio, o el fallo pasó desapercibido).
 
-  **Migración de proveedor (en curso):** se decidió migrar a
+  **Migración de proveedor — completada y funcionando.** Se migró a
   **Cloudflare Workers AI** en vez de OpenAI/Anthropic/DeepSeek — mismo
   proveedor que ya se usa para D1/Pages, tier gratuito con límite generoso
   para uso de instituto, sin necesitar ninguna cuenta ni token externo
-  nuevo. Cambios: `wrangler.toml` ganó un binding `[ai]` (aunque **este
-  archivo resultó NO ser lo que rige producción** — Cloudflare Pages con
-  deploy automático vía Git no lee `wrangler.toml` para bindings de
-  recursos, a diferencia de un deploy con `wrangler pages deploy` directo;
-  el binding real hay que añadirlo a mano en el dashboard del proyecto,
-  Cloudflare dashboard → Workers & Pages → `boscoinventario` → Settings →
+  nuevo. `wrangler.toml` ganó un binding `[ai]`, pero **este archivo
+  resultó NO ser lo que rige producción** — Cloudflare Pages con deploy
+  automático vía Git no lee `wrangler.toml` para bindings de recursos, a
+  diferencia de un deploy con `wrangler pages deploy` directo; el binding
+  real hubo que añadirlo a mano en el dashboard del proyecto (Cloudflare
+  dashboard → Workers & Pages → `boscoinventario` → Settings →
   Vinculaciones → "+ Agregar" → tipo "Workers AI" → nombre de variable
   exactamente `AI`, igual que ya existía el binding `DB` de D1 ahí mismo).
-  `functions/api/item.js` (acción `buscarPorSerie`) se reescribió para usar
-  `env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {prompt, image,
-  max_tokens})` en vez de la llamada `fetch` a GitHub Models. Confirmado que
-  el binding ya se detecta (`env.AI` ya no da "no configurado"), pero la
-  llamada real a `env.AI.run()` seguía fallando con un error genérico
-  ("Error del servicio de IA") al cierre de esta sesión — se añadió un
-  **debug temporal** (el mensaje de error incluye ahora
-  `String(e?.message || e)` del catch) para ver la causa exacta en el
-  siguiente intento; probablemente el formato del parámetro `image` (array
-  de bytes) o `prompt` no es el que espera ese modelo concreto en Workers
-  AI (puede necesitar `messages` con roles en vez de `prompt` simple, como
-  los modelos de chat, o el campo de imagen con otro nombre) — **pendiente
-  de diagnosticar y corregir en la próxima sesión**, ver
-  [Pendiente](#pendiente-próximas-sesiones).
 
-  **IMPORTANTE — limpiar antes de dar la feature por cerrada:** el mensaje
-  de debug en `functions/api/item.js` (`'Error del servicio de IA (debug): '
-  + String(e?.message || e)`) expone el mensaje de error interno de
-  Cloudflare al usuario final — quitarlo y volver al mensaje genérico
-  `'Error del servicio de IA'` en cuanto la causa esté confirmada y
-  arreglada, antes de considerar la feature terminada.
+  **Recorrido completo de depuración hasta dar con la configuración que
+  funciona** (útil como referencia para migrar Volt más adelante, mismo
+  proveedor):
+  1. Primer modelo probado, `@cf/meta/llama-3.2-11b-vision-instruct`, con
+     payload `{prompt, image:[...bytes], max_tokens}` — falló primero por
+     `atob()` con base64 corrupto (el archivo de request generado con
+     PowerShell tenía BOM UTF-8 y una estructura JSON anidada por error de
+     `ConvertTo-Json` sobre un objeto ya serializado; solución: generar el
+     body con `[System.IO.File]::WriteAllText(..., New-Object
+     System.Text.UTF8Encoding($false))`, sin BOM).
+  2. Con el base64 limpio, ese modelo rechazó la petición porque exige
+     aceptar una **licencia comunitaria de Meta que excluye explícitamente
+     a usuarios domiciliados en la Unión Europea** — inválido para un
+     instituto español, sin solución posible salvo cambiar de modelo.
+  3. Se cambió a `@cf/moondream/moondream3.1-9B-A2B` (especializado en
+     OCR/structured output según su descripción oficial, sin esa cláusula
+     de exclusión geográfica) — pero con el mismo payload `{prompt, image:
+     array de bytes}` dio `Type mismatch of '/image', 'string' not in
+     'array','binary'`, porque **el schema de Moondream es completamente
+     distinto** al de Llama Vision: no acepta un `prompt` libre, sino
+     `{task: 'query'|'caption'|'point'|'detect', image: '<URL o data URI
+     base64, como STRING>', question, reasoning, max_tokens}` — confirmado
+     leyendo la documentación oficial
+     (`https://developers.cloudflare.com/workers-ai/models/moondream3.1-9B-A2B/index.md`,
+     accesible con `curl`, mucho más fiable que adivinar por prueba y
+     error).
+  4. Con el schema correcto, la llamada ya no fallaba (`ok:true`), pero el
+     texto de respuesta venía vacío al leerlo de `aiData.answer` — Workers
+     AI **envuelve la respuesta anidada** en `{result:{answer,...},
+     usage:{...}}`, no la expone en la raíz del objeto devuelto por
+     `env.AI.run()`. Corregido leyendo `aiData.result.answer`.
+  5. Con el campo correcto, el modelo respondía JSON válido pero con
+     `{"serie": null}` — no detectaba el número de serie real de la foto.
+     Solución: activar `reasoning: true` (estaba en `false`) — con
+     razonamiento activado, el modelo sí detectó el texto pequeño de la
+     etiqueta (leyó `220A$1002886` frente al real `220A4S1002886`, un
+     error de OCR menor y razonable en tipografía pequeña con caracteres
+     parecidos).
+  6. Verificado end-to-end en producción con una foto real (etiqueta de un
+     router TP-Link Archer TX3000E) proporcionada por el usuario: el flujo
+     completo cámara → foto → Workers AI → parseo → búsqueda en D1 (con
+     `match:'ninguno'` correcto, ya que ningún ítem real tenía ese S/N
+     guardado) funciona sin errores. Quitado el debug temporal (mensajes
+     `debugRaw`/`debugFull` y el `(debug): + e.message` en el catch) una
+     vez confirmado.
+
+  **Configuración final que funciona** en
+  `functions/api/item.js` (acción `buscarPorSerie`):
+  ```js
+  env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
+    task: 'query',
+    image: `data:image/jpeg;base64,${imagen}`,
+    question: '...pide JSON {"serie": "VALOR"|null}...',
+    reasoning: true,
+    stream: false,
+    max_tokens: 300
+  })
+  // respuesta en aiData.result.answer, NO aiData.answer
+  ```
 
   **Volt (`proxy-ai.js`) sigue roto, migración pendiente para otra
-  sesión.** Usa streaming SSE en formato OpenAI (`stream:true`, chunks
-  `data: {choices[0].delta.content}`, parseados en
+  sesión** — mismo motivo (GitHub Models retirado). Usa streaming SSE en
+  formato OpenAI (`stream:true`, chunks `data:
+  {choices[0].delta.content}`, parseados en
   `js/agente-widget.js:streamAI()`) — Workers AI también soporta streaming
-  pero con formato de respuesta distinto, así que migrarlo es un cambio más
-  grande que el de `buscarPorSerie` (que era una sola llamada no-streaming)
-  y no se abordó en esta sesión a propósito, para no mezclar dos
-  migraciones de proveedor de riesgo distinto en el mismo push sin
-  verificar la primera con calma.
+  pero con formato de respuesta distinto, así que migrarlo es un cambio
+  más grande que el de `buscarPorSerie` (que era una sola llamada
+  no-streaming) y no se abordó en esta sesión a propósito. Con el recorrido
+  de depuración de arriba ya resuelto, migrar Volt debería ser más rápido
+  la próxima vez: mismo proveedor, mismo tipo de binding, y ya se sabe que
+  `@cf/moondream/moondream3.1-9B-A2B` con `reasoning:true` responde bien —
+  aunque para chat de texto puro (sin imagen) probablemente convenga un
+  modelo de texto normal en vez de uno de visión, y aún queda por resolver
+  el formato de streaming.
 
   **Incidente de seguridad menor durante la sesión:** el primer GitHub
   Personal Access Token generado se pegó en texto plano en el chat de
@@ -893,54 +936,27 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
 
 ## Pendiente (Próximas sesiones)
 
-### 🔴 URGENTE — retomar esto primero al abrir sesión nueva (búsqueda por serie)
+### 🔴 URGENTE — Volt sigue roto en producción
 
-1. **Diagnosticar por qué `env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', ...)`
-   sigue fallando** en `functions/api/item.js` (acción `buscarPorSerie`), pese a
-   que el binding `AI` ya está confirmado y configurado en el dashboard de
-   Cloudflare (Workers & Pages → `boscoinventario` → Settings → Vinculaciones).
-   Hay un **debug temporal ya desplegado** que expone el mensaje de error real
-   (`'Error del servicio de IA (debug): ' + String(e?.message || e)`) — el
-   primer paso es simplemente volver a llamar al endpoint y leer ese mensaje:
-   ```powershell
-   $env:NODE_TLS_REJECT_UNAUTHORIZED="0"
-   Invoke-RestMethod -Method Post -Uri "https://boscoinventario.pages.dev/api/item?u=Seba&p=Seba" -InFile "$env:TEMP\serie_body.json" -ContentType "application/json"
-   ```
-   (si `$env:TEMP\serie_body.json` ya no existe por ser otro PC/sesión, hay
-   que regenerar el body con una foto de etiqueta real convertida a base64 —
-   ver el propio archivo `js/camara-serie.js` para el formato exacto del
-   payload: `{action:'buscarPorSerie', imagen:'<base64 sin prefijo data:>'}`).
-   Sospecha principal: el modelo `@cf/meta/llama-3.2-11b-vision-instruct` de
-   Cloudflare Workers AI puede esperar el formato de mensajes tipo chat
-   (`messages:[{role,content:[...]}]`, como los modelos de OpenAI) en vez del
-   `{prompt, image}` simple que se le está mandando — revisar la
-   [documentación oficial de Workers AI para modelos de visión](https://developers.cloudflare.com/workers-ai/models/llama-3.2-11b-vision-instruct/)
-   para confirmar el schema exacto de entrada antes de seguir probando a ciegas.
-2. **Una vez funcione**, quitar el debug temporal (volver el mensaje de
-   `catch` a solo `'Error del servicio de IA'`, sin concatenar
-   `e?.message`) — no dejar mensajes de error internos de Cloudflare
-   expuestos al usuario final en producción.
-3. **Completar la verificación pendiente** (Task 6 del plan, nunca se
-   terminó por el bloqueo de IA): los 4 casos de `match`
-   (`exacto`/`fuzzy`/`ninguno`/`sin_lectura`), scoping por departamento
-   (un usuario de un departamento no debe encontrar por S/N un ítem de otro
-   departamento que no sea `iesjuanbosco`), y confirmar visualmente en el
-   navegador que los botones "Escanear QR" / "Buscar por Nº de serie" se ven
-   bien (ya reubicados fuera del cuadro de búsqueda, fila propia debajo).
-4. **Cerrar la rama del worktree** una vez todo lo anterior esté verificado:
-   `H:\Mi unidad\Github\boscoinventario\.claude\worktrees\busqueda-serie`
-   (rama `worktree-busqueda-serie`) — usar el skill
-   `superpowers:finishing-a-development-branch` para decidir si hace falta
-   algún merge/limpieza adicional (el grueso de la feature ya se mergeó a
-   `main` a mitad de sesión; el worktree puede tener commits de debug
-   sueltos que revisar antes de borrarlo).
-5. **Migrar Volt (`js/agente-widget.js` + `functions/api/proxy-ai.js`) a
-   Cloudflare Workers AI también** — sigue roto en producción por el mismo
-   motivo (GitHub Models retirado el 30/07/2026). Cambio más grande que
-   `buscarPorSerie` porque usa streaming SSE en formato OpenAI; no
-   abordado esta sesión a propósito. Sin Volt funcionando, el chatbot del
-   inventario no responde a los usuarios — probablemente el hallazgo más
-   urgente después de cerrar la búsqueda por serie.
+**Búsqueda por número de serie: ✅ resuelta y verificada** (ver detalle en
+la entrada de sesión del 01/08/2026 más abajo) — no queda nada pendiente de
+esa feature.
+
+Lo que sí sigue urgente: **migrar Volt (`js/agente-widget.js` +
+`functions/api/proxy-ai.js`) a Cloudflare Workers AI** — sigue roto en
+producción porque usaba GitHub Models, retirado el 30/07/2026 (mismo
+hallazgo que bloqueó la búsqueda por serie al principio de esta sesión, ver
+más abajo). Cambio más grande que `buscarPorSerie` porque usa streaming SSE
+en formato OpenAI (`stream:true`, chunks `data: {choices[0].delta.content}`,
+parseados en `js/agente-widget.js:streamAI()`) — no abordado esta sesión a
+propósito, para no mezclar dos migraciones de proveedor sin verificar la
+primera con calma. Con `buscarPorSerie` ya resuelto, se sabe que **Cloudflare
+Workers AI + modelo `@cf/moondream/moondream3.1-9B-A2B` funciona bien** (con
+`reasoning:true`) para tareas de una sola llamada — Volt necesitará además
+resolver el streaming, que Workers AI soporta pero con formato de respuesta
+distinto al de OpenAI, así que `streamAI()` tendrá que parsear los chunks de
+otra forma. Sin Volt funcionando, el chatbot del inventario no responde a
+los usuarios — es el hallazgo más urgente pendiente ahora mismo.
 
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 
