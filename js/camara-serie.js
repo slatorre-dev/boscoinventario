@@ -89,7 +89,7 @@ async function capturarSerie() {
       return;
     }
     if (res.match === 'ninguno') {
-      _mostrarSerieCrearNuevo(res.serieLeida);
+      _mostrarSerieCrearNuevo(res.serieLeida, res.marca, res.modelo);
       return;
     }
     _mostrarSerieError('No se pudo leer ningún número de serie, prueba a acercar la cámara o mejorar la luz');
@@ -124,24 +124,43 @@ function _mostrarSerieCandidatos(candidatos) {
 }
 
 let _serieLeidaPendiente = '';
+let _marcaPendiente = '';
+let _modeloPendiente = '';
 
-function _mostrarSerieCrearNuevo(serieLeida) {
+function _mostrarSerieCrearNuevo(serieLeida, marca, modelo) {
   _serieLeidaPendiente = serieLeida;
+  _marcaPendiente = marca || '';
+  _modeloPendiente = modelo || '';
   const resultado = document.getElementById('serieResultado');
   resultado.style.display = 'block';
+  const nombreDetectado = [marca, modelo].filter(Boolean).join(' ').trim();
+  const botonTexto = nombreDetectado
+    ? `Crear ítem nuevo: ${escHtml(nombreDetectado)} (S/N: ${escHtml(serieLeida)})`
+    : `Crear ítem nuevo con S/N: ${escHtml(serieLeida)}`;
   resultado.innerHTML = `
     <div style="margin-bottom:12px">No se encontró ningún ítem con el número de serie <strong>${escHtml(serieLeida)}</strong>.</div>
-    <button class="btn btn-p" onclick="_crearItemDesdeSerie()">Crear ítem nuevo con S/N: ${escHtml(serieLeida)}</button>
+    <button class="btn btn-p" onclick="_crearItemDesdeSerie()">${botonTexto}</button>
     <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar</button>`;
 }
 
 function _crearItemDesdeSerie() {
   const serie = _serieLeidaPendiente;
+  const marca = _marcaPendiente;
+  const modelo = _modeloPendiente;
   closeCamaraSerie();
   openModal();
   setTimeout(() => {
     const input = document.getElementById('f_serie');
     if (input) input.value = serie;
+    const nombreDetectado = [marca, modelo].filter(Boolean).join(' ').trim();
+    if (nombreDetectado) {
+      const itemInput = document.getElementById('f_item');
+      if (itemInput) itemInput.value = nombreDetectado;
+    }
+    if (marca) {
+      const provInput = document.getElementById('f_proveedor');
+      if (provInput) provInput.value = marca;
+    }
   }, 50);
 }
 

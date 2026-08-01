@@ -326,7 +326,7 @@ export async function onRequestPost({ request, env, data }) {
       aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         task: 'query',
         image: `data:image/jpeg;base64,${imagen}`,
-        question: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.',
+        question: 'Analiza esta etiqueta de equipo y responde SOLO con JSON: {"serie": "VALOR o null", "marca": "VALOR o null", "modelo": "VALOR o null"}. Extrae el número de serie (S/N, Serial Number, Service Tag), la marca del fabricante, y el modelo del equipo, si son visibles. No añadas explicaciones.',
         reasoning: true,
         stream: false,
         max_tokens: 300
@@ -335,11 +335,13 @@ export async function onRequestPost({ request, env, data }) {
       return Response.json({ ok: false, error: 'Error del servicio de IA' });
     }
 
-    let serieLeida = '';
+    let serieLeida = '', marca = '', modelo = '';
     const raw = aiData?.result?.answer || '';
     try {
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
+      marca = String(parsed.marca || '').trim();
+      modelo = String(parsed.modelo || '').trim();
     } catch (e) {
       return Response.json({ ok: true, match: 'sin_lectura' });
     }
@@ -364,7 +366,7 @@ export async function onRequestPost({ request, env, data }) {
       .map(({ _dist, ...r }) => r);
 
     if (candidatos.length) return Response.json({ ok: true, match: 'fuzzy', candidatos });
-    return Response.json({ ok: true, match: 'ninguno', serieLeida });
+    return Response.json({ ok: true, match: 'ninguno', serieLeida, marca, modelo });
   }
 
   return Response.json({ ok: false, error: 'Accion desconocida' });
