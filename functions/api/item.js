@@ -324,7 +324,7 @@ export async function onRequestPost({ request, env, data }) {
     let aiData;
     try {
       const imageBytes = Uint8Array.from(atob(imagen), c => c.charCodeAt(0));
-      aiData = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+      aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         prompt: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.',
         image: Array.from(imageBytes),
         max_tokens: 100
