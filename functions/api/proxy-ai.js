@@ -58,8 +58,10 @@ export async function onRequestPost({ request, env }) {
         }
         const text = decoder.decode(value, { stream: true });
         let enqueued = false;
+        let sawDataLine = false;
         for (const line of text.split('\n')) {
           if (!line.startsWith('data: ')) continue;
+          sawDataLine = true;
           const payload = line.slice(6).trim();
           if (!payload || payload === '[DONE]') continue;
           let content = '';
@@ -80,6 +82,11 @@ export async function onRequestPost({ request, env }) {
           }
           const chunk = { choices: [{ delta: { content } }] };
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          enqueued = true;
+        }
+        if (!sawDataLine && text.trim()) {
+          const dbg = { choices: [{ delta: { content: '[DEBUG no-data-line]: ' + text.slice(0, 200) } }] };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(dbg)}\n\n`));
           enqueued = true;
         }
         if (enqueued) return;
