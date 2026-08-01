@@ -408,6 +408,52 @@ export async function onRequestPost({ request, env, data }) {
     return Response.json({ ok: true, match: 'sin_lectura' });
   }
 
+  if (action === 'detectarMultiples') {
+    const imagen = body.imagen;
+    if (!imagen) return Response.json({ ok: false, error: 'Falta la imagen' });
+    if (!env.AI) return Response.json({ ok: false, error: 'Workers AI no configurado en Cloudflare' });
+
+    const catDeptFilter = superadmin ? '' : ' WHERE departamento=?';
+    const catDeptBind = superadmin ? [] : [dept];
+    const catRows = await env.DB.prepare(`SELECT DISTINCT name FROM categorias${catDeptFilter} ORDER BY orden`)
+      .bind(...catDeptBind).all();
+    const categoriasDept = (catRows.results || []).map(r => r.name).filter(Boolean);
+
+    let aiData;
+    try {
+      const categoriasTexto = categoriasDept.length
+        ? categoriasDept.map(c => `"${c}"`).join(', ')
+        : '(ninguna categoría disponible)';
+      aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
+        task: 'query',
+        image: `data:image/jpeg;base64,${imagen}`,
+        question: `Analiza esta foto de una mesa o superficie con varios equipos o materiales de inventario. Identifica CADA objeto distinto que veas y agrupa los que sean iguales entre sí, contando cuántas unidades hay de cada uno. Para cada tipo de objeto distinto, indica un nombre breve y descriptivo, la cantidad de unidades de ese tipo, y si encaja, UNA categoría de esta lista exacta: ${categoriasTexto}. Responde ÚNICAMENTE con un array JSON real usando los datos que veas, por ejemplo: [{"nombre": "Fuente de alimentación de laboratorio", "cantidad": 4, "categoriaSugerida": "Equipos de medida"}, {"nombre": "Multímetro digital", "cantidad": 2, "categoriaSugerida": "Herramientas"}, {"nombre": "Osciloscopio", "cantidad": 1, "categoriaSugerida": null}]. "categoriaSugerida" debe ser EXACTAMENTE uno de los nombres de la lista dada (copiado tal cual) o null si ninguno encaja — nunca inventes un nombre de categoría nuevo. Si no detectas ningún objeto reconocible, responde con un array vacío: []. No añadas explicaciones ni texto fuera del array JSON. Nunca copies este ejemplo literalmente si no corresponde a la foto real.`,
+        reasoning: true,
+        stream: false,
+        max_tokens: 600
+      });
+    } catch (e) {
+      return Response.json({ ok: false, error: 'Error del servicio de IA' });
+    }
+
+    let objetos = [];
+    const raw = aiData?.result?.answer || '';
+    try {
+      const parsed = JSON.parse(raw.match(/\[[\s\S]*\]/)?.[0] || '[]');
+      objetos = (Array.isArray(parsed) ? parsed : []).map(o => {
+        const nombre = String(o?.nombre || '').trim();
+        const cantidad = Math.max(1, parseInt(o?.cantidad, 10) || 1);
+        let categoriaSugerida = String(o?.categoriaSugerida || '').trim();
+        if (categoriaSugerida && !categoriasDept.includes(categoriaSugerida)) categoriaSugerida = '';
+        return { nombre, cantidad, categoriaSugerida };
+      }).filter(o => o.nombre);
+    } catch (e) {
+      return Response.json({ ok: true, objetos: [] });
+    }
+
+    return Response.json({ ok: true, objetos });
+  }
+
   return Response.json({ ok: false, error: 'Accion desconocida' });
 }
 
