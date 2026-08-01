@@ -336,7 +336,7 @@ export async function onRequestPost({ request, env, data }) {
     }
 
     let serieLeida = '';
-    const raw = aiData?.answer || aiData?.response || '';
+    const raw = aiData?.result?.answer || aiData?.answer || aiData?.response || '';
     try {
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
