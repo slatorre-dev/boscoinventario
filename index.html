@@ -321,9 +321,9 @@
         </svg>
         <span>Escanear QR</span>
       </button>
-      <button class="gsearch-extra-btn" id="gsSerie" onclick="openCamaraSerie()" title="Buscar por número de serie">
+      <button class="gsearch-extra-btn" id="gsSerie" onclick="openCamaraSerie()" title="Buscar con la cámara">
         🔢
-        <span>Buscar por Nº de serie</span>
+        <span>Buscar con la cámara</span>
       </button>
     </div>
   </div>
@@ -1543,7 +1543,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <!-- ══ CÁMARA BÚSQUEDA POR NÚMERO DE SERIE ══ -->
 <div class="mbg" id="mCamaraSerie" onclick="if(event.target===this)closeCamaraSerie()">
   <div class="modal" style="max-width:600px">
-    <div class="mh"><div class="mt">📷 Buscar por número de serie</div><button class="mx" onclick="closeCamaraSerie()">✕</button></div>
+    <div class="mh"><div class="mt">📷 Apunta la cámara a la etiqueta o al objeto</div><button class="mx" onclick="closeCamaraSerie()">✕</button></div>
     <video id="serieVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px;display:none" autoplay playsinline></video>
     <div id="serieEstado" style="display:none;font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Leyendo etiqueta...</div>
     <div id="serieResultado" style="display:none"></div>
