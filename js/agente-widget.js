@@ -14,7 +14,7 @@
   // ── Config ────────────────────────────────────────────────────────────────
   var API_BASE = '';          // vacío = mismo dominio (relativo)
   var AI_ENDPOINT = '/api/proxy-ai';  // Pages Function — el token vive en el servidor, requiere sesión (ver _middleware.js)
-  var MODEL = 'gpt-4o-mini';     // GitHub Models: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct...
+  var MODEL = 'glm-4.7-flash';   // Cloudflare Workers AI — el modelo real (@cf/zai-org/glm-4.7-flash) lo fija el backend (proxy-ai.js), este valor es solo informativo
   var AGENTE_NOMBRE = 'Volt';    // Nombre del agente IA
   var LEARN_KEY = 'volt_intent_examples_v1';
   var HISTORY_KEY = 'volt_chat_history_v1';

@@ -1,17 +1,21 @@
 /**
- * Pages Function — Proxy para GitHub Models (OpenAI-compatible)
+ * Pages Function — Proxy para el chat de Volt vía Cloudflare Workers AI
  * Ruta: /api/proxy-ai
- * GITHUB_TOKEN: Personal Access Token de GitHub (secret de Cloudflare)
- * Modelos disponibles: gpt-4o-mini, gpt-4o, meta-llama-3.1-70b-instruct, phi-4, mistral-large...
- * Protegido por functions/api/_middleware.js (requiere u+p o u+t válidos) — antes vivía
- * en /proxy/ai, fuera del alcance del middleware, sin ninguna autenticación.
+ * Antes usaba GitHub Models (retirado el 30/07/2026, ver claude.md) — ahora
+ * usa el binding nativo env.AI (mismo binding que ya usa item.js:buscarPorSerie).
+ * Protegido por functions/api/_middleware.js (requiere u+p o u+t válidos).
+ *
+ * El frontend (js/agente-widget.js:streamAI()) espera SSE en formato OpenAI
+ * ("data: {choices:[{delta:{content}}]}\n\n" por chunk, "data: [DONE]" al
+ * final) — este archivo traduce el stream nativo de Workers AI a ese
+ * formato exacto para no tener que tocar el frontend.
  */
 
-const GITHUB_MODELS_URL = 'https://models.inference.ai.azure.com/chat/completions';
+const MODEL = '@cf/zai-org/glm-4.7-flash';
 
 export async function onRequestPost({ request, env }) {
-  if (!env.GITHUB_TOKEN) {
-    return Response.json({ error: 'GITHUB_TOKEN no configurado en Cloudflare' }, { status: 500 });
+  if (!env.AI) {
+    return Response.json({ error: 'Workers AI no configurado en Cloudflare' }, { status: 500 });
   }
 
   let body;
@@ -21,19 +25,53 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ error: 'Body inválido' }, { status: 400 });
   }
 
-  const resp = await fetch(GITHUB_MODELS_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.GITHUB_TOKEN}`,
-    },
-    body: JSON.stringify(body),
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  const maxTokens = body.max_tokens || 500;
+
+  let aiStream;
+  try {
+    aiStream = await env.AI.run(MODEL, {
+      messages,
+      max_tokens: maxTokens,
+      stream: true
+    });
+  } catch (e) {
+    return Response.json({ error: 'Error del servicio de IA: ' + String(e?.message || e) }, { status: 500 });
+  }
+
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const reader = aiStream.getReader();
+
+  const translated = new ReadableStream({
+    async pull(controller) {
+      const { done, value } = await reader.read();
+      if (done) {
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+        return;
+      }
+      const text = decoder.decode(value, { stream: true });
+      for (const line of text.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (!payload || payload === '[DONE]') continue;
+        let content = '';
+        try {
+          const parsed = JSON.parse(payload);
+          content = parsed.response ?? '';
+        } catch {
+          continue;
+        }
+        if (content) {
+          const chunk = { choices: [{ delta: { content } }] };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+        }
+      }
+    }
   });
 
-  return new Response(resp.body, {
-    status: resp.status,
-    headers: {
-      'Content-Type': resp.headers.get('Content-Type') ?? 'application/json',
-    },
+  return new Response(translated, {
+    headers: { 'Content-Type': 'text/event-stream' }
   });
 }
