@@ -6,11 +6,11 @@ plan) completamente implementado y desplegado. Repo
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
 por departamento en todo el backend. Feature nueva completa y verificada en
 producción: **búsqueda de ítems por número de serie vía cámara** (foto de
-etiqueta → OCR con Cloudflare Workers AI → busca en inventario), ver sesión
-del 01/08/2026 más abajo. **Pendiente urgente:** GitHub Models (proveedor de
-IA usado por Volt, el chatbot) fue retirado el 30/07/2026 — Volt sigue roto
-en producción, migración a Workers AI pendiente para otra sesión, ver
-[Pendiente](#pendiente-próximas-sesiones).
+etiqueta → OCR con Cloudflare Workers AI → busca en inventario). **Volt**
+(el chatbot) también migrado y verificado — GitHub Models, su proveedor de
+IA original, fue retirado el 30/07/2026; ahora usa Cloudflare Workers AI
+igual que la búsqueda por serie. Ambas migraciones completas, ver sesión
+del 01/08/2026 más abajo. Sin pendientes urgentes de esta sesión.
 
 Inventario general del **IES El Bosco**: cada departamento gestiona su
 propio inventario (aulas, categorías, ciclos, profesores, préstamos) desde
@@ -725,11 +725,12 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   de A/C). Corregido el dato en D1 (`orden=115`); el bug de código en
   `saveAulas()` queda sin arreglar, pendiente para otra sesión — afecta a
   cualquier departamento con pocas aulas que guarde desde ese modal.
-- **01/08/2026 (v543): Búsqueda de ítems por número de serie vía cámara —
-  ✅ completada y verificada end-to-end en producción**, tras un bloqueo
-  largo por retirada de proveedor de IA (GitHub Models) resuelto en la
-  misma sesión. Idea propuesta por el usuario: "Modo Cámara Inteligente"
-  con 10 sub-ideas
+- **01/08/2026 (v543): Búsqueda de ítems por número de serie vía cámara +
+  migración completa de Volt (el chatbot) — ambas ✅ completadas y
+  verificadas end-to-end en producción**, tras un bloqueo largo por
+  retirada de proveedor de IA (GitHub Models) que afectaba a las dos
+  features, resuelto en la misma sesión. Idea propuesta por el usuario:
+  "Modo Cámara Inteligente" con 10 sub-ideas
   (buscar por S/N, alta automática desde etiqueta, reconocimiento visual,
   modo "Inspector" en vivo, etc.) — esta sesión implementó solo la primera
   pieza (#1: foto de etiqueta → OCR extrae el número de serie → busca el
@@ -898,20 +899,77 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   // respuesta en aiData.result.answer, NO aiData.answer
   ```
 
-  **Volt (`proxy-ai.js`) sigue roto, migración pendiente para otra
-  sesión** — mismo motivo (GitHub Models retirado). Usa streaming SSE en
-  formato OpenAI (`stream:true`, chunks `data:
-  {choices[0].delta.content}`, parseados en
-  `js/agente-widget.js:streamAI()`) — Workers AI también soporta streaming
-  pero con formato de respuesta distinto, así que migrarlo es un cambio
-  más grande que el de `buscarPorSerie` (que era una sola llamada
-  no-streaming) y no se abordó en esta sesión a propósito. Con el recorrido
-  de depuración de arriba ya resuelto, migrar Volt debería ser más rápido
-  la próxima vez: mismo proveedor, mismo tipo de binding, y ya se sabe que
-  `@cf/moondream/moondream3.1-9B-A2B` con `reasoning:true` responde bien —
-  aunque para chat de texto puro (sin imagen) probablemente convenga un
-  modelo de texto normal en vez de uno de visión, y aún queda por resolver
-  el formato de streaming.
+  **Volt (`functions/api/proxy-ai.js` + `js/agente-widget.js`) — también
+  migrado a Workers AI y verificado, en la misma sesión.** Mismo motivo
+  (GitHub Models retirado). Modelo elegido: **`@cf/zai-org/glm-4.7-flash`**
+  (texto, multilingüe, function calling — se descartó Llama de Meta porque
+  su licencia tiene la misma cláusula de exclusión de usuarios UE que ya
+  bloqueó el modelo de visión de `buscarPorSerie`).
+
+  **Recorrido de depuración** (Volt es más complejo que `buscarPorSerie`
+  porque el frontend, `js/agente-widget.js:streamAI()`, espera streaming
+  SSE real, no una sola respuesta):
+  1. Primer intento: `env.AI.run(MODEL, {messages, stream:true})` devuelve
+     un `ReadableStream` nativo — se escribió un `ReadableStream` custom en
+     `proxy-ai.js` que traducía cada chunk al formato SSE OpenAI que el
+     frontend ya parseaba (`data: {choices:[{delta:{content}}]}`). Quedó
+     **colgado indefinidamente**: la conexión abría (`200 OK`,
+     `Content-Type: text/event-stream`, confirmado con `curl -v`) pero
+     nunca llegaban datos ni cierre. Causa: el método `pull()` del stream
+     custom hacía un solo `reader.read()` por llamada y podía retornar sin
+     encolar nada si ese chunk no traía contenido útil (línea vacía o el
+     propio `[DONE]` de Workers AI, descartado) — el contrato de
+     `ReadableStream` espera que `pull()` encole algo o cierre; si no hace
+     ninguna de las dos cosas, el runtime sigue esperando.
+  2. Fix: se cambió `pull()` a un `while(true)` que sigue leyendo hasta
+     encolar contenido real o cerrar. **Seguía colgado.** Causa (más
+     profunda, no confirmada del todo pero consistente con el síntoma): el
+     stream nativo de Workers AI para modelos de texto no necesariamente
+     emite líneas con el prefijo `data: ` en cada chunk de red (puede venir
+     partido a mitad de un JSON entre dos `read()`), así que el filtro
+     `line.startsWith('data: ')` podía descartar TODO un chunk sin nunca
+     entrar a ninguna rama que decidiera encolar o seguir — el `while(true)`
+     daba vueltas para siempre sin salir nunca ni fallar con un error
+     diagnosticable.
+  3. **Decisión: simplificar a respuesta única, sin streaming real.** Tras
+     2 intentos fallidos de traducir el stream con causa no completamente
+     verificable, se priorizó fiabilidad sobre la UX de escritura
+     incremental: `proxy-ai.js` ahora llama a `env.AI.run(MODEL, {messages,
+     max_tokens})` **sin** `stream:true` (una sola llamada, espera la
+     respuesta completa) y la envuelve en un único chunk SSE seguido de
+     `[DONE]` — el frontend no necesita ningún cambio porque sigue viendo
+     el mismo formato, solo pierde el efecto de "escritura en vivo" (la
+     respuesta de Volt aparece de golpe en vez de palabra por palabra).
+  4. Con la llamada simplificada, `content` seguía vacío. Depurado
+     volcando el objeto `aiData` completo: `finish_reason: "length"` con
+     `message.content: null`, pero un campo `reasoning`/`reasoning_content`
+     con una traza de pensamiento a medias — **GLM-4.7-Flash razona antes
+     de responder por defecto, consumiendo sus propios tokens de esa
+     cuota**, y con `max_tokens` bajo (el frontend manda 20-500 según el
+     caso) el modelo se quedaba sin tokens a media traza de razonamiento,
+     sin llegar nunca a generar el `content` real.
+  5. **Fix final:** se añadió `chat_template_kwargs: {enable_thinking:
+     false}` (patrón habitual para desactivar razonamiento en modelos
+     GLM/Qwen) y se puso un mínimo de `max_tokens=500` como red de
+     seguridad. El campo de lectura correcto es
+     `aiData.choices[0].message.content` (formato OpenAI estándar para
+     `env.AI.run()` sin streaming — distinto del `aiData.response` plano
+     usado por otros modelos, y también distinto del `aiData.result.answer`
+     anidado de Moondream; cada modelo/familia envuelve su respuesta de
+     forma distinta, hay que confirmarlo con un volcado real, no asumirlo).
+  6. Verificado en producción con 3 pruebas: saludo simple, pregunta
+     técnica ("¿qué es un multímetro?", respuesta correcta y coherente), y
+     respeto de `system` prompt (contar hasta 3 dio "1, 2, 3."). Sin debug
+     residual en el código final.
+
+  **Lección para el futuro:** si alguien quiere recuperar el streaming
+  incremental de Volt, el punto de partida ya no es "cómo traducir el
+  stream" sino "por qué el `ReadableStream` custom nunca emite ni cierra"
+  — revisar si Workers AI expone algún ejemplo de proxy de streaming
+  SSE→SSE ya hecho (la documentación de modelos de texto muestra pasar el
+  stream nativo directo a `Response`, no traducirlo primero), o considerar
+  si compensa el esfuerzo frente al enfoque actual de respuesta única, que
+  ya funciona de forma fiable.
 
   **Incidente de seguridad menor durante la sesión:** el primer GitHub
   Personal Access Token generado se pegó en texto plano en el chat de
@@ -936,27 +994,14 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
 
 ## Pendiente (Próximas sesiones)
 
-### 🔴 URGENTE — Volt sigue roto en producción
+### Sin pendientes urgentes — búsqueda por serie y Volt, ambos resueltos
 
-**Búsqueda por número de serie: ✅ resuelta y verificada** (ver detalle en
-la entrada de sesión del 01/08/2026 más abajo) — no queda nada pendiente de
-esa feature.
-
-Lo que sí sigue urgente: **migrar Volt (`js/agente-widget.js` +
-`functions/api/proxy-ai.js`) a Cloudflare Workers AI** — sigue roto en
-producción porque usaba GitHub Models, retirado el 30/07/2026 (mismo
-hallazgo que bloqueó la búsqueda por serie al principio de esta sesión, ver
-más abajo). Cambio más grande que `buscarPorSerie` porque usa streaming SSE
-en formato OpenAI (`stream:true`, chunks `data: {choices[0].delta.content}`,
-parseados en `js/agente-widget.js:streamAI()`) — no abordado esta sesión a
-propósito, para no mezclar dos migraciones de proveedor sin verificar la
-primera con calma. Con `buscarPorSerie` ya resuelto, se sabe que **Cloudflare
-Workers AI + modelo `@cf/moondream/moondream3.1-9B-A2B` funciona bien** (con
-`reasoning:true`) para tareas de una sola llamada — Volt necesitará además
-resolver el streaming, que Workers AI soporta pero con formato de respuesta
-distinto al de OpenAI, así que `streamAI()` tendrá que parsear los chunks de
-otra forma. Sin Volt funcionando, el chatbot del inventario no responde a
-los usuarios — es el hallazgo más urgente pendiente ahora mismo.
+**Búsqueda por número de serie: ✅ resuelta y verificada.**
+**Volt (chatbot): ✅ migrado y verificado.** Ambos detallados en la entrada
+de sesión del 01/08/2026 más abajo. Nota para el futuro: Volt perdió el
+efecto de streaming incremental (la respuesta aparece de golpe, no palabra
+por palabra) — ver la entrada de sesión para la razón y si alguien quiere
+recuperarlo más adelante con más tiempo para depurar el `ReadableStream`.
 
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 
