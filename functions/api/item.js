@@ -323,10 +323,12 @@ export async function onRequestPost({ request, env, data }) {
 
     let aiData;
     try {
-      const imageBytes = Uint8Array.from(atob(imagen), c => c.charCodeAt(0));
       aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
-        prompt: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.',
-        image: Array.from(imageBytes),
+        task: 'query',
+        image: `data:image/jpeg;base64,${imagen}`,
+        question: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.',
+        reasoning: false,
+        stream: false,
         max_tokens: 100
       });
     } catch (e) {
@@ -335,7 +337,7 @@ export async function onRequestPost({ request, env, data }) {
 
     let serieLeida = '';
     try {
-      const raw = aiData?.response || '';
+      const raw = aiData?.answer || aiData?.response || '';
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
     } catch (e) {
