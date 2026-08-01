@@ -327,9 +327,9 @@ export async function onRequestPost({ request, env, data }) {
         task: 'query',
         image: `data:image/jpeg;base64,${imagen}`,
         question: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.',
-        reasoning: false,
+        reasoning: true,
         stream: false,
-        max_tokens: 100
+        max_tokens: 300
       });
     } catch (e) {
       return Response.json({ ok: false, error: 'Error del servicio de IA (debug): ' + String(e?.message || e) });
