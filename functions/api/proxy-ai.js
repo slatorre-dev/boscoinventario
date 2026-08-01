@@ -65,15 +65,22 @@ export async function onRequestPost({ request, env }) {
           let content = '';
           try {
             const parsed = JSON.parse(payload);
-            content = parsed.response ?? '';
+            content = parsed.response ?? parsed.choices?.[0]?.delta?.content ?? '';
           } catch {
+            const dbg = { choices: [{ delta: { content: '[DEBUG raw]: ' + payload.slice(0, 200) } }] };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(dbg)}\n\n`));
+            enqueued = true;
             continue;
           }
-          if (content) {
-            const chunk = { choices: [{ delta: { content } }] };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          if (!content) {
+            const dbg = { choices: [{ delta: { content: '[DEBUG parsed]: ' + JSON.stringify(parsed).slice(0, 200) } }] };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(dbg)}\n\n`));
             enqueued = true;
+            continue;
           }
+          const chunk = { choices: [{ delta: { content } }] };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          enqueued = true;
         }
         if (enqueued) return;
       }
