@@ -98,6 +98,10 @@ async function capturarSerie() {
       }
       return;
     }
+    if (res.match === 'visual') {
+      _mostrarVisualCandidatos(res.candidatos, res.nombreSugerido, res.categoriaSugerida);
+      return;
+    }
     if (res.match === 'ninguno') {
       _mostrarSerieCrearNuevo(res.serieLeida, res.marca, res.modelo);
       return;
@@ -133,9 +137,37 @@ function _mostrarSerieCandidatos(candidatos) {
   resultado.innerHTML = `<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}<button class="btn" onclick="serieReintentar()">Reintentar</button>`;
 }
 
+function _mostrarVisualCandidatos(candidatos, nombreSugerido, categoriaSugerida) {
+  _nombreSugeridoPendiente = nombreSugerido || '';
+  _categoriaSugeridaPendiente = categoriaSugerida || '';
+  const resultado = document.getElementById('serieResultado');
+  resultado.style.display = 'block';
+  if (!candidatos || !candidatos.length) {
+    const nombreTexto = nombreSugerido ? escHtml(nombreSugerido) : 'este objeto';
+    resultado.innerHTML = `
+      <div style="margin-bottom:12px">No se encontró ningún ítem parecido a <strong>${nombreTexto}</strong> en el inventario.</div>
+      <button class="btn btn-p" onclick="_crearItemDesdeVisual()">Crear ítem nuevo${nombreSugerido ? ': ' + escHtml(nombreSugerido) : ''}</button>
+      <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar</button>`;
+    return;
+  }
+  const filas = candidatos.map(c => {
+    const aula = (typeof AULAS !== 'undefined' ? AULAS.find(a => a.id === c.aula) : null);
+    const aulaNombre = aula ? aula.name : (c.aula || 'Sin aula');
+    return `<div class="serie-candidato" onclick="closeCamaraSerie();openItemRoute(${c.id})" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer">
+      <div style="font-weight:600">${escHtml(c.item)}</div>
+      <div style="font-size:12px;color:var(--muted)">${escHtml(aulaNombre)}${c.cat ? ' · ' + escHtml(c.cat) : ''}</div>
+    </div>`;
+  }).join('');
+  resultado.innerHTML = `<div style="margin-bottom:8px">No se leyó ningún texto, ¿es alguno de estos?</div>${filas}
+    <button class="btn btn-p" onclick="_crearItemDesdeVisual()" style="margin-top:8px">Ninguno, crear ítem nuevo</button>
+    <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar</button>`;
+}
+
 let _serieLeidaPendiente = '';
 let _marcaPendiente = '';
 let _modeloPendiente = '';
+let _nombreSugeridoPendiente = '';
+let _categoriaSugeridaPendiente = '';
 
 function _mostrarSerieCrearNuevo(serieLeida, marca, modelo) {
   _serieLeidaPendiente = serieLeida;
@@ -170,6 +202,23 @@ function _crearItemDesdeSerie() {
     if (marca) {
       const provInput = document.getElementById('f_proveedor');
       if (provInput) provInput.value = marca;
+    }
+  }, 50);
+}
+
+function _crearItemDesdeVisual() {
+  const nombreSugerido = _nombreSugeridoPendiente;
+  const categoriaSugerida = _categoriaSugeridaPendiente;
+  closeCamaraSerie();
+  openModal();
+  setTimeout(() => {
+    if (nombreSugerido) {
+      const itemInput = document.getElementById('f_item');
+      if (itemInput) itemInput.value = nombreSugerido;
+    }
+    if (categoriaSugerida) {
+      const catSelect = document.getElementById('f_cat');
+      if (catSelect) catSelect.value = categoriaSugerida;
     }
   }, 50);
 }
