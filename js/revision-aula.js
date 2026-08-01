@@ -110,6 +110,9 @@ async function capturarRevision() {
 }
 
 function _mostrarRevisionResultado(item) {
+  if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => String(x.id) === String(item.id))) {
+    items.push(item);
+  }
   const resultado = document.getElementById('revisionResultado');
   resultado.style.display = 'block';
   if (String(item.aula) === String(_revisionAulaId)) {
@@ -207,10 +210,11 @@ function terminarRevisionAula() {
   const listaConfirmados = _revisionConfirmados.length
     ? _revisionConfirmados.map(x => x.item).join(', ')
     : 'ninguno';
-  const listaNoVerificados = noVerificados.length
-    ? noVerificados.map(x => x.item).join(', ')
-    : 'ninguno';
-  const message = `Confirmados (${_revisionConfirmados.length}): ${listaConfirmados}. No verificados (${noVerificados.length}): ${listaNoVerificados}. "No verificado" no significa ausente — puede que no se haya fotografiado durante esta revisión.`;
+  let message = `Confirmados (${_revisionConfirmados.length}): ${listaConfirmados}.`;
+  if (noVerificados.length) {
+    const listaNoVerificados = noVerificados.map(x => x.item).join(', ');
+    message += ` No verificados (${noVerificados.length}): ${listaNoVerificados}. "No verificado" no significa ausente — puede que no se haya fotografiado durante esta revisión.`;
+  }
 
   confirmDialog({
     title: `📋 Resumen de revisión: ${aulaNombre}`,
