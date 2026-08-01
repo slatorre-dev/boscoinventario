@@ -357,28 +357,54 @@ export async function onRequestPost({ request, env, data }) {
     } catch (e) {
       return Response.json({ ok: true, match: 'sin_lectura' });
     }
-    if (!serieLeida) return Response.json({ ok: true, match: 'sin_lectura' });
+    // categoriaSugerida solo es válida si coincide exactamente con una categoría real del departamento
+    if (categoriaSugerida && !categoriasDept.includes(categoriaSugerida)) categoriaSugerida = '';
 
     const deptFilter = superadmin
       ? ''
       : ` AND (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}')`;
     const deptBind = superadmin ? [] : [dept];
 
-    const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
-      .bind(serieLeida, ...deptBind).first();
-    if (exact) return Response.json({ ok: true, match: 'exacto', item: exact });
+    if (serieLeida) {
+      const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
+        .bind(serieLeida, ...deptBind).first();
+      if (exact) return Response.json({ ok: true, match: 'exacto', item: exact });
 
-    const candidatesRes = await env.DB.prepare(`SELECT id, item, ref, aula, serie FROM inventario WHERE serie != ''${deptFilter}`)
-      .bind(...deptBind).all();
-    const candidatos = (candidatesRes.results || [])
-      .map(r => ({ ...r, _dist: levenshtein(r.serie, serieLeida) }))
-      .filter(r => r._dist <= 2)
-      .sort((a, b) => a._dist - b._dist)
-      .slice(0, 5)
-      .map(({ _dist, ...r }) => r);
+      const candidatesRes = await env.DB.prepare(`SELECT id, item, ref, aula, serie FROM inventario WHERE serie != ''${deptFilter}`)
+        .bind(...deptBind).all();
+      const candidatos = (candidatesRes.results || [])
+        .map(r => ({ ...r, _dist: levenshtein(r.serie, serieLeida) }))
+        .filter(r => r._dist <= 2)
+        .sort((a, b) => a._dist - b._dist)
+        .slice(0, 5)
+        .map(({ _dist, ...r }) => r);
 
-    if (candidatos.length) return Response.json({ ok: true, match: 'fuzzy', candidatos });
-    return Response.json({ ok: true, match: 'ninguno', serieLeida, marca, modelo });
+      if (candidatos.length) return Response.json({ ok: true, match: 'fuzzy', candidatos });
+      return Response.json({ ok: true, match: 'ninguno', serieLeida, marca, modelo });
+    }
+
+    if (textoLibre) {
+      return Response.json({ ok: true, match: 'texto', textoLibre });
+    }
+
+    if (descripcionVisual || categoriaSugerida) {
+      const nombreSugerido = categoriaSugerida || descripcionVisual;
+      const palabraClave = descripcionVisual.split(/\s+/).filter(w => w.length >= 4)[0] || descripcionVisual;
+      const catCond = categoriaSugerida ? ' AND cat=?' : '';
+      const catBind = categoriaSugerida ? [categoriaSugerida] : [];
+      const visualRes = await env.DB.prepare(
+        `SELECT id, item, ref, aula, cat FROM inventario WHERE item LIKE ?${catCond}${deptFilter} LIMIT 10`
+      ).bind(`%${palabraClave}%`, ...catBind, ...deptBind).all();
+      return Response.json({
+        ok: true,
+        match: 'visual',
+        candidatos: visualRes.results || [],
+        nombreSugerido,
+        categoriaSugerida
+      });
+    }
+
+    return Response.json({ ok: true, match: 'sin_lectura' });
   }
 
   return Response.json({ ok: false, error: 'Accion desconocida' });
