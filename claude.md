@@ -971,6 +971,32 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   si compensa el esfuerzo frente al enfoque actual de respuesta única, que
   ya funciona de forma fiable.
 
+  **Autocompletado de marca/modelo al crear ítem desde S/N no encontrado —
+  idea #2 del roadmap original, también completada en esta sesión.**
+  Ampliado el mismo prompt de `buscarPorSerie` (una sola llamada a la IA,
+  sin coste extra) para que además del número de serie extraiga marca y
+  modelo visibles en la etiqueta. Cuando `match:'ninguno'`, la respuesta
+  incluye `marca`/`modelo`, y el botón "Crear ítem nuevo" precarga además
+  `f_item` (ej. "TP-Link Archer TX3000E") y `f_proveedor` (marca) en el
+  modal de alta — spec en
+  `docs/superpowers/specs/2026-08-01-autocompletado-marca-modelo-design.md`.
+  Bug encontrado y corregido en el primer intento: el prompt usaba
+  `{"serie": "VALOR o null", ...}` como plantilla de ejemplo, y el modelo a
+  veces **copiaba ese texto literal** en vez de sustituirlo por el dato
+  real — confirmado en producción (`serieLeida:"VALOR o null"`), rompiendo
+  la lectura del S/N que antes funcionaba bien. Corregido reescribiendo el
+  ejemplo del prompt con datos concretos reales (`{"serie":
+  "220A4S1002886", "marca": "TP-Link", "modelo": "Archer TX3000E"}`) en vez
+  de placeholders de texto, más una instrucción explícita de no copiar el
+  ejemplo literalmente. **Lección de prompting reutilizable:** cuando se le
+  pide a un modelo un JSON de ejemplo en el prompt, usar siempre valores
+  de muestra realistas y coherentes con el dominio, nunca placeholders
+  tipo "VALOR"/"XXX"/"TODO" — el modelo puede tratarlos como el resultado
+  esperado en vez de como notación de plantilla. Verificado tras el fix
+  con la misma foto real (router TP-Link Archer TX3000E): `serieLeida`
+  volvió a leerse exacta (`220A4S1002886`, sin el error de OCR del intento
+  original), `marca:"TP-Link"` y `modelo:"Archer TX3000E"` correctos.
+
   **Incidente de seguridad menor durante la sesión:** el primer GitHub
   Personal Access Token generado se pegó en texto plano en el chat de
   Claude Code — el usuario lo revocó y generó uno nuevo en cuanto se señaló
