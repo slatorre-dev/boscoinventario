@@ -45,28 +45,37 @@ export async function onRequestPost({ request, env }) {
 
   const translated = new ReadableStream({
     async pull(controller) {
-      const { done, value } = await reader.read();
-      if (done) {
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-        controller.close();
-        return;
-      }
-      const text = decoder.decode(value, { stream: true });
-      for (const line of text.split('\n')) {
-        if (!line.startsWith('data: ')) continue;
-        const payload = line.slice(6).trim();
-        if (!payload || payload === '[DONE]') continue;
-        let content = '';
-        try {
-          const parsed = JSON.parse(payload);
-          content = parsed.response ?? '';
-        } catch {
-          continue;
+      // Sigue leyendo del stream nativo hasta encolar algo (contenido real o
+      // el cierre) — un solo read() puede traer un chunk sin contenido útil
+      // (línea vacía, [DONE] de Workers AI que descartamos), y si pull()
+      // retorna sin encolar nada el stream queda esperando indefinidamente.
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+          return;
         }
-        if (content) {
-          const chunk = { choices: [{ delta: { content } }] };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+        const text = decoder.decode(value, { stream: true });
+        let enqueued = false;
+        for (const line of text.split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (!payload || payload === '[DONE]') continue;
+          let content = '';
+          try {
+            const parsed = JSON.parse(payload);
+            content = parsed.response ?? '';
+          } catch {
+            continue;
+          }
+          if (content) {
+            const chunk = { choices: [{ delta: { content } }] };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+            enqueued = true;
+          }
         }
+        if (enqueued) return;
       }
     }
   });
