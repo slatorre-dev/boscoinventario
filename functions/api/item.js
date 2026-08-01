@@ -321,7 +321,7 @@ export async function onRequestPost({ request, env, data }) {
     if (!imagen) return Response.json({ ok: false, error: 'Falta la imagen' });
     if (!env.AI) return Response.json({ ok: false, error: 'Workers AI no configurado en Cloudflare' });
 
-    const catDeptFilter = superadmin ? '' : ` WHERE departamento IN (?, '${genericDept}')`;
+    const catDeptFilter = superadmin ? '' : ' WHERE departamento=?';
     const catDeptBind = superadmin ? [] : [dept];
     const catRows = await env.DB.prepare(`SELECT DISTINCT name FROM categorias${catDeptFilter} ORDER BY orden`)
       .bind(...catDeptBind).all();
@@ -388,7 +388,7 @@ export async function onRequestPost({ request, env, data }) {
     }
 
     if (descripcionVisual || categoriaSugerida) {
-      const nombreSugerido = categoriaSugerida || descripcionVisual;
+      const nombreSugerido = descripcionVisual || categoriaSugerida;
       const palabraClave = descripcionVisual.split(/\s+/).filter(w => w.length >= 4)[0] || descripcionVisual;
       const catCond = categoriaSugerida ? ' AND cat=?' : '';
       const catBind = categoriaSugerida ? [categoriaSugerida] : [];
