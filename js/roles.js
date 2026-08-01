@@ -39,6 +39,7 @@ const ACTION_PERMISSIONS = {
   fotosGet: 'items.write',
   fotosSync: 'items.write',
   buscarPorSerie: 'serie.read',
+  detectarMultiples: 'serie.read',
   profAdd: 'profesores.manage',
   profUpdate: 'profesores.manage',
   profDelete: 'profesores.manage',

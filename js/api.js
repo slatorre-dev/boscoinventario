@@ -3,7 +3,7 @@
 // ═════════════════════════════════════════════════════════
 
 const ENDPOINT_MAP = {
-  add:'item', update:'item', delete:'item', bulkImport:'item', restoreBackup:'item', toggleOculto:'item', fotosGet:'item', fotosSync:'item', buscarPorSerie:'item',
+  add:'item', update:'item', delete:'item', bulkImport:'item', restoreBackup:'item', toggleOculto:'item', fotosGet:'item', fotosSync:'item', buscarPorSerie:'item', detectarMultiples:'item',
   prestar:'prestar', devolver:'prestar', prestarCaja:'prestar', notificarVencidos:'prestar',
   profAdd:'profesores', profUpdate:'profesores', profDelete:'profesores',
   aulasSync:'config', catsSync:'config', normalizeCategoriesTags:'config', normalizeTagsCanonical:'config', renameTag:'config', deleteTag:'config', ciclosSync:'config', ubicacionesSync:'config',
