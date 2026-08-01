@@ -5,3 +5,6 @@ compatibility_date = "2024-01-01"
 binding = "DB"
 database_name = "boscoinventario"
 database_id = "78646c8d-fcbf-456d-ab82-2428ba64c0b3"
+
+[ai]
+binding = "AI"

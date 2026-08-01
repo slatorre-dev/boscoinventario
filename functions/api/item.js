@@ -319,37 +319,23 @@ export async function onRequestPost({ request, env, data }) {
   if (action === 'buscarPorSerie') {
     const imagen = body.imagen;
     if (!imagen) return Response.json({ ok: false, error: 'Falta la imagen' });
-    if (!env.GITHUB_TOKEN) return Response.json({ ok: false, error: 'GITHUB_TOKEN no configurado en Cloudflare' });
+    if (!env.AI) return Response.json({ ok: false, error: 'Workers AI no configurado en Cloudflare' });
 
     let aiData;
     try {
-      const aiResp = await fetch('https://models.inference.ai.azure.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.GITHUB_TOKEN}` },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.' },
-                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imagen}` } }
-              ]
-            }
-          ],
-          temperature: 0,
-          max_tokens: 100
-        })
+      const imageBytes = Uint8Array.from(atob(imagen), c => c.charCodeAt(0));
+      aiData = await env.AI.run('@cf/meta/llama-3.2-11b-vision-instruct', {
+        prompt: 'Extrae ÚNICAMENTE el número de serie (S/N, Serial Number, Service Tag) visible en esta etiqueta de equipo. Responde SOLO con JSON: {"serie": "VALOR"} o {"serie": null} si no ves ningún número de serie legible. No añadas explicaciones.',
+        image: Array.from(imageBytes),
+        max_tokens: 100
       });
-      if (!aiResp.ok) return Response.json({ ok: false, error: 'Error del servicio de IA' });
-      aiData = await aiResp.json();
     } catch (e) {
       return Response.json({ ok: false, error: 'Error del servicio de IA' });
     }
 
     let serieLeida = '';
     try {
-      const raw = aiData?.choices?.[0]?.message?.content || '';
+      const raw = aiData?.response || '';
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
     } catch (e) {
