@@ -326,7 +326,7 @@ export async function onRequestPost({ request, env, data }) {
       aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         task: 'query',
         image: `data:image/jpeg;base64,${imagen}`,
-        question: 'Analiza esta etiqueta de equipo y responde SOLO con JSON: {"serie": "VALOR o null", "marca": "VALOR o null", "modelo": "VALOR o null"}. Extrae el número de serie (S/N, Serial Number, Service Tag), la marca del fabricante, y el modelo del equipo, si son visibles. No añadas explicaciones.',
+        question: 'Analiza esta etiqueta de equipo. Extrae el número de serie (S/N, Serial Number o Service Tag), la marca del fabricante, y el modelo del equipo, si son visibles. Responde ÚNICAMENTE con un objeto JSON real usando los datos que veas, por ejemplo: {"serie": "220A4S1002886", "marca": "TP-Link", "modelo": "Archer TX3000E"}. Si no ves alguno de esos datos, pon null en ese campo concreto (nunca inventes ni copies el ejemplo literalmente). No añadas explicaciones ni texto fuera del JSON.',
         reasoning: true,
         stream: false,
         max_tokens: 300
