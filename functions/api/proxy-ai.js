@@ -30,19 +30,26 @@ export async function onRequestPost({ request, env }) {
   }
 
   const messages = Array.isArray(body.messages) ? body.messages : [];
-  const maxTokens = body.max_tokens || 500;
+  // GLM-4.7-Flash razona antes de responder (campo "reasoning" en el mensaje,
+  // consume tokens propios) — con max_tokens bajo, el modelo se corta a
+  // media traza de razonamiento y nunca llega a generar el content real
+  // (confirmado: finish_reason:"length" con content:null). Se desactiva el
+  // razonamiento vía chat_template_kwargs (patrón habitual en modelos
+  // GLM/Qwen) y se sube el mínimo de max_tokens como red de seguridad.
+  const maxTokens = Math.max(body.max_tokens || 500, 500);
 
   let aiData;
   try {
     aiData = await env.AI.run(MODEL, {
       messages,
-      max_tokens: maxTokens
+      max_tokens: maxTokens,
+      chat_template_kwargs: { enable_thinking: false }
     });
   } catch (e) {
     return Response.json({ error: 'Error del servicio de IA: ' + String(e?.message || e) }, { status: 500 });
   }
 
-  const content = aiData?.response || aiData?.result?.response || '[DEBUG aiData]: ' + JSON.stringify(aiData).slice(0, 500);
+  const content = aiData?.choices?.[0]?.message?.content || aiData?.response || '[DEBUG aiData]: ' + JSON.stringify(aiData).slice(0, 500);
   const chunk = { choices: [{ delta: { content } }] };
   const sse = `data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`;
 
