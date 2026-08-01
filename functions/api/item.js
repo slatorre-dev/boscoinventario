@@ -332,18 +332,18 @@ export async function onRequestPost({ request, env, data }) {
         max_tokens: 300
       });
     } catch (e) {
-      return Response.json({ ok: false, error: 'Error del servicio de IA (debug): ' + String(e?.message || e) });
+      return Response.json({ ok: false, error: 'Error del servicio de IA' });
     }
 
     let serieLeida = '';
-    const raw = aiData?.result?.answer || aiData?.answer || aiData?.response || '';
+    const raw = aiData?.result?.answer || '';
     try {
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
     } catch (e) {
-      return Response.json({ ok: true, match: 'sin_lectura', debugRaw: raw, debugFull: aiData });
+      return Response.json({ ok: true, match: 'sin_lectura' });
     }
-    if (!serieLeida) return Response.json({ ok: true, match: 'sin_lectura', debugRaw: raw, debugFull: aiData });
+    if (!serieLeida) return Response.json({ ok: true, match: 'sin_lectura' });
 
     const deptFilter = superadmin
       ? ''
