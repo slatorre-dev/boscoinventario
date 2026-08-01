@@ -321,27 +321,39 @@ export async function onRequestPost({ request, env, data }) {
     if (!imagen) return Response.json({ ok: false, error: 'Falta la imagen' });
     if (!env.AI) return Response.json({ ok: false, error: 'Workers AI no configurado en Cloudflare' });
 
+    const catDeptFilter = superadmin ? '' : ` WHERE departamento IN (?, '${genericDept}')`;
+    const catDeptBind = superadmin ? [] : [dept];
+    const catRows = await env.DB.prepare(`SELECT DISTINCT name FROM categorias${catDeptFilter} ORDER BY orden`)
+      .bind(...catDeptBind).all();
+    const categoriasDept = (catRows.results || []).map(r => r.name).filter(Boolean);
+
     let aiData;
     try {
+      const categoriasTexto = categoriasDept.length
+        ? categoriasDept.map(c => `"${c}"`).join(', ')
+        : '(ninguna categoría disponible)';
       aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         task: 'query',
         image: `data:image/jpeg;base64,${imagen}`,
-        question: 'Analiza esta etiqueta de equipo. Extrae el número de serie (S/N, Serial Number o Service Tag), la marca del fabricante, y el modelo del equipo, si son visibles. Responde ÚNICAMENTE con un objeto JSON real usando los datos que veas, por ejemplo: {"serie": "220A4S1002886", "marca": "TP-Link", "modelo": "Archer TX3000E"}. Si no ves alguno de esos datos, pon null en ese campo concreto (nunca inventes ni copies el ejemplo literalmente). No añadas explicaciones ni texto fuera del JSON.',
+        question: `Analiza esta foto de un equipo o material de inventario. Primero busca una etiqueta con número de serie (S/N, Serial Number o Service Tag), marca del fabricante y modelo. Si no hay número de serie pero hay cualquier otro texto visible (nombre de producto impreso, texto en una caja, etc.), extráelo como texto libre. Si no hay ningún texto legible, describe brevemente el objeto que ves y, si encaja, elige UNA categoría de esta lista exacta: ${categoriasTexto}. Responde ÚNICAMENTE con un objeto JSON real usando los datos que veas, por ejemplo: {"serie": "220A4S1002886", "marca": "TP-Link", "modelo": "Archer TX3000E", "textoLibre": null, "descripcionVisual": null, "categoriaSugerida": null}. Otro ejemplo válido cuando no hay serie pero sí texto: {"serie": null, "marca": null, "modelo": null, "textoLibre": "Arduino UNO R3", "descripcionVisual": null, "categoriaSugerida": null}. Otro ejemplo válido cuando no hay ningún texto legible: {"serie": null, "marca": null, "modelo": null, "textoLibre": null, "descripcionVisual": "placa de desarrollo con microcontrolador y pines de conexión", "categoriaSugerida": "Electrónica"}. "categoriaSugerida" debe ser EXACTAMENTE uno de los nombres de la lista dada (copiado tal cual) o null si ninguno encaja — nunca inventes un nombre de categoría nuevo. Pon null en cualquier campo que no veas (nunca inventes datos ni copies estos ejemplos literalmente si no corresponden a la foto real). No añadas explicaciones ni texto fuera del JSON.`,
         reasoning: true,
         stream: false,
-        max_tokens: 300
+        max_tokens: 400
       });
     } catch (e) {
       return Response.json({ ok: false, error: 'Error del servicio de IA' });
     }
 
-    let serieLeida = '', marca = '', modelo = '';
+    let serieLeida = '', marca = '', modelo = '', textoLibre = '', descripcionVisual = '', categoriaSugerida = '';
     const raw = aiData?.result?.answer || '';
     try {
       const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       serieLeida = String(parsed.serie || '').trim();
       marca = String(parsed.marca || '').trim();
       modelo = String(parsed.modelo || '').trim();
+      textoLibre = String(parsed.textoLibre || '').trim();
+      descripcionVisual = String(parsed.descripcionVisual || '').trim();
+      categoriaSugerida = String(parsed.categoriaSugerida || '').trim();
     } catch (e) {
       return Response.json({ ok: true, match: 'sin_lectura' });
     }
