@@ -295,8 +295,8 @@ function getCreds() {
   }
 }
 
-// Enviado a GitHub Models:
-POST /api/ai
+// Enviado al proxy IA del backend:
+POST /api/proxy-ai
 Body: {
   "prompt": "...",
   "credentials": { "u": "teacher@school.es", "p": "MyPassword123" }
@@ -304,8 +304,8 @@ Body: {
 ```
 
 **Riesgo:**
-- ✗ Credenciales viajan a GitHub (tercero)
-- ✗ GitHub Models podría logearlas
+- ✗ Credenciales viajan a un proveedor IA externo (tercero)
+- ✗ El proveedor IA podría logearlas
 - ✗ MITM podría capturarlas
 
 **Solución:**
@@ -316,7 +316,7 @@ function getCreds() {
 }
 
 // Si necesitas context, usar solo público:
-POST /api/ai
+POST /api/proxy-ai
 Body: {
   "prompt": "¿Cuántos Arduinos hay?",
   "user_id": "123",  // Solo ID, no credenciales
@@ -584,5 +584,5 @@ npm install -D eslint-plugin-security
 
 ---
 
-**Última actualización:** Mayo 2026 (v317+)
+**Última actualización:** Agosto 2026 (v558)
 **Próxima auditoría:** Después de implementar cambios críticos

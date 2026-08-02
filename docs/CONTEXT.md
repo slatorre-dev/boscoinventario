@@ -49,7 +49,9 @@ Detalle de scoping por departamento (quién ve qué) en
 - `functions/api/usuarios.js` — CRUD usuarios (scoped por departamento)
 - `functions/api/historial.js` — logs de auditoría (scoped por departamento)
 - `sw.js` — Service Worker (versión de la app)
-- `migrations/` — migraciones SQL (`0001`-`0006` esquema/seed original, `0007`-`0008` multi-departamento)
+- `migrations/` — migraciones SQL (`0001`-`0026` aplicadas en remoto) +
+  tabla de aprendizaje IA `ia_deteccion_ejemplos` autocreada en runtime
+  por `functions/api/item.js`
 
 ## Reglas de desarrollo
 - **Siempre** subir versión en `sw.js` y hacer commit+push al final de cada sesión

@@ -135,26 +135,29 @@ Response (200):
 
 Añade un nuevo ítem.
 
+Nota de contrato actual: en implementación real el `action` se envía en el
+body JSON (`{ "action": "add", "item": {...} }`), no en query string.
+
 ```http
-POST /api/item?u=usuario&p=password&action=add
+POST /api/item?u=usuario&p=password
 Content-Type: application/json
 
 Body:
 {
+  "action": "add",
   "item": {
     "ref": "R-10K",
     "item": "Multímetro Digital",
     "qty": 5,
-    "qty_min": 2,
+    "min": 2,
     "tipo_material": "Inventariable",
-    "aula_id": "A35",
-    "ubicacion": "Estantería A3",
-    "categoria": "Herramientas",
-    "ciclo_id": "CFGM",
-    "modulo_id": "0363",
+    "aula": "A35",
+    "loc": "Estantería A3",
+    "cat": "Herramientas",
+    "mod": "CFGM__0363",
     "tags": "medición, electrónica",
-    "estado": "Bueno",
-    "utilidad": "Mediciones en prácticas",
+    "est": "Bueno",
+    "util": "Mediciones en prácticas",
     "proveedor": "CoolComponent",
     "foto": "data:image/jpeg;base64,/9j/4AAQ..."
   }
@@ -186,40 +189,41 @@ Response (400):
 
 **Campos Opcionales:**
 - `qty` (number) - Cantidad (default: 1)
-- `qty_min` (number) - Stock mínimo (default: 5)
+- `min` (number) - Stock mínimo (default: 1)
 - `tipo_material` (string) - Consumible/Inventariable/Contenedor
-- `aula_id` (string) - ID de aula
-- `ubicacion` (string) - Ubicación física
-- `categoria` (string) - Categoría
-- `ciclo_id` (string) - Ciclo formativo
-- `modulo_id` (string) - Módulo
+- `aula` (string) - ID de aula
+- `loc` (string) - Ubicación física
+- `cat` (string) - Categoría
+- `mod` (string) - Ciclo/módulo (`cicloId__modCod`)
 - `tags` (string) - CSV de tags
-- `estado` (string) - Estado (Bueno/Deteriorado/Avería/Baja)
-- `utilidad` (string) - Descripción de uso
+- `est` (string) - Estado (Bueno/Deteriorado/Avería/Baja)
+- `util` (string) - Descripción de uso
 - `proveedor` (string) - Proveedor/tienda
 - `foto` (string) - Base64 encoded image
 - `es_contenedor` (boolean) - Si es contenedor de componentes
 - `parent_id` (integer) - Si es componente, ID del contenedor padre
 
 **Permisos Requeridos:**
-- `create_item` o rol `admin`/`jefe/a departamento`
+- `items.write` (según `ACTION_PERMISSIONS`)
 
 ---
 
-### POST /api/item (Edit)
+### POST /api/item (Update)
 
 Edita un ítem existente.
 
 ```http
-POST /api/item?u=usuario&p=password&action=edit&id=123
+POST /api/item?u=usuario&p=password
 Content-Type: application/json
 
 Body:
 {
+  "action": "update",
   "item": {
+    "id": 123,
     "qty": 10,
-    "estado": "Deteriorado",
-    "mant_solicitado": true
+    "est": "Deteriorado",
+    "mant": 1
   }
 }
 
@@ -230,7 +234,7 @@ Response (200):
 }
 ```
 
-**Nota:** Solo se actualizen los campos incluidos en el body.
+**Nota:** Se actualizan los campos enviados de `item`.
 
 ---
 
@@ -540,11 +544,10 @@ Response (200):
 
 ### POST /api/proxy-ai
 
-Envía prompt al modelo IA y recibe respuesta con streaming. Vivía en
-`/proxy/ai` (fuera de `/api/*`, sin ninguna autenticación — cualquiera podía
-gastar el `GITHUB_TOKEN` del servidor). Movido a `/api/proxy-ai` para que
-`functions/api/_middleware.js` lo proteja igual que el resto de endpoints
-(requiere `?u=&p=` o `?u=&t=` válidos).
+Envía mensajes al modelo IA de Volt y devuelve respuesta en formato SSE
+compatible con el frontend. El endpoint vive bajo `/api/*` y queda protegido
+por `functions/api/_middleware.js` igual que el resto (requiere `?u=&p=` o
+`?u=&t=` válidos).
 
 ```http
 POST /api/proxy-ai?u=usuario&p=password
@@ -552,7 +555,6 @@ Content-Type: application/json
 
 Body:
 {
-  "model": "gpt-4o-mini",
   "stream": true,
   "messages": [{"role":"system","content":"..."},{"role":"user","content":"¿Cuántos multímetros hay disponibles?"}]
 }
@@ -564,8 +566,8 @@ data: [DONE]
 ```
 
 **Modelo Usado:**
-- `gpt-4o-mini` (GitHub Models)
-- Gratis con GitHub Copilot
+- `@cf/zai-org/glm-4.7-flash` (Cloudflare Workers AI)
+- Binding requerido en Pages: `AI`
 
 ---
 
@@ -602,14 +604,15 @@ curl -X GET "https://inventario.pages.dev/api/list?u=usuario&p=password&categori
 ### Crear Ítem
 
 ```bash
-curl -X POST "https://inventario.pages.dev/api/item?u=usuario&p=password&action=add" \
+curl -X POST "https://inventario.pages.dev/api/item?u=usuario&p=password" \
   -H "Content-Type: application/json" \
   -d '{
+    "action": "add",
     "item": {
       "ref": "R-10K",
       "item": "Multímetro Digital",
       "qty": 5,
-      "categoria": "Herramientas"
+      "cat": "Herramientas"
     }
   }'
 ```
@@ -617,11 +620,13 @@ curl -X POST "https://inventario.pages.dev/api/item?u=usuario&p=password&action=
 ### Actualizar Ítem
 
 ```bash
-curl -X POST "https://inventario.pages.dev/api/item?u=usuario&p=password&action=edit&id=123" \
+curl -X POST "https://inventario.pages.dev/api/item?u=usuario&p=password" \
   -H "Content-Type: application/json" \
   -d '{
+    "action": "update",
     "item": {
-      "estado": "Deteriorado"
+      "id": 123,
+      "est": "Deteriorado"
     }
   }'
 ```
@@ -635,11 +640,14 @@ curl -X DELETE "https://inventario.pages.dev/api/item?id=123&u=usuario&p=passwor
 ### Chat IA
 
 ```bash
-curl -X POST "https://inventario.pages.dev/proxy/ai" \
+curl -X POST "https://inventario.pages.dev/api/proxy-ai?u=usuario&p=password" \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "¿Cuántos ítems hay?",
-    "stream": false
+    "stream": true,
+    "messages": [
+      {"role":"system","content":"Eres Volt"},
+      {"role":"user","content":"¿Cuántos ítems hay?"}
+    ]
   }'
 ```
 
@@ -681,6 +689,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
 
 ---
 
-**Última actualización:** Mayo 2026 (v317+)
+**Última actualización:** Agosto 2026 (v558)
 **API Versión:** v1 (sin versionamiento formal)
 **⚠️ Seguridad:** Revisar SECURITY.md para mejoras críticas

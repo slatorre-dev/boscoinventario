@@ -68,8 +68,8 @@ Hecho: tabla `departamentos`, columna `departamento` en tablas clave,
 scoping backend completo, un ciclo/departamento con sus asignaturas/módulos
 por cada uno de los 24 departamentos + 1 genérico. Detalle completo en
 [PLAN_MULTIDEPARTAMENTO.md](PLAN_MULTIDEPARTAMENTO.md) y `claude.md`.
-Queda pendiente la Fase 3 (frontend): selector de departamento para
-`superadmin`, y las ideas de usabilidad de la siguiente sección.
+Fase 3 (frontend) también completada: selector de departamento activo para
+`superadmin` en gestión de aulas/categorías/ciclos (ver `claude.md`, v532).
 
 ### Multi-departamento — mejoras de usabilidad pendientes
 
@@ -124,9 +124,8 @@ detalle técnico completo en `CLAUDE.md`, sesiones del 01/08/2026 y
 **Roadmap original completo:** #1-#8 implementados y en producción, #9
 resultó ya cubierto por código existente sin cambios necesarios, #10
 descartada por bajo valor frente a su complejidad. Dos ideas nuevas
-surgidas después del cierre (#11 código de barras, #12 onboarding)
-también implementadas. Una idea más (#13, unificar botones QR+cámara)
-propuesta a última hora, pendiente de diseñar.
+surgidas después del cierre (#11 código de barras, #12 onboarding, #13
+unificación QR+cámara) también implementadas.
 
 ### 1. Buscar por número de serie — ✅ implementado (01/08/2026)
 Foto de etiqueta → OCR extrae el S/N → busca el ítem (match exacto, fuzzy
@@ -184,7 +183,7 @@ nuevo `detectarMultiples`; la creación reutiliza `bulkImport` ya existente
 de Google ya formada (`proveedor + nombre + "manual pdf"`, etc.), sin API
 de pago ni base de enlaces curados (decisión que simplificó radicalmente
 la estimación original del roadmap). Spec:
-`docs/superpowers/specs/2026-08-02-enlaces-manual-datasheet-design.md`.
+`docs/superpowers/specs/2026-08-01-enlaces-manual-datasheet-design.md`.
 
 ### 11. Lectura de código de barras (mejora de #1) — ✅ implementado (02/08/2026)
 Idea nueva, no numerada en el roadmap original de 10, propuesta por el
@@ -251,9 +250,10 @@ Contador de visitas en localStorage, las aulas más usadas aparecen primero en h
 **Prioridad:** Media
 
 ### Paginación Persistente entre Sesiones
-Guardar `_pageSize` en localStorage para que el usuario no tenga que reconfigurar al volver.
+✅ Implementado (29/07/2026): `_pageSize` se guarda en `localStorage`
+(`inv_page_size`) y se restaura automáticamente al volver.
 
-**Prioridad:** Baja
+**Prioridad:** Cerrado
 
 ### Modo Oscuro
 Variables CSS ya preparadas, solo falta toggle en perfil de usuario.
@@ -361,7 +361,7 @@ CSV o PDF con items problemáticos agrupados por aula/categoría.
 ## Estado
 
 - **Última actualización:** 02/08/2026
-- **Versión actual:** v551
+- **Versión actual:** v558
 - **Roadmap "Modo Cámara Inteligente":** completo — ideas #1-#8 implementadas
   y en producción, #9 resultó ya cubierta por código existente (sin
   cambios necesarios), #10 descartada por bajo valor frente a su

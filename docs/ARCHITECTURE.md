@@ -72,7 +72,7 @@ para el detalle de esa arquitectura multi-tenant.
 | **Database** | D1 (SQLite) | - | Persistencia |
 | **Hosting** | Cloudflare Pages | - | CDN global |
 | **Auth** | OAuth 2.0 (Google) | - | Autenticación |
-| **IA** | GitHub Models (gpt-4o-mini) | - | Chat bot |
+| **IA** | Cloudflare Workers AI (`@cf/zai-org/glm-4.7-flash` y `@cf/moondream/moondream3.1-9B-A2B`) | - | Volt + cámara inteligente |
 | **QR** | jsQR library | - | Scanner QR |
 
 **Alternativa de Herencia:**
@@ -436,11 +436,11 @@ GET /api/item?id=123
 → { ok: true, item: {...} }
 
 POST /api/item?action=add
-Body: { item: {...} }
+Body: { action: "add", item: {...} }
 → { ok: true, id: 456 }
 
-POST /api/item?action=edit&id=123
-Body: { item: {...} }
+POST /api/item
+Body: { action: "update", item: { id: 123, ... } }
 → { ok: true }
 
 DELETE /api/item?id=123
@@ -461,7 +461,7 @@ GET /api/config
 
 ```
 POST /api/proxy-ai?u=usuario&p=password
-Body: { model: "gpt-4o-mini", stream: true, messages: [...] }
+Body: { stream: true, messages: [...] }
 → Streaming response con chunks (formato OpenAI)
 ```
 
@@ -474,9 +474,9 @@ Ver **API.md** para documentación completa.
 ### Service Worker (sw.js)
 
 ```javascript
-const VERSION = 'v317';
-const CACHE_SHELL = 'inventario-fp-shell-v317';
-const CACHE_DYNAMIC = 'inventario-fp-dynamic-v317';
+const VERSION = 'v558';
+const CACHE_SHELL = 'inventario-fp-shell-v558';
+const CACHE_RUNTIME = 'inventario-fp-runtime-v558';
 
 // Estrategia: Cache-first para assets, Network-first para API
 ```
@@ -534,7 +534,7 @@ async function streamAI(prompt) {
 Si se envía `SESSION` al modelo:
 ```javascript
 getCreds() // Puede incluir password
-→ Enviado a GitHub Models
+→ Nunca debe enviarse a proveedores IA externos
 ```
 
 **Recomendación:** Nunca enviar credenciales a APIs externas
@@ -641,6 +641,6 @@ Ver **ROADMAP.md** para plan detallado.
 
 ---
 
-**Última actualización:** Mayo 2026 (v317+)
+**Última actualización:** Agosto 2026 (v558)
 **Autor:** Análisis de código y arquitectura
 **Revisor:** Necesita revisión de seguridad

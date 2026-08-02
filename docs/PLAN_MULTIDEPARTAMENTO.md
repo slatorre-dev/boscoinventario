@@ -1,7 +1,6 @@
 # Plan de acción: inventario de todo el centro
 
-**Estado:** Fases 0, 1 y 2 implementadas y desplegadas (29/07/2026). Fase 3
-pendiente.
+**Estado:** Fases 0, 1, 2 y 3 implementadas y desplegadas.
 
 Bosco Inventario es el inventario general de todo el IES El Bosco, con cada
 departamento gestionando el suyo propio desde la misma aplicación, aislado
@@ -83,7 +82,7 @@ con el usado en `migrations/0007_departamentos.sql`.
 > marcada en las 48 cuentas, fuerza cambio de contraseña obligatorio en el
 > primer login (`#pForcePassword`, ver `claude.md`). El resto de deuda de
 > seguridad (credenciales en query params, sin hash) sigue pendiente — ver
-> [[docs/SECURITY.md]].
+> [SECURITY.md](SECURITY.md).
 
 Además, se creó un departamento genérico compartido `iesjuanbosco` ("IES
 Juan Bosco", migración `0011`) para material sin departamento concreto —
@@ -136,15 +135,18 @@ superadmin tienen un departamento de referencia asignado (migración `0015`):
   del centro a su departamento; el resto se crea sin departamento asignado.
 - Detalle línea a línea en `claude.md`, sección "Multi-departamento".
 
-### Fase 3 — Frontend (pendiente)
-- Selector de departamento visible solo para `superadmin` (hoy ve todos los
-  datos globalmente pero sin poder aislar la vista a uno en concreto).
-- Campo "departamento" en el formulario de alta de usuarios/profesores desde
-  la UI, para que `superadmin` pueda asignarlo sin tocar SQL directo.
-- Estado vacío amigable para los departamentos con 0 ítems (todos, de
-  momento — la base arrancó limpia).
+### Fase 3 — Frontend ✅ hecha (31/07/2026, v532)
+- Selector de departamento visible solo para `superadmin` (`#deptActivoSelect`,
+  persistido en localStorage) para actuar por departamento en gestión de
+  aulas/categorías/ciclos.
+- Backend de config acepta `departamentoDestino` validado contra tabla
+  `departamentos` para sincronizaciones seguras.
+- Gap resuelto: `catsCrudo` para filtrar categorías por departamento en UI
+  de superadmin sin romper estructura legacy de `CATS`.
+- La alta de usuarios/profesores con campo departamento ya estaba operativa
+  previamente y verificada end-to-end.
 
-### Fase 4 — Rollout por oleadas (pendiente, tras Fase 3)
+### Fase 4 — Rollout por oleadas (pendiente)
 1. Comunicar credenciales (`departamento<slug>` / `profe1<slug>`) a cada
    jefe/a de departamento real.
 2. Confirmar que cada uno ve solo su propio inventario, aulas, categorías y
@@ -153,6 +155,6 @@ superadmin tienen un departamento de referencia asignado (migración `0015`):
    genéricas donde corresponda.
 
 ## Siguiente paso concreto
-Empezar por la Fase 3: construir el selector de departamento para
-`superadmin` en el frontend, y el campo de asignación de departamento en las
-pantallas de alta de usuarios/profesores.
+Completar hardening de módulos aún globales/no scoping (`docs.js` y
+`backup.js`) y cerrar deuda de seguridad crítica (`?u=&p=` y hashing) antes
+de escalar usuarios reales.

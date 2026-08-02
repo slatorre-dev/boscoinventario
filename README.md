@@ -4,11 +4,11 @@ Sistema web de gestión de inventario para el IES El Bosco. Accesible desde
 cualquier dispositivo (PC, móvil, tablet) sin instalación, funciona también
 sin conexión.
 
-Nació como el inventario de un único departamento y está en proceso de
-convertirse en el inventario general de todo el centro, con cada
-departamento gestionando el suyo desde la misma aplicación. Ver
+Nació como el inventario de un único departamento y ya está desplegado como
+inventario general de todo el centro, con cada departamento gestionando el
+suyo desde la misma aplicación. Ver
 [docs/PLAN_MULTIDEPARTAMENTO.md](docs/PLAN_MULTIDEPARTAMENTO.md) para el
-plan de expansión.
+detalle del despliegue.
 
 ---
 

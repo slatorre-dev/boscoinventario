@@ -298,7 +298,7 @@ f62cc3f — Avoid unsaved prompt after item save (v154→v155)
 45418d0 — Add department Pac-Man game (v149→v150)
 ```
 
-## Estado Actual (v158)
+## Estado de esa sesión (v158)
 
 **Completado en esta sesión:**
 ✅ Auditoría e historial de cambios (una de las mejoras sugeridas)

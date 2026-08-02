@@ -426,7 +426,7 @@ Semana 4+ (25h): FASE 3 - Medio
 - [ ] FASE 3 iniciada
 - [ ] Todo completado
 
-### Estado Actual (v317)
+### Estado Actual (snapshot original del roadmap)
 
 | Tarea | Estado | Estimación | Asignado |
 |-------|--------|-----------|----------|
@@ -457,5 +457,6 @@ Semana 4+ (25h): FASE 3 - Medio
 
 ---
 
-**Última actualización:** Mayo 2026 (v317+)
+**Última actualización de este roadmap base:** Mayo 2026 (v317+)
+**Estado operativo real del proyecto:** ver `claude.md` y `docs/HANDOFF_2026-08-02_v557.md`
 **Mantener actualizado:** Al completar cada tarea
