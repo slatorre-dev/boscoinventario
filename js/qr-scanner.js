@@ -117,6 +117,14 @@ function _showQrActions(itemId) {
   if(del) del.disabled = !can('items.write') && !can('items.delete');
 }
 
+function _showQrActionsStandalone(itemId) {
+  const modal = document.getElementById('mQrScanner');
+  modal.classList.add('open');
+  document.getElementById('qrScannerContent').style.display = 'none';
+  document.getElementById('qrError').style.display = 'none';
+  _showQrActions(itemId);
+}
+
 function qrQuickAction(action) {
   const id = _qrDetectedItemId;
   if(!id) return;
