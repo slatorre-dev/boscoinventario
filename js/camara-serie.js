@@ -70,6 +70,35 @@ async function capturarSerie() {
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  if (window.BarcodeDetector) {
+    try {
+      const detector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+      const codigos = await detector.detect(canvas);
+      if (codigos.length) {
+        const resCodigo = await apiPost({ action: 'buscarSeriePorCodigo', codigo: codigos[0].rawValue });
+        if (resCodigo.ok && (resCodigo.match === 'exacto' || resCodigo.match === 'fuzzy')) {
+          if (resCodigo.match === 'exacto') {
+            closeCamaraSerie();
+            if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === resCodigo.item.id)) {
+              items.push(resCodigo.item);
+            }
+            openItemRoute(resCodigo.item.id);
+            _serieCapturing = false;
+            return;
+          }
+          _mostrarSerieCandidatos(resCodigo.candidatos);
+          _serieCapturing = false;
+          return;
+        }
+      }
+    } catch (e) {
+      // Falla silenciosa: si BarcodeDetector existe pero lanza un error
+      // (ej. formato no soportado por este navegador concreto), se sigue
+      // con el flujo normal de IA sin interrumpir al usuario.
+    }
+  }
+
   const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
   const imagenBase64 = dataUrl.split(',')[1];
 
