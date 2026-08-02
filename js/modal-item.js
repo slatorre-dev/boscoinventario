@@ -854,6 +854,17 @@ function setItemModalReadonly(readonly){
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
     });
+  const btnSerie = document.getElementById('btnSerieDesdeCamara');
+  if(btnSerie) btnSerie.disabled = !!readonly;
+}
+
+function capturarSerieEnFormulario(){
+  if(!requirePerm('items.write')) return;
+  if(typeof openCamaraSerieParaCampoSerie === 'function'){
+    openCamaraSerieParaCampoSerie();
+    return;
+  }
+  toast('La cámara de serie no está disponible', 'err');
 }
 
 function openModal(id=null, src=null){
