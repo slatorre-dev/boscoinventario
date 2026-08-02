@@ -1,4 +1,5 @@
 const TOUR_CAMARA_KEY = 'tour_camara_visto_v1';
+const HINT_CAMARA_KEY = 'hint_camara_visto_v1';
 
 const TOUR_PANTALLAS = [
   {
@@ -35,6 +36,26 @@ function _marcarTourVisto() {
 function iniciarTourCamaraSiPrimeraVez() {
   if (_tourVisto()) return;
   openTourCamara(false);
+}
+
+function mostrarHintCamaraSiPrimeraVez() {
+  try {
+    if (localStorage.getItem(HINT_CAMARA_KEY)) return;
+  } catch (e) { return; }
+  const hint = document.getElementById('camaraHint');
+  if (!hint) return;
+  const tourOpen = document.getElementById('mTourCamara')?.classList.contains('open');
+  if (tourOpen) {
+    setTimeout(mostrarHintCamaraSiPrimeraVez, 1200);
+    return;
+  }
+  hint.style.display = 'flex';
+}
+
+function cerrarHintCamara() {
+  const hint = document.getElementById('camaraHint');
+  if (hint) hint.style.display = 'none';
+  try { localStorage.setItem(HINT_CAMARA_KEY, '1'); } catch (e) { /* ignore */ }
 }
 
 function openTourCamara(reabierta) {

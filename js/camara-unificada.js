@@ -7,13 +7,82 @@ let _camUnifUltimoFallidoTimestamp = 0;
 let _camUnifUltimoQrNoInventarioTs = 0;
 let _camUnifCandidatosPorId = {};
 let _camUnifCodigoPendienteAlta = '';
+let _camUnifTrack = null;
+let _camUnifTorchOn = false;
+
+const CAM_PREF_QUICK = 'camara_quick_mode_v1';
+const CAM_PREF_ACCESS = 'camara_access_mode_v1';
+const CAM_PREF_LAST_AULA = 'cam_last_aula';
+const CAM_PREF_LAST_CAT = 'cam_last_cat';
+
+function _camPrefBoolGet(key, fallback = false) {
+  try {
+    const v = localStorage.getItem(key);
+    if (v === null) return fallback;
+    return v === '1';
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function _camPrefBoolSet(key, value) {
+  try { localStorage.setItem(key, value ? '1' : '0'); } catch (e) { /* ignore */ }
+}
+
+function _camUnifQuickMode() {
+  const chk = document.getElementById('camUnifQuickMode');
+  return !!(chk ? chk.checked : _camPrefBoolGet(CAM_PREF_QUICK, false));
+}
+
+function _camUnifApplyAccessMode(enabled) {
+  const modal = document.getElementById('mCamaraUnificada');
+  modal?.classList.toggle('camera-accessible', !!enabled);
+}
+
+function _camUnifPulseDetected() {
+  const video = document.getElementById('camaraUnifVideo');
+  if (!video) return;
+  video.classList.add('camera-detected');
+  setTimeout(() => video.classList.remove('camera-detected'), 220);
+  if (navigator.vibrate) navigator.vibrate(70);
+}
+
+async function _setupCamaraUnifTorch() {
+  const btn = document.getElementById('camaraUnifFlashBtn');
+  if (!btn || !_camUnifTrack) return;
+  _camUnifTorchOn = false;
+  btn.textContent = '💡 Linterna';
+  try {
+    const caps = _camUnifTrack.getCapabilities ? _camUnifTrack.getCapabilities() : {};
+    btn.style.display = caps.torch ? 'inline-flex' : 'none';
+  } catch (e) {
+    btn.style.display = 'none';
+  }
+}
+
+async function toggleCamaraUnifFlash() {
+  if (!_camUnifTrack) return;
+  try {
+    const caps = _camUnifTrack.getCapabilities ? _camUnifTrack.getCapabilities() : {};
+    if (!caps.torch) return;
+    _camUnifTorchOn = !_camUnifTorchOn;
+    await _camUnifTrack.applyConstraints({ advanced: [{ torch: _camUnifTorchOn }] });
+    const btn = document.getElementById('camaraUnifFlashBtn');
+    if (btn) btn.textContent = _camUnifTorchOn ? '💡 Linterna encendida' : '💡 Linterna';
+  } catch (e) {
+    toast('No se pudo activar la linterna en este dispositivo', 'err');
+  }
+}
 
 function openCamaraUnificada() {
+  if (typeof cerrarHintCamara === 'function') cerrarHintCamara();
   const modal = document.getElementById('mCamaraUnificada');
   const video = document.getElementById('camaraUnifVideo');
   const estado = document.getElementById('camaraUnifEstado');
   const resultado = document.getElementById('camaraUnifResultado');
   const btnIA = document.getElementById('camaraUnifBtnIA');
+  const chkQuick = document.getElementById('camUnifQuickMode');
+  const chkAccess = document.getElementById('camUnifAccessibleMode');
 
   modal.classList.add('open');
   estado.style.display = 'block';
@@ -24,6 +93,19 @@ function openCamaraUnificada() {
   _camUnifScanning = true;
   _camUnifCandidatosPorId = {};
   _camUnifCodigoPendienteAlta = '';
+
+  if (chkQuick) {
+    chkQuick.checked = _camPrefBoolGet(CAM_PREF_QUICK, false);
+    chkQuick.onchange = () => _camPrefBoolSet(CAM_PREF_QUICK, chkQuick.checked);
+  }
+  if (chkAccess) {
+    chkAccess.checked = _camPrefBoolGet(CAM_PREF_ACCESS, false);
+    _camUnifApplyAccessMode(chkAccess.checked);
+    chkAccess.onchange = () => {
+      _camPrefBoolSet(CAM_PREF_ACCESS, chkAccess.checked);
+      _camUnifApplyAccessMode(chkAccess.checked);
+    };
+  }
 
   _camUnifUsarJsQR = true;
   if (typeof BarcodeDetector !== 'undefined' && BarcodeDetector.getSupportedFormats) {
@@ -41,9 +123,11 @@ function openCamaraUnificada() {
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
     .then(stream => {
       _camUnifStream = stream;
+      _camUnifTrack = stream.getVideoTracks?.()[0] || null;
       video.srcObject = stream;
       video.onloadedmetadata = () => {
         video.play();
+        _setupCamaraUnifTorch();
         _camUnifNoDetectadoTimer = setTimeout(() => {
           if (_camUnifScanning) document.getElementById('camaraUnifBtnIA').style.display = 'inline-flex';
         }, 3000);
@@ -62,6 +146,8 @@ function openCamaraUnificada() {
 function closeCamaraUnificada() {
   _camUnifScanning = false;
   if (_camUnifNoDetectadoTimer) { clearTimeout(_camUnifNoDetectadoTimer); _camUnifNoDetectadoTimer = null; }
+  _camUnifTrack = null;
+  _camUnifTorchOn = false;
   if (_camUnifStream) {
     _camUnifStream.getTracks().forEach(t => t.stop());
     _camUnifStream = null;
@@ -128,6 +214,7 @@ async function _manejarDeteccionUnificada(valor, formato) {
       return false;
     }
     _camUnifScanning = false;
+    _camUnifPulseDetected();
     if (_camUnifNoDetectadoTimer) { clearTimeout(_camUnifNoDetectadoTimer); _camUnifNoDetectadoTimer = null; }
     document.getElementById('camaraUnifEstado').textContent = 'QR detectado: ' + itemMatch[1];
     if (_camUnifStream) { _camUnifStream.getTracks().forEach(t => t.stop()); _camUnifStream = null; }
@@ -153,6 +240,8 @@ async function _manejarDeteccionUnificada(valor, formato) {
     }
     if (res.ok && (res.match === 'exacto' || res.match === 'fuzzy')) {
       if (res.match === 'exacto') {
+        _camUnifPulseDetected();
+        window._camaraReturnToScanner = _camUnifQuickMode();
         document.getElementById('camaraUnifEstado').textContent = 'Código encontrado. Abriendo ficha...';
         closeCamaraUnificada();
         if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === res.item.id)) {
@@ -205,17 +294,28 @@ function camaraUnifReintentar() {
 
 function camaraUnifCrearItemDesdeCodigo() {
   const codigo = String(_camUnifCodigoPendienteAlta || '').trim();
+  window._camaraReturnToScanner = _camUnifQuickMode();
   closeCamaraUnificada();
   openModal();
   setTimeout(() => {
     const serieInput = document.getElementById('f_serie');
     if (serieInput && codigo) serieInput.value = codigo;
+    const aulaPref = localStorage.getItem(CAM_PREF_LAST_AULA) || '';
+    const catPref = localStorage.getItem(CAM_PREF_LAST_CAT) || '';
+    const aulaSel = document.getElementById('f_aula');
+    if (aulaSel && aulaPref && [...aulaSel.options].some(o => o.value === aulaPref)) aulaSel.value = aulaPref;
+    const catSel = document.getElementById('f_cat');
+    if (catSel && catPref && [...catSel.options].some(o => o.value === catPref)) {
+      catSel.value = catPref;
+      catSel.dataset.prev = catPref;
+    }
     const itemInput = document.getElementById('f_item');
     if (itemInput) itemInput.focus();
   }, 50);
 }
 
 async function camaraUnifAbrirCandidato(id) {
+  window._camaraReturnToScanner = _camUnifQuickMode();
   closeCamaraUnificada();
   openItemRoute(id);
   if (typeof items !== 'undefined' && Array.isArray(items) && items.some(x => Number(x.id) === Number(id))) return;

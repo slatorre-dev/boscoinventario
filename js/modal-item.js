@@ -871,7 +871,8 @@ function openModal(id=null, src=null){
   document.getElementById('mT').textContent = existing ? (readonly ? 'Ver ítem' : 'Editar ítem') : src ? '📋 Duplicar ítem' : 'Nuevo ítem';
   document.getElementById('f_ref').value = id ? (m?.ref||'') : '';
   document.getElementById('f_serie').value = id ? (m?.serie||'') : '';
-  document.getElementById('f_aula').value=m?.aula||(cf?.type==='aula'?cf.id:AULAS[0]?.id);
+  const aulaReciente = localStorage.getItem('cam_last_aula') || '';
+  document.getElementById('f_aula').value = m?.aula || (cf?.type==='aula' ? cf.id : (aulaReciente || AULAS[0]?.id));
   document.getElementById('f_item').value=m?.item||'';
   document.getElementById('f_fechaAdquisicion').value = id ? (m?.fecha_adquisicion || '') : new Date().toISOString().slice(0,10);
   renderMainPhoto(m?.foto||'');
@@ -888,7 +889,8 @@ function openModal(id=null, src=null){
   document.getElementById('f_min').value=m?.min??0;
   document.getElementById('f_tipo_material').value=materialType(m || src || {});
   const catSel = document.getElementById('f_cat');
-  catSel.value=m?.cat||sortedCatNames()[0]||'Componentes electrónicos';
+  const catReciente = localStorage.getItem('cam_last_cat') || '';
+  catSel.value = m?.cat || catReciente || sortedCatNames()[0] || 'Componentes electrónicos';
   catSel.dataset.prev = catSel.value;
   const ownCiclos = CICLOS.filter(c=>c.id!=='iesjuanbosco');
   const itemCiclo = m?.mod ? m.mod.split('__')[0]
@@ -970,6 +972,10 @@ async function closeM(force=false){
   window.scrollTo(0, sy);
   setItemModalReadonly(false);
   resetModalChanges();
+  if(window._camaraReturnToScanner){
+    window._camaraReturnToScanner = false;
+    if(typeof openCamaraUnificada === 'function') setTimeout(openCamaraUnificada, 140);
+  }
 }
 
 async function copyItemQrUrl(){
@@ -1115,6 +1121,12 @@ async function saveItem(){
     es_contenedor: document.getElementById('f_es_contenedor').checked ? 1 : 0,
     parent_id: document.getElementById('f_parent_id').value ? Number(document.getElementById('f_parent_id').value) : null,
   };
+  try {
+    if(v.aula) localStorage.setItem('cam_last_aula', String(v.aula));
+    if(v.cat) localStorage.setItem('cam_last_cat', String(v.cat));
+  } catch (e) {
+    // localStorage no disponible: no bloquea guardado
+  }
   const btn = document.getElementById('btnSave');
   btn.disabled = true; btn.textContent = '⏳ Guardando...';
   try {

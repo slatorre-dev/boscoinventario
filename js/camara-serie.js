@@ -6,6 +6,72 @@ let _modeloPendiente = '';
 let _nombreSugeridoPendiente = '';
 let _categoriaSugeridaPendiente = '';
 let _serieCandidatosPorId = {};
+let _serieTrack = null;
+let _serieTorchOn = false;
+
+const SERIE_PREF_QUICK = 'camara_quick_mode_v1';
+const SERIE_PREF_ACCESS = 'camara_access_mode_v1';
+const SERIE_PREF_LAST_AULA = 'cam_last_aula';
+const SERIE_PREF_LAST_CAT = 'cam_last_cat';
+
+function _seriePrefBoolGet(key, fallback = false) {
+  try {
+    const v = localStorage.getItem(key);
+    if (v === null) return fallback;
+    return v === '1';
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function _seriePrefBoolSet(key, value) {
+  try { localStorage.setItem(key, value ? '1' : '0'); } catch (e) { /* ignore */ }
+}
+
+function _serieQuickMode() {
+  const chk = document.getElementById('serieQuickMode');
+  return !!(chk ? chk.checked : _seriePrefBoolGet(SERIE_PREF_QUICK, false));
+}
+
+function _serieApplyAccessMode(enabled) {
+  const modal = document.getElementById('mCamaraSerie');
+  modal?.classList.toggle('camera-accessible', !!enabled);
+}
+
+function _seriePulseDetected() {
+  const video = document.getElementById('serieVideo');
+  if (!video) return;
+  video.classList.add('camera-detected');
+  setTimeout(() => video.classList.remove('camera-detected'), 220);
+  if (navigator.vibrate) navigator.vibrate(70);
+}
+
+async function _setupSerieTorch() {
+  const btn = document.getElementById('serieFlashBtn');
+  if (!btn || !_serieTrack) return;
+  _serieTorchOn = false;
+  btn.textContent = '💡 Linterna';
+  try {
+    const caps = _serieTrack.getCapabilities ? _serieTrack.getCapabilities() : {};
+    btn.style.display = caps.torch ? 'inline-flex' : 'none';
+  } catch (e) {
+    btn.style.display = 'none';
+  }
+}
+
+async function toggleSerieFlash() {
+  if (!_serieTrack) return;
+  try {
+    const caps = _serieTrack.getCapabilities ? _serieTrack.getCapabilities() : {};
+    if (!caps.torch) return;
+    _serieTorchOn = !_serieTorchOn;
+    await _serieTrack.applyConstraints({ advanced: [{ torch: _serieTorchOn }] });
+    const btn = document.getElementById('serieFlashBtn');
+    if (btn) btn.textContent = _serieTorchOn ? '💡 Linterna encendida' : '💡 Linterna';
+  } catch (e) {
+    toast('No se pudo activar la linterna en este dispositivo', 'err');
+  }
+}
 
 function openCamaraSerie() {
   const modal = document.getElementById('mCamaraSerie');
@@ -13,6 +79,8 @@ function openCamaraSerie() {
   const estado = document.getElementById('serieEstado');
   const resultado = document.getElementById('serieResultado');
   const capturarBtn = document.getElementById('serieCapturarBtn');
+  const chkQuick = document.getElementById('serieQuickMode');
+  const chkAccess = document.getElementById('serieAccessibleMode');
 
   modal.classList.add('open');
   estado.style.display = 'none';
@@ -27,6 +95,19 @@ function openCamaraSerie() {
   _categoriaSugeridaPendiente = '';
   _serieCandidatosPorId = {};
 
+  if (chkQuick) {
+    chkQuick.checked = _seriePrefBoolGet(SERIE_PREF_QUICK, false);
+    chkQuick.onchange = () => _seriePrefBoolSet(SERIE_PREF_QUICK, chkQuick.checked);
+  }
+  if (chkAccess) {
+    chkAccess.checked = _seriePrefBoolGet(SERIE_PREF_ACCESS, false);
+    _serieApplyAccessMode(chkAccess.checked);
+    chkAccess.onchange = () => {
+      _seriePrefBoolSet(SERIE_PREF_ACCESS, chkAccess.checked);
+      _serieApplyAccessMode(chkAccess.checked);
+    };
+  }
+
   if (!navigator.mediaDevices?.getUserMedia) {
     toast('Este navegador no permite acceder a la cámara', 'err');
     closeCamaraSerie();
@@ -36,10 +117,14 @@ function openCamaraSerie() {
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
     .then(stream => {
       _serieStream = stream;
+      _serieTrack = stream.getVideoTracks?.()[0] || null;
       video.srcObject = stream;
       video.style.display = 'block';
       capturarBtn.style.display = 'inline-flex';
-      video.onloadedmetadata = () => video.play();
+      video.onloadedmetadata = () => {
+        video.play();
+        _setupSerieTorch();
+      };
     })
     .catch(err => {
       let msg = 'Error al acceder a la cámara: ' + err.message;
@@ -51,6 +136,8 @@ function openCamaraSerie() {
 }
 
 function closeCamaraSerie() {
+  _serieTrack = null;
+  _serieTorchOn = false;
   if (_serieStream) {
     _serieStream.getTracks().forEach(t => t.stop());
     _serieStream = null;
@@ -94,6 +181,8 @@ async function capturarSerie() {
         }
         if (resCodigo.ok && (resCodigo.match === 'exacto' || resCodigo.match === 'fuzzy')) {
           if (resCodigo.match === 'exacto') {
+            _seriePulseDetected();
+            window._camaraReturnToScanner = _serieQuickMode();
             closeCamaraSerie();
             if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === resCodigo.item.id)) {
               items.push(resCodigo.item);
@@ -129,6 +218,8 @@ async function capturarSerie() {
       return;
     }
     if (res.match === 'exacto') {
+      _seriePulseDetected();
+      window._camaraReturnToScanner = _serieQuickMode();
       closeCamaraSerie();
       if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === res.item.id)) {
         items.push(res.item);
@@ -237,11 +328,21 @@ function _crearItemDesdeSerie() {
   const serie = _serieLeidaPendiente;
   const marca = _marcaPendiente;
   const modelo = _modeloPendiente;
+  window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
   openModal();
   setTimeout(() => {
     const input = document.getElementById('f_serie');
     if (input) input.value = serie;
+    const aulaPref = localStorage.getItem(SERIE_PREF_LAST_AULA) || '';
+    const catPref = localStorage.getItem(SERIE_PREF_LAST_CAT) || '';
+    const aulaSel = document.getElementById('f_aula');
+    if (aulaSel && aulaPref && [...aulaSel.options].some(o => o.value === aulaPref)) aulaSel.value = aulaPref;
+    const catSel = document.getElementById('f_cat');
+    if (catSel && catPref && [...catSel.options].some(o => o.value === catPref)) {
+      catSel.value = catPref;
+      catSel.dataset.prev = catPref;
+    }
     const nombreDetectado = [marca, modelo].filter(Boolean).join(' ').trim();
     if (nombreDetectado) {
       const itemInput = document.getElementById('f_item');
@@ -257,9 +358,13 @@ function _crearItemDesdeSerie() {
 function _crearItemDesdeVisual() {
   const nombreSugerido = _nombreSugeridoPendiente;
   const categoriaSugerida = _categoriaSugeridaPendiente;
+  window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
   openModal();
   setTimeout(() => {
+    const aulaPref = localStorage.getItem(SERIE_PREF_LAST_AULA) || '';
+    const aulaSel = document.getElementById('f_aula');
+    if (aulaSel && aulaPref && [...aulaSel.options].some(o => o.value === aulaPref)) aulaSel.value = aulaPref;
     if (nombreSugerido) {
       const itemInput = document.getElementById('f_item');
       if (itemInput) itemInput.value = nombreSugerido;
@@ -280,6 +385,7 @@ function serieReintentar() {
 }
 
 async function serieAbrirCandidato(id) {
+  window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
   openItemRoute(id);
   if (typeof items !== 'undefined' && Array.isArray(items) && items.some(x => Number(x.id) === Number(id))) return;
