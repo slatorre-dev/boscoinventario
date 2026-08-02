@@ -221,6 +221,28 @@ al flujo de IA existente (`js/camara-serie.js`) sin cambios. `#gsQr` y
 reactivable sin deploy. Spec:
 `docs/superpowers/specs/2026-08-02-unificar-camara-qr-serie-design.md`.
 
+### 15. Crear ítem desde la búsqueda sin resultados — ✅ implementado (02/08/2026)
+Pedido directo del usuario: buscar "cacharro" y no encontrarlo debía ofrecer
+crearlo con ese nombre ya precargado, en vez de solo mostrar "sin
+resultados". Implementado en los dos campos de búsqueda de la app:
+- **Buscador global de Home** (`#gsInput`, `js/search.js`): botón
+  "➕ Crear ítem nuevo: «query»" en el estado sin resultados →
+  `gsCrearItemDesdeQuery(q)` → `openModal(null, {item:q})`.
+- **Filtro dentro de una aula/categoría ya abierta** (`#srch`,
+  `js/inventory.js`): mismo patrón, `invCrearItemDesdeBusqueda()`, con el
+  añadido de precargar también la categoría cuando la vista actual es de
+  categoría (`cf.type==='cat'` → `prefill.cat=cf.id`) — el aula **no** hizo
+  falta pasarla explícita porque `openModal()` ya la deducía sola de
+  `cf.type==='aula'` cuando no se pasa `aula` en el objeto precargado
+  (comportamiento preexistente, reutilizado tal cual).
+Ambos botones solo se muestran con permiso `items.write` (`can()`), aunque
+`openModal()` ya bloquea la apertura igualmente si se accede sin permiso —
+doble red de seguridad. Fix de acompañamiento en `js/modal-item.js`
+(`openModal`): el título del modal decía "📋 Duplicar ítem" para *cualquier*
+`src` no vacío (mecanismo ya existente, reusado por `duplicateItem()`) —
+ahora solo lo dice si `src.id` existe, para no confundir a quien crea un
+ítem nuevo desde una búsqueda con quien está duplicando uno ya existente.
+
 ### 14. Mejora de calidad de reconocimiento visual (sin S/N) — ✅ implementado (02/08/2026)
 Motivado por feedback directo del usuario: "el reconocimiento es regular
 actualmente". Tres mejoras en `buscarPorSerie` (`functions/api/item.js`) +

@@ -879,7 +879,7 @@ function openModal(id=null, src=null){
   const readonly = existing && !can('items.write');
   fillMaintenanceResponsibles();
   initTagsAutocomplete();
-  document.getElementById('mT').textContent = existing ? (readonly ? 'Ver ítem' : 'Editar ítem') : src ? '📋 Duplicar ítem' : 'Nuevo ítem';
+  document.getElementById('mT').textContent = existing ? (readonly ? 'Ver ítem' : 'Editar ítem') : (src && src.id != null) ? '📋 Duplicar ítem' : 'Nuevo ítem';
   document.getElementById('f_ref').value = id ? (m?.ref||'') : '';
   document.getElementById('f_serie').value = id ? (m?.serie||'') : '';
   const aulaReciente = localStorage.getItem('cam_last_aula') || '';

@@ -142,7 +142,9 @@ function globalSearch(q){
   }).sort((a,b)=>scoreMatch(b,q)-scoreMatch(a,q));
   gsIdx=-1;
   if(!_gsMatches.length){
-    res.innerHTML=`<div class="gsr-empty">Sin resultados para "<strong>${escHtml(q)}</strong>"</div>`;
+    const canCreate = typeof can === 'function' && can('items.write');
+    res.innerHTML=`<div class="gsr-empty">Sin resultados para "<strong>${escHtml(q)}</strong>"</div>`
+      +(canCreate ? `<div class="gsr-print-row"><button class="gsr-print-btn" onclick="gsCrearItemDesdeQuery('${q.replace(/'/g,"\\'")}')">➕ Crear ítem nuevo: "${escHtml(q)}"</button></div>` : '');
     res.classList.add('open');return;
   }
   const visible=_gsMatches.slice(0,14);
@@ -182,6 +184,11 @@ function gsGo(aulaId,term){
 function gsOpenItem(id){
   gsClear();
   openItemRoute(id);
+}
+
+function gsCrearItemDesdeQuery(q){
+  gsClear();
+  openModal(null, { item: q });
 }
 
 function gsClear(){

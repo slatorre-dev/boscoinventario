@@ -160,11 +160,14 @@ function renderInv(){
   document.getElementById('iLow').textContent=low>0?`⚠ ${low} con stock bajo`:'';
   renderBulkBar();
   if(!data.length){
-    const hasFilter = document.getElementById('srch').value || document.getElementById('fCat').value || document.getElementById('fTipo').value || document.getElementById('fEst')?.value;
+    const searchQ = document.getElementById('srch').value.trim();
+    const hasFilter = searchQ || document.getElementById('fCat').value || document.getElementById('fTipo').value || document.getElementById('fEst')?.value;
+    const canCreate = searchQ && typeof can === 'function' && can('items.write');
     mc.innerHTML=`<div class="empty">
       <span class="ei">${hasFilter ? '🔍' : '📭'}</span>
       <div class="et">${hasFilter ? 'No hay ítems con estos filtros.<br><small>Prueba a cambiar la búsqueda o los filtros.</small>' : 'Esta sección no tiene ítems todavía.'}</div>
       ${hasFilter ? `<button class="empty-btn" onclick="document.getElementById('srch').value='';document.getElementById('fCat').value='';document.getElementById('fTipo').value='';if(document.getElementById('fEst'))document.getElementById('fEst').value='';renderInv()">✕ Limpiar filtros</button>` : ''}
+      ${canCreate ? `<button class="empty-btn" onclick="invCrearItemDesdeBusqueda()">➕ Crear ítem nuevo: "${escHtml(searchQ)}"</button>` : ''}
     </div>`;
     return;
   }
@@ -1157,6 +1160,14 @@ window.addEventListener('resize',()=>{
   if(nextMode !== _lastInvRenderMode) renderInv();
   else setTwHeight();
 });
+function invCrearItemDesdeBusqueda(){
+  const nombre = document.getElementById('srch').value.trim();
+  if(!nombre) return;
+  const prefill = { item: nombre };
+  if(cf && cf.type==='cat') prefill.cat = cf.id;
+  openModal(null, prefill);
+}
+
 function sort(k){if(sk===k)sa=!sa;else{sk=k;sa=true}renderInv()}
 function goInvPage(page){_invPage=page;renderInv();document.querySelector('#pS .srow')?.scrollIntoView({block:'start'})}
 function setPageSize(v){_pageSize=Number(v)||25;_pageSizeUserSet=true;_invPage=1;localStorage.setItem('inv_page_size',String(_pageSize));renderInv()}

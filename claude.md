@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v576 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+**Estado:** v577 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
@@ -1495,6 +1495,20 @@ en más de una sesión — el propio patrón de "revisión final encuentra bugs 
 la intersección de dos cambios que por separado parecían correctos", ya
 documentado varias veces en este archivo, aplica igual cuando la segunda
 mitad del cambio la hace un humano en vez de un agente.
+
+### 02/08/2026 (v577): crear ítem desde la búsqueda sin resultados
+
+Pedido directo del usuario: buscar algo que no existe (ej. "cacharro") debía
+ofrecer crearlo con el nombre ya precargado. Implementado en los dos campos
+de búsqueda — buscador global de Home (`js/search.js`,
+`gsCrearItemDesdeQuery()`) y filtro dentro de una aula/categoría ya abierta
+(`js/inventory.js`, `invCrearItemDesdeBusqueda()`) — ver detalle en
+[`docs/IDEAS.md`](docs/IDEAS.md#15-crear-ítem-desde-la-búsqueda-sin-resultados--implementado-02082026).
+Ambos reusan `openModal(null, {item:..., cat?:...})`, el mismo mecanismo de
+precarga que ya usaba `duplicateItem()`. De paso se corrigió que el título
+del modal decía "Duplicar ítem" para cualquier precarga, no solo al
+duplicar — ahora distingue por si el objeto precargado trae `id` (duplicar)
+o no (nombre nuevo). Sin cambios de backend ni de esquema.
 
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 
