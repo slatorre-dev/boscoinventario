@@ -1126,6 +1126,14 @@ textarea.fi-w{resize:vertical;min-height:60px}
 #mCamaraUnificada.camera-accessible .modal,#mCamaraSerie.camera-accessible .modal{font-size:16px}
 #mCamaraUnificada.camera-accessible .btn,#mCamaraSerie.camera-accessible .btn{min-height:44px;font-size:15px;padding:10px 14px}
 #mCamaraUnificada.camera-accessible .camera-options label,#mCamaraSerie.camera-accessible .camera-options label{font-size:14px;color:var(--text)}
+.camera-stage{position:relative;display:flex;justify-content:center}
+.camera-guide{position:absolute;inset:10px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.camera-guide::before{content:'';width:min(72%,360px);height:min(55%,220px);border:2px dashed rgba(255,255,255,.85);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.14)}
+.camera-guide-label{position:absolute;bottom:14px;background:rgba(15,23,42,.72);color:#fff;padding:4px 10px;border-radius:999px;font-size:11px;letter-spacing:.2px}
+.ai-confidence{display:inline-flex;align-items:center;gap:6px;margin-bottom:10px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.ai-confidence.high{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.ai-confidence.mid{background:#fff7ed;color:#9a3412;border:1px solid #fdba74}
+.ai-confidence.low{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5}
 .gsr{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--white);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shh);z-index:300;max-height:380px;overflow-y:auto;display:none;animation:pgIn .15s ease}
 .gsr.open{display:block}
 .gsr-item{display:flex;align-items:center;gap:11px;padding:10px 16px;cursor:pointer;transition:background .1s;border-bottom:1px solid var(--border)}

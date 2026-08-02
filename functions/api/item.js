@@ -425,7 +425,7 @@ export async function onRequestPost({ request, env, data }) {
     }
 
     if (textoLibre) {
-      return Response.json({ ok: true, match: 'texto', textoLibre });
+      return Response.json({ ok: true, match: 'texto', textoLibre, confianzaSerie });
     }
 
     if (descripcionVisual || categoriaSugerida) {
@@ -459,11 +459,12 @@ export async function onRequestPost({ request, env, data }) {
         match: 'visual',
         candidatos: ranked,
         nombreSugerido,
-        categoriaSugerida
+        categoriaSugerida,
+        confianzaSerie
       });
     }
 
-    return Response.json({ ok: true, match: 'sin_lectura' });
+    return Response.json({ ok: true, match: 'sin_lectura', confianzaSerie });
   }
 
   if (action === 'buscarSeriePorCodigo') {

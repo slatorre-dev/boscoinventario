@@ -1603,7 +1603,12 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <div class="mbg" id="mCamaraSerie" onclick="if(event.target===this)closeCamaraSerie()">
   <div class="modal" style="max-width:600px">
     <div class="mh"><div class="mt">📷 Apunta la cámara a la etiqueta o al objeto</div><button class="mx" onclick="closeCamaraSerie()">✕</button></div>
-    <video id="serieVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px;display:none" autoplay playsinline></video>
+    <div class="camera-stage" style="margin-bottom:16px">
+      <video id="serieVideo" style="width:100%;max-width:500px;border-radius:8px;display:none" autoplay playsinline></video>
+      <div class="camera-guide" aria-hidden="true">
+        <div class="camera-guide-label">Centra la etiqueta u objeto aquí</div>
+      </div>
+    </div>
     <div class="camera-options" style="margin-top:-8px;margin-bottom:10px">
       <label><input type="checkbox" id="serieQuickMode"> Modo clase rápida</label>
       <label><input type="checkbox" id="serieAccessibleMode"> Modo accesible</label>
@@ -1622,7 +1627,12 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <div class="mbg" id="mCamaraUnificada" onclick="if(event.target===this)closeCamaraUnificada()">
   <div class="modal" style="max-width:600px">
     <div class="mh"><div class="mt">🎥 Busca o añade: apunta a un QR o etiqueta</div><button class="mx" onclick="closeCamaraUnificada()">✕</button></div>
-    <video id="camaraUnifVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px" autoplay playsinline></video>
+    <div class="camera-stage" style="margin-bottom:16px">
+      <video id="camaraUnifVideo" style="width:100%;max-width:500px;border-radius:8px" autoplay playsinline></video>
+      <div class="camera-guide" aria-hidden="true">
+        <div class="camera-guide-label">Centra QR, código o etiqueta aquí</div>
+      </div>
+    </div>
     <div class="camera-options" style="margin-top:-8px;margin-bottom:10px">
       <label><input type="checkbox" id="camUnifQuickMode"> Modo clase rápida</label>
       <label><input type="checkbox" id="camUnifAccessibleMode"> Modo accesible</label>

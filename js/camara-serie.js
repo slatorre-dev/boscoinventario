@@ -46,6 +46,35 @@ function _seriePulseDetected() {
   if (navigator.vibrate) navigator.vibrate(70);
 }
 
+function _renderConfianzaBadge(conf) {
+  const c = Math.max(0, Math.min(1, Number(conf || 0)));
+  if (!c) return '';
+  if (c >= 0.75) return `<div class="ai-confidence high">✅ Confianza alta (${Math.round(c * 100)}%)</div>`;
+  if (c >= 0.5) return `<div class="ai-confidence mid">⚠️ Confianza media (${Math.round(c * 100)}%)</div>`;
+  return `<div class="ai-confidence low">🛑 Confianza baja (${Math.round(c * 100)}%)</div>`;
+}
+
+function _mostrarExactoConConfirmacion(item, confianza) {
+  const resultado = document.getElementById('serieResultado');
+  const aula = (typeof AULAS !== 'undefined' ? AULAS.find(a => a.id === item.aula) : null);
+  const aulaNombre = aula ? aula.name : (item.aula || 'Sin aula');
+  resultado.style.display = 'block';
+  resultado.innerHTML = `${_renderConfianzaBadge(confianza)}
+    <div style="margin-bottom:10px">He encontrado una coincidencia, pero con baja confianza. ¿Quieres abrir esta ficha?</div>
+    <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px">
+      <div style="font-weight:700">${escHtml(item.item || '')}</div>
+      <div style="font-size:12px;color:var(--muted)">${escHtml(aulaNombre)}${item.serie ? ' · S/N: ' + escHtml(item.serie) : ''}</div>
+    </div>
+    <button class="btn btn-p" onclick="_abrirExactoSerieConfirmado(${Number(item.id)})">Abrir ficha sugerida</button>
+    <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar captura</button>`;
+}
+
+function _abrirExactoSerieConfirmado(id) {
+  window._camaraReturnToScanner = _serieQuickMode();
+  closeCamaraSerie();
+  openItemRoute(id);
+}
+
 function _frameSharpnessScore(imageData) {
   const d = imageData.data;
   const w = imageData.width;
@@ -262,11 +291,16 @@ async function capturarSerie() {
 
     const res = await apiPost({ action: 'buscarPorSerie', imagen: imagenBase64 });
     estado.style.display = 'none';
+    const confianza = Number(res?.confianzaSerie || 0) || 0;
     if (!res.ok) {
       _mostrarSerieError(res.error || 'No se pudo leer la etiqueta, inténtalo de nuevo');
       return;
     }
     if (res.match === 'exacto') {
+      if (confianza > 0 && confianza < 0.45) {
+        _mostrarExactoConConfirmacion(res.item, confianza);
+        return;
+      }
       _seriePulseDetected();
       window._camaraReturnToScanner = _serieQuickMode();
       closeCamaraSerie();
@@ -277,7 +311,7 @@ async function capturarSerie() {
       return;
     }
     if (res.match === 'fuzzy') {
-      _mostrarSerieCandidatos(res.candidatos);
+      _mostrarSerieCandidatos(res.candidatos, confianza);
       return;
     }
     if (res.match === 'texto' && res.textoLibre && res.textoLibre.trim().length >= 2) {
@@ -315,7 +349,7 @@ function _mostrarSerieError(msg) {
     <button class="btn" onclick="serieReintentar()">Reintentar</button>`;
 }
 
-function _mostrarSerieCandidatos(candidatos) {
+function _mostrarSerieCandidatos(candidatos, confianza = 0) {
   const resultado = document.getElementById('serieResultado');
   resultado.style.display = 'block';
   _serieCandidatosPorId = {};
@@ -328,7 +362,7 @@ function _mostrarSerieCandidatos(candidatos) {
       <div style="font-size:12px;color:var(--muted)">${escHtml(aulaNombre)} · S/N: ${escHtml(c.serie)}</div>
     </div>`;
   }).join('');
-  resultado.innerHTML = `<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}<button class="btn" onclick="serieReintentar()">Reintentar</button>`;
+  resultado.innerHTML = `${_renderConfianzaBadge(confianza)}<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}<button class="btn" onclick="serieReintentar()">Reintentar</button>`;
 }
 
 function _mostrarVisualCandidatos(candidatos, nombreSugerido, categoriaSugerida) {
