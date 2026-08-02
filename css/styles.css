@@ -2424,7 +2424,7 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
 
 /* Presets de filtros */
 .preset-wrap { position: relative; }
-.preset-toggle-btn { font-size: 15px !important; }
+.preset-toggle-btn { display: none !important; }
 .preset-panel {
   display: none;
   position: absolute;
