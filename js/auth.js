@@ -509,7 +509,7 @@ async function loadData(){
 
 // ─── INIT ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function(){
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();closeConf();closeAulasModal();closeUbicacionesModal();closePrestar();closeDevolver();closeProfModal();closeImport();closeExportModal();closeDocsModal();closeDelModal();closeHistorial();closeQrScanner();closeUsuariosModal();closeModulosUsuario();closePrintModal()}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();closeConf();closeAulasModal();closeUbicacionesModal();closePrestar();closeDevolver();closeProfModal();closeImport();closeExportModal();closeDocsModal();closeDelModal();closeHistorial();closeQrScanner();closeUsuariosModal();closeModulosUsuario();closePrintModal();closeTourCamara();closeAyudaCamara()}});
   ['loginUser','loginPass'].forEach(id=>{
     document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
   });

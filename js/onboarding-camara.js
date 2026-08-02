@@ -7,11 +7,13 @@ const TOUR_PANTALLAS = [
   },
   {
     titulo: '📷 Novedades: búsqueda por cámara',
-    texto: '<strong>📸 Multi-equipo en una foto</strong><br>Fotografía una mesa entera con varios equipos nuevos y créalos todos de golpe.'
+    texto: '<strong>📸 Multi-equipo en una foto</strong><br>Fotografía una mesa entera con varios equipos nuevos y créalos todos de golpe.',
+    requiereEscritura: true
   },
   {
     titulo: '📷 Novedades: búsqueda por cámara',
-    texto: '<strong>📷 Inventario andando</strong><br>Recorre un aula fotografiando cada equipo, uno tras otro, y confirma que todo está donde debe.'
+    texto: '<strong>📷 Inventario andando</strong><br>Recorre un aula fotografiando cada equipo, uno tras otro, y confirma que todo está donde debe.',
+    requiereEscritura: true
   },
   {
     titulo: '📷 Novedades: búsqueda por cámara',
@@ -20,6 +22,7 @@ const TOUR_PANTALLAS = [
 ];
 
 let _tourPaso = 0;
+let _tourPantallas = TOUR_PANTALLAS;
 
 function _tourVisto() {
   try { return !!localStorage.getItem(TOUR_CAMARA_KEY); } catch (e) { return false; }
@@ -35,6 +38,8 @@ function iniciarTourCamaraSiPrimeraVez() {
 }
 
 function openTourCamara(reabierta) {
+  const puedeEscribir = typeof can === 'function' && can('items.write');
+  _tourPantallas = TOUR_PANTALLAS.filter(p => !p.requiereEscritura || puedeEscribir);
   _tourPaso = 0;
   _renderTourPaso();
   document.getElementById('mTourCamara').classList.add('open');
@@ -47,16 +52,16 @@ function closeTourCamara() {
 }
 
 function _renderTourPaso() {
-  const p = TOUR_PANTALLAS[_tourPaso];
+  const p = _tourPantallas[_tourPaso];
   document.getElementById('tourTitulo').textContent = p.titulo;
   document.getElementById('tourContenido').innerHTML = p.texto;
-  document.getElementById('tourPasos').textContent = `${_tourPaso + 1} / ${TOUR_PANTALLAS.length}`;
+  document.getElementById('tourPasos').textContent = `${_tourPaso + 1} / ${_tourPantallas.length}`;
   document.getElementById('tourBtnAtras').style.display = _tourPaso === 0 ? 'none' : 'inline-flex';
-  document.getElementById('tourBtnSiguiente').textContent = _tourPaso === TOUR_PANTALLAS.length - 1 ? 'Terminar' : 'Siguiente';
+  document.getElementById('tourBtnSiguiente').textContent = _tourPaso === _tourPantallas.length - 1 ? 'Terminar' : 'Siguiente';
 }
 
 function tourSiguiente() {
-  if (_tourPaso >= TOUR_PANTALLAS.length - 1) {
+  if (_tourPaso >= _tourPantallas.length - 1) {
     closeTourCamara();
     return;
   }
@@ -71,6 +76,11 @@ function tourAnterior() {
 }
 
 function openAyudaCamara() {
+  const puedeEscribir = typeof can === 'function' && can('items.write');
+  ['ayudaMultiEquipo', 'ayudaRevisionAula'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = puedeEscribir ? '' : 'none';
+  });
   document.getElementById('mAyudaCamara').classList.add('open');
 }
 
