@@ -1,5 +1,6 @@
 let _multiStream = null;
 let _multiCapturing = false;
+let _multiSubmitting = false;
 let _multiAulaId = '';
 let _multiObjetos = [];
 
@@ -17,14 +18,17 @@ function openMultiEquipo() {
   const listaWrap = document.getElementById('multiListaWrap');
   const capturarBtn = document.getElementById('multiCapturarBtn');
   const crearBtn = document.getElementById('multiCrearBtn');
+  const cicloSel = document.getElementById('multiCicloSel');
 
   modal.classList.add('open');
   estado.style.display = 'none';
   listaWrap.style.display = 'none';
   document.getElementById('multiListaBody').innerHTML = '';
+  if (cicloSel) cicloSel.innerHTML = '<option value="">Sin asignar</option>';
   capturarBtn.style.display = 'none';
   crearBtn.style.display = 'none';
   _multiCapturing = false;
+  _multiSubmitting = false;
 
   if (!navigator.mediaDevices?.getUserMedia) {
     toast('Este navegador no permite acceder a la cámara', 'err');
@@ -94,6 +98,7 @@ async function capturarMulti() {
       return;
     }
     _multiObjetos = res.objetos.map((o, i) => ({ _rowId: i, nombre: o.nombre, cantidad: o.cantidad, categoriaSugerida: o.categoriaSugerida || '' }));
+    _poblarSelectorCicloMulti();
     _renderMultiLista();
   } catch (e) {
     estado.style.display = 'none';
@@ -111,6 +116,26 @@ function _volverACapturarMulti() {
   capturarBtn.style.display = 'inline-flex';
 }
 
+function _poblarSelectorCicloMulti() {
+  const cicloSel = document.getElementById('multiCicloSel');
+  if (!cicloSel) return;
+
+  const ownCiclos = (typeof CICLOS !== 'undefined' ? CICLOS : []).filter(c => c.id !== 'iesjuanbosco');
+
+  const opciones = ['<option value="">Sin asignar</option>'];
+  ownCiclos.forEach(c => {
+    (c.modulos || []).forEach(m => {
+      opciones.push(`<option value="${escHtml(c.id)}__${escHtml(m.cod)}">${escHtml(c.name)} — ${escHtml(m.name)}</option>`);
+    });
+  });
+  cicloSel.innerHTML = opciones.join('');
+
+  const preseleccion = (ownCiclos.length === 1 && (ownCiclos[0].modulos || []).length === 1)
+    ? `${ownCiclos[0].id}__${ownCiclos[0].modulos[0].cod}`
+    : '';
+  cicloSel.value = preseleccion;
+}
+
 function _renderMultiLista() {
   const listaWrap = document.getElementById('multiListaWrap');
   const body = document.getElementById('multiListaBody');
@@ -118,17 +143,19 @@ function _renderMultiLista() {
   const capturarBtn = document.getElementById('multiCapturarBtn');
 
   const catNames = typeof CATS !== 'undefined' ? Object.keys(CATS) : [];
-  const catOptions = ['<option value="">Sin categoría</option>']
-    .concat(catNames.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`))
-    .join('');
 
-  body.innerHTML = _multiObjetos.map(o => `
+  body.innerHTML = _multiObjetos.map(o => {
+    const catOpts = ['<option value="">Sin categoría</option>']
+      .concat(catNames.map(c => `<option value="${escHtml(c)}"${c === o.categoriaSugerida ? ' selected' : ''}>${escHtml(c)}</option>`))
+      .join('');
+    return `
     <tr data-row-id="${o._rowId}">
       <td style="padding:4px"><input type="text" class="fi-w" value="${escHtml(o.nombre)}" oninput="_multiActualizarFila(${o._rowId},'nombre',this.value)" style="width:100%"></td>
       <td style="padding:4px"><input type="number" class="fi-w" min="1" value="${Number(o.cantidad) || 1}" oninput="_multiActualizarFila(${o._rowId},'cantidad',this.value)" style="width:100%"></td>
-      <td style="padding:4px"><select class="fi-w" onchange="_multiActualizarFila(${o._rowId},'categoriaSugerida',this.value)" style="width:100%">${catOptions.replace(`value="${o.categoriaSugerida}"`, `value="${o.categoriaSugerida}" selected`)}</select></td>
+      <td style="padding:4px"><select class="fi-w" onchange="_multiActualizarFila(${o._rowId},'categoriaSugerida',this.value)" style="width:100%">${catOpts}</select></td>
       <td style="padding:4px;text-align:center"><button class="btn-icon-only" onclick="_multiEliminarFila(${o._rowId})" title="Eliminar fila" style="cursor:pointer;border:none;background:none;font-size:16px">🗑️</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   listaWrap.style.display = 'block';
   capturarBtn.style.display = 'none';
@@ -148,27 +175,30 @@ function _multiEliminarFila(rowId) {
 }
 
 async function confirmarCrearMulti() {
+  if (_multiSubmitting) return;
   if (!_multiObjetos.length) return;
   if (typeof can === 'function' && !can('import.write')) {
     toast('No tienes permiso para crear varios ítems a la vez', 'err');
     return;
   }
-  const ok = await confirmDialog({
-    title: 'Crear ítems',
-    message: `Se crearán ${_multiObjetos.length} ítem${_multiObjetos.length !== 1 ? 's' : ''} nuevo${_multiObjetos.length !== 1 ? 's' : ''} en esta aula. ¿Continuar?`,
-    confirmText: 'Crear'
-  }).catch(() => false);
-  if (!ok) return;
-
-  const payload = _multiObjetos.map(o => ({
-    ref: '', aula: _multiAulaId, mod: '', item: o.nombre, qty: o.cantidad, min: 1,
-    cat: o.categoriaSugerida || '', loc: '', est: 'Operativo', util: '', proveedor: '', tags: '',
-    fecha: new Date().toISOString().slice(0, 10), fecha_adquisicion: '', precio: null,
-    mant: '', mantFecha: '', mantNota: '', mantResp: '', mantEstado: '', mantSolicitante: '', mantSolicitanteEmail: '',
-    foto: '', obs: '', code: '', serie: '', es_contenedor: 0, parent_id: null, tipo_material: 'inventariable', oculto: 0
-  }));
-
+  _multiSubmitting = true;
   try {
+    const ok = await confirmDialog({
+      title: 'Crear ítems',
+      message: `Se crearán ${_multiObjetos.length} ítem${_multiObjetos.length !== 1 ? 's' : ''} nuevo${_multiObjetos.length !== 1 ? 's' : ''} en esta aula. ¿Continuar?`,
+      confirmText: 'Crear'
+    }).catch(() => false);
+    if (!ok) return;
+
+    const modSeleccionado = document.getElementById('multiCicloSel').value;
+    const payload = _multiObjetos.map(o => ({
+      ref: '', aula: _multiAulaId, mod: modSeleccionado, item: o.nombre, qty: o.cantidad, min: 1,
+      cat: o.categoriaSugerida || '', loc: '', est: 'Bueno', util: '', proveedor: '', tags: '',
+      fecha: new Date().toISOString().slice(0, 10), fecha_adquisicion: '', precio: null,
+      mant: '', mantFecha: '', mantNota: '', mantResp: '', mantEstado: '', mantSolicitante: '', mantSolicitanteEmail: '',
+      foto: '', obs: '', code: '', serie: '', es_contenedor: 0, parent_id: null, tipo_material: 'inventariable', oculto: 0
+    }));
+
     const res = await apiPost({ action: 'bulkImport', items: payload });
     if (!res.ok) throw new Error(res.error || 'Error al crear los ítems');
     if (res.items) items.push(...res.items);
@@ -177,5 +207,7 @@ async function confirmarCrearMulti() {
     if (typeof renderInv === 'function') renderInv();
   } catch (e) {
     toast('No se pudieron crear los ítems: ' + (e.message || ''), 'err');
+  } finally {
+    _multiSubmitting = false;
   }
 }
