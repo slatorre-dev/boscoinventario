@@ -396,6 +396,13 @@ export async function onRequestPost({ request, env, data }) {
     return Response.json({ ok: true, match: 'sin_lectura' });
   }
 
+  if (action === 'buscarSeriePorCodigo') {
+    const codigo = String(body.codigo || '').trim();
+    if (!codigo) return Response.json({ ok: false, error: 'Falta el código' });
+    const r = await buscarSerieEnD1(env, codigo, dept, superadmin, genericDept);
+    return Response.json({ ok: true, ...r });
+  }
+
   if (action === 'detectarMultiples') {
     const imagen = body.imagen;
     if (!imagen) return Response.json({ ok: false, error: 'Falta la imagen' });
