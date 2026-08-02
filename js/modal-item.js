@@ -36,6 +36,22 @@ function resetModalChanges(){
   updateModalIndicator();
 }
 
+function _actualizarEnlacesManual(){
+  const wrap = document.getElementById('linksManualWrap');
+  if(!wrap) return;
+  const proveedor = (document.getElementById('f_proveedor')?.value || '').trim();
+  const nombre = (document.getElementById('f_item')?.value || '').trim();
+  if(!proveedor || !nombre){
+    wrap.style.display = 'none';
+    return;
+  }
+  const base = encodeURIComponent(`${proveedor} ${nombre}`);
+  document.getElementById('linkManual').href = `https://www.google.com/search?q=${base}+manual+pdf`;
+  document.getElementById('linkDatasheet').href = `https://www.google.com/search?q=${base}+datasheet`;
+  document.getElementById('linkVideo').href = `https://www.google.com/search?q=${base}+tutorial+video`;
+  wrap.style.display = 'flex';
+}
+
 function captureModalOriginalValues(){
   const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
   modalOriginalValues = {};
@@ -50,6 +66,17 @@ function captureModalOriginalValues(){
     }
   });
   attachModalChangeListeners();
+  attachManualLinksListeners();
+}
+
+function attachManualLinksListeners(){
+  ['f_proveedor', 'f_item'].forEach(field => {
+    const el = document.getElementById(field);
+    if(el){
+      el.removeEventListener('input', _actualizarEnlacesManual);
+      el.addEventListener('input', _actualizarEnlacesManual);
+    }
+  });
 }
 
 function attachModalChangeListeners(){
@@ -909,7 +936,8 @@ function openModal(id=null, src=null){
 
   resetModalChanges();
   captureModalOriginalValues();
-  
+  _actualizarEnlacesManual();
+
   // Auto-focus en nombre para escribir directo
   setTimeout(() => document.getElementById('f_item').focus(), 0);
 }
