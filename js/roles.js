@@ -41,6 +41,7 @@ const ACTION_PERMISSIONS = {
   buscarPorSerie: 'serie.read',
   detectarMultiples: 'serie.read',
   buscarSeriePorCodigo: 'serie.read',
+  registrarFeedbackDeteccion: 'serie.read',
   profAdd: 'profesores.manage',
   profUpdate: 'profesores.manage',
   profDelete: 'profesores.manage',

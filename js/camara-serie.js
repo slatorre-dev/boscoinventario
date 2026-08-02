@@ -6,6 +6,8 @@ let _modeloPendiente = '';
 let _nombreSugeridoPendiente = '';
 let _categoriaSugeridaPendiente = '';
 let _serieCandidatosPorId = {};
+let _ultimaImagenDetectada = '';
+let _ultimaConfianzaIA = 0;
 let _serieTrack = null;
 let _serieTorchOn = false;
 
@@ -46,6 +48,15 @@ function _seriePulseDetected() {
   if (navigator.vibrate) navigator.vibrate(70);
 }
 
+function _registrarFeedbackDeteccion(payload) {
+  apiPost({
+    action: 'registrarFeedbackDeteccion',
+    imagen: _ultimaImagenDetectada,
+    confianza: _ultimaConfianzaIA,
+    ...payload
+  }).catch(() => {});
+}
+
 function _renderConfianzaBadge(conf) {
   const c = Math.max(0, Math.min(1, Number(conf || 0)));
   if (!c) return '';
@@ -70,6 +81,13 @@ function _mostrarExactoConConfirmacion(item, confianza) {
 }
 
 function _abrirExactoSerieConfirmado(id) {
+  const it = (typeof items !== 'undefined' && Array.isArray(items)) ? items.find(x => Number(x.id) === Number(id)) : null;
+  _registrarFeedbackDeteccion({
+    tipo: 'exacto_confirmado',
+    nombre: it?.item || '',
+    categoria: it?.cat || '',
+    serie: it?.serie || _serieLeidaPendiente || ''
+  });
   window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
   openItemRoute(id);
@@ -173,6 +191,8 @@ function openCamaraSerie() {
   _nombreSugeridoPendiente = '';
   _categoriaSugeridaPendiente = '';
   _serieCandidatosPorId = {};
+  _ultimaImagenDetectada = '';
+  _ultimaConfianzaIA = 0;
 
   if (chkQuick) {
     chkQuick.checked = _seriePrefBoolGet(SERIE_PREF_QUICK, false);
@@ -282,6 +302,7 @@ async function capturarSerie() {
     }
 
     const imagenBase64 = await _captureBestFrameBase64(video);
+    _ultimaImagenDetectada = imagenBase64;
 
     video.style.display = 'none';
     capturarBtn.style.display = 'none';
@@ -292,6 +313,7 @@ async function capturarSerie() {
     const res = await apiPost({ action: 'buscarPorSerie', imagen: imagenBase64 });
     estado.style.display = 'none';
     const confianza = Number(res?.confianzaSerie || 0) || 0;
+    _ultimaConfianzaIA = confianza;
     if (!res.ok) {
       _mostrarSerieError(res.error || 'No se pudo leer la etiqueta, inténtalo de nuevo');
       return;
@@ -302,6 +324,12 @@ async function capturarSerie() {
         return;
       }
       _seriePulseDetected();
+      _registrarFeedbackDeteccion({
+        tipo: 'exacto_auto',
+        nombre: res.item?.item || '',
+        categoria: res.item?.cat || '',
+        serie: res.item?.serie || ''
+      });
       window._camaraReturnToScanner = _serieQuickMode();
       closeCamaraSerie();
       if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === res.item.id)) {
@@ -315,6 +343,7 @@ async function capturarSerie() {
       return;
     }
     if (res.match === 'texto' && res.textoLibre && res.textoLibre.trim().length >= 2) {
+      _registrarFeedbackDeteccion({ tipo: 'texto_libre', textoLibre: res.textoLibre });
       closeCamaraSerie();
       const gsInput = document.getElementById('gsInput');
       if (gsInput) {
@@ -411,6 +440,13 @@ function _crearItemDesdeSerie() {
   const serie = _serieLeidaPendiente;
   const marca = _marcaPendiente;
   const modelo = _modeloPendiente;
+  _registrarFeedbackDeteccion({
+    tipo: 'alta_desde_serie',
+    nombre: [marca, modelo].filter(Boolean).join(' ').trim(),
+    serie,
+    marca,
+    modelo
+  });
   window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
   openModal();
@@ -441,6 +477,11 @@ function _crearItemDesdeSerie() {
 function _crearItemDesdeVisual() {
   const nombreSugerido = _nombreSugeridoPendiente;
   const categoriaSugerida = _categoriaSugeridaPendiente;
+  _registrarFeedbackDeteccion({
+    tipo: 'alta_desde_visual',
+    nombre: nombreSugerido,
+    categoria: categoriaSugerida
+  });
   window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
   openModal();
@@ -468,6 +509,13 @@ function serieReintentar() {
 }
 
 async function serieAbrirCandidato(id) {
+  const it = (typeof items !== 'undefined' && Array.isArray(items)) ? items.find(x => Number(x.id) === Number(id)) : null;
+  _registrarFeedbackDeteccion({
+    tipo: 'fuzzy_seleccionado',
+    nombre: it?.item || '',
+    categoria: it?.cat || '',
+    serie: _serieCandidatosPorId[String(id)] || it?.serie || ''
+  });
   window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
   openItemRoute(id);

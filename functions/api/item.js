@@ -37,6 +37,23 @@ async function ensureContainerCols(db) {
     await db.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('tipo_material_migrated', datetime('now'))").run().catch(() => {});
   }
 }
+
+async function ensureDeteccionLearningTable(db) {
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ia_deteccion_ejemplos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha TEXT DEFAULT '',
+    departamento TEXT DEFAULT '',
+    tipo TEXT DEFAULT '',
+    nombre TEXT DEFAULT '',
+    categoria TEXT DEFAULT '',
+    serie TEXT DEFAULT '',
+    marca TEXT DEFAULT '',
+    modelo TEXT DEFAULT '',
+    texto_libre TEXT DEFAULT '',
+    confianza REAL DEFAULT 0,
+    imagen_base64 TEXT DEFAULT ''
+  )`).run().catch(() => {});
+}
 async function auditLog(db, user, accion, itemId, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
@@ -84,7 +101,54 @@ export async function onRequestPost({ request, env, data }) {
   const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
 
   await ensureContainerCols(env.DB);
+  await ensureDeteccionLearningTable(env.DB);
   await env.DB.prepare("ALTER TABLE inventario ADD COLUMN departamento TEXT DEFAULT ''").run().catch(() => {});
+
+  if (action === 'registrarFeedbackDeteccion') {
+    const now = new Date().toISOString().replace('T',' ').slice(0,19);
+    const tipo = String(body.tipo || '').slice(0, 40);
+    const nombre = String(body.nombre || '').slice(0, 160);
+    const categoria = String(body.categoria || '').slice(0, 120);
+    const serie = String(body.serie || '').slice(0, 120);
+    const marca = String(body.marca || '').slice(0, 120);
+    const modelo = String(body.modelo || '').slice(0, 120);
+    const textoLibre = String(body.textoLibre || '').slice(0, 240);
+    const confianza = Math.max(0, Math.min(1, Number(body.confianza || 0) || 0));
+    const imagen = String(body.imagen || '');
+    // Limitar tamaño para no inflar D1; suficiente para few-shot visual futuro.
+    const imagenCortada = imagen.length > 260000 ? imagen.slice(0, 260000) : imagen;
+
+    await env.DB.prepare(
+      `INSERT INTO ia_deteccion_ejemplos
+        (fecha, departamento, tipo, nombre, categoria, serie, marca, modelo, texto_libre, confianza, imagen_base64)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+    ).bind(
+      now,
+      dept || '',
+      tipo,
+      nombre,
+      categoria,
+      serie,
+      marca,
+      modelo,
+      textoLibre,
+      confianza,
+      imagenCortada
+    ).run().catch(() => {});
+
+    // Mantener últimos 300 ejemplos por departamento para controlar tamaño.
+    await env.DB.prepare(
+      `DELETE FROM ia_deteccion_ejemplos
+       WHERE id IN (
+         SELECT id FROM ia_deteccion_ejemplos
+         WHERE departamento=?
+         ORDER BY id DESC
+         LIMIT -1 OFFSET 300
+       )`
+    ).bind(dept || '').run().catch(() => {});
+
+    return Response.json({ ok: true });
+  }
 
   if (action === 'add') {
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM inventario').first();
@@ -332,6 +396,15 @@ export async function onRequestPost({ request, env, data }) {
       ? categoriasDept.map(c => `"${c}"`).join(', ')
       : '(ninguna categoría disponible)';
 
+    const ejemplosDeptFilter = superadmin ? '' : ' WHERE departamento=?';
+    const ejemplosDeptBind = superadmin ? [] : [dept];
+    const ejemplosRows = await env.DB.prepare(
+      `SELECT tipo, nombre, categoria, serie, marca, modelo, texto_libre, confianza
+       FROM ia_deteccion_ejemplos${ejemplosDeptFilter}
+       ORDER BY id DESC LIMIT 4`
+    ).bind(...ejemplosDeptBind).all().catch(() => ({ results: [] }));
+    const ejemplosTexto = formatLearningExamples(ejemplosRows?.results || []);
+
     async function runVisionQuestion(question, maxTokens = 420) {
       return env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         task: 'query',
@@ -354,6 +427,7 @@ export async function onRequestPost({ request, env, data }) {
         `"categoriaSugerida" debe ser EXACTAMENTE uno de: ${categoriasTexto} o null. ` +
         `"confianzaSerie" va de 0 a 1 y representa tu confianza sobre la serie. ` +
         `"alternativasSerie" debe incluir hasta 3 variantes plausibles si hay ambigüedad OCR (ej. O/0, I/1, S/5). ` +
+        `${ejemplosTexto}` +
         `No añadas texto fuera del JSON y no inventes datos.`
       );
 
@@ -660,6 +734,23 @@ function extractJsonArray(raw) {
 function safeText(v) {
   if (v == null) return '';
   return String(v).trim();
+}
+
+function formatLearningExamples(rows) {
+  const r = Array.isArray(rows) ? rows : [];
+  if (!r.length) return '';
+  const lines = r.slice(0, 4).map((e, i) => {
+    const tipo = safeText(e.tipo) || 'desconocido';
+    const nombre = safeText(e.nombre) || 'sin-nombre';
+    const categoria = safeText(e.categoria) || 'sin-categoria';
+    const serie = safeText(e.serie) || 'sin-serie';
+    const marca = safeText(e.marca) || 'sin-marca';
+    const modelo = safeText(e.modelo) || 'sin-modelo';
+    const texto = safeText(e.texto_libre) || 'sin-texto';
+    const confianza = Math.max(0, Math.min(1, Number(e.confianza || 0) || 0));
+    return `Ejemplo ${i + 1}: tipo=${tipo}; nombre=${nombre}; categoria=${categoria}; serie=${serie}; marca=${marca}; modelo=${modelo}; texto=${texto}; confianza=${Math.round(confianza * 100)}%`;
+  });
+  return ` Usa estos ejemplos recientes del propio taller como referencia de estilo/terminología (no los copies literalmente): ${lines.join(' | ')}.`;
 }
 
 function expandOcrCandidates(input) {
