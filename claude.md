@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v560 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+**Estado:** v576 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
@@ -1435,6 +1435,66 @@ inventario, vía Vectorize) se evaluó pero se dejó pendiente a petición
 explícita del usuario — necesita un binding nuevo (mismo tipo de paso
 manual en el dashboard que ya hizo falta para `AI`) y backfill con coste
 de IA sobre `item_fotos`; ver punto 19 en Pendiente.
+
+### 02/08/2026 (v561-v576): rediseño visual de Home/Inventario + captura de S/N desde el formulario
+
+Sesión de 16 commits hecha directamente por el usuario (fuera de esta
+conversación), ya pusheada a `origin/main` antes de documentarla aquí.
+
+**Rediseño visual (14 commits `ui(...)`).** Iteración fuerte de
+estilo/jerarquía visual en `css/styles.css` + ajustes puntuales de
+`index.html`/`js/home.js`/`js/inventory.js`, con foco en mobile/tablet:
+acciones rápidas de Home compactadas en una sola fila de iconos, cabecera y
+toolbar de la subpágina de inventario reforzadas, tarjetas de inventario y
+vista agrupada (categorías/tags) con más contraste, iconos de la barra
+superior compactos en pantallas pequeñas (con una iteración revertida a
+medio camino, `af021f9 ui(topbar): restaura vista móvil anterior`, antes de
+llegar al resultado final), y ocultación del botón de presets de filtros.
+Sin cambios de backend ni de datos.
+
+**`fix(aulas): ordena aulas globales por numero` (`574adb1`).** Las 70 aulas
+globales (`aula1`..`aula70`) se listaban ordenadas por la columna `orden`
+tal cual, lo que no garantizaba orden numérico real. `list.js`/`meta.js`
+ahora ordenan con un `CASE` que extrae el número de `aulaN` vía
+`GLOB 'aula[0-9]*'` cuando aplica, y cae a `orden`/`id` para el resto (aulas
+de departamento tipo `dept-tecnologia`). Nota: esto es una corrección del
+`ORDER BY` de lectura, **no** arregla el bug ya documentado de escritura en
+`saveAulas()` (`js/modal-aulas.js:78`, ver pendiente #14) — siguen siendo
+dos problemas relacionados pero distintos.
+
+**`feat(items): capture serial number from item form` (`7540495`).** Botón
+📷 nuevo junto al campo "Nº de serie" del modal de ítem
+(`btnSerieDesdeCamara` → `openCamaraSerieParaCampoSerie()`), que abre la
+misma cámara de `js/camara-serie.js` pero en un modo dedicado
+(`_serieDestinoFormulario`) que solo rellena el campo `f_serie` del
+formulario abierto — sin buscar en D1 ni navegar a ninguna ficha, incluso
+cuando la IA reconoce un S/N ya existente en otro ítem (`match:'ninguno' &&
+serieLeida` también se acepta, porque para este modo el objetivo es
+capturar el texto, no encontrar una coincidencia). Reusa código de
+barras/OCR/candidatos fuzzy ya existentes, con render propio
+(`_mostrarSerieCandidatosParaFormulario`) para el caso fuzzy.
+
+**Regresión encontrada y corregida en la misma revisión.** El commit
+anterior se editó a partir de una copia de `js/camara-serie.js` previa a las
+mejoras de reconocimiento visual de v560 (mismo día, sesión anterior) —
+como el nuevo modo toca varias de las mismas funciones (`_mostrarSerieError`,
+`_mostrarVisualCandidatos`, `_mostrarSerieCrearNuevo`, las ramas de
+`capturarSerie()`), el diff resultante **eliminó silenciosamente** el aviso
+de encuadre (`motivoEncuadre`, 💡) y el botón "Probar otro ángulo"
+(`_serieIntentoPrevio`) de v560, sin que nadie lo pidiera — el backend
+(`functions/api/item.js`) nunca dejó de calcular `motivoEncuadre`, solo el
+frontend dejó de leerlo. Detectado al revisar `sw.js` (salto de v560 a v576
+sin commits intermedios documentados) y confirmado con `git show` del
+commit. Restaurado en las mismas funciones, verificado que no interfiere
+con el modo nuevo `_serieDestinoFormulario` (ese modo hace `return` antes de
+llegar a las ramas restauradas, así que son mutuamente excluyentes por
+diseño). **Lección para la próxima vez que se edite `camara-serie.js` fuera
+de una sesión de Claude Code:** partir siempre de `git pull`/HEAD real antes
+de editar, especialmente en un archivo que ha recibido cambios el mismo día
+en más de una sesión — el propio patrón de "revisión final encuentra bugs en
+la intersección de dos cambios que por separado parecían correctos", ya
+documentado varias veces en este archivo, aplica igual cuando la segunda
+mitad del cambio la hace un humano en vez de un agente.
 
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 

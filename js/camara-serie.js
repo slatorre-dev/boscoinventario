@@ -11,6 +11,8 @@ let _ultimaConfianzaIA = 0;
 let _serieTrack = null;
 let _serieTorchOn = false;
 let _serieDestinoFormulario = false;
+let _serieIntentoPrevio = null;
+let _serieCarryIntentoPrevio = false;
 
 const SERIE_PREF_QUICK = 'camara_quick_mode_v1';
 const SERIE_PREF_ACCESS = 'camara_access_mode_v1';
@@ -245,6 +247,8 @@ function openCamaraSerie() {
   _serieCandidatosPorId = {};
   _ultimaImagenDetectada = '';
   _ultimaConfianzaIA = 0;
+  if (!_serieCarryIntentoPrevio) _serieIntentoPrevio = null;
+  _serieCarryIntentoPrevio = false;
   if (titulo) {
     titulo.textContent = _serieDestinoFormulario
       ? '📷 Capturar número de serie para este formulario'
@@ -432,14 +436,28 @@ async function capturarSerie() {
       return;
     }
     if (res.match === 'visual') {
-      _mostrarVisualCandidatos(res.candidatos, res.nombreSugerido, res.categoriaSugerida);
+      let nombreSugerido = res.nombreSugerido, categoriaSugerida = res.categoriaSugerida;
+      if ((!res.candidatos || !res.candidatos.length) && _serieIntentoPrevio) {
+        nombreSugerido = nombreSugerido || _serieIntentoPrevio.nombreSugerido;
+        categoriaSugerida = categoriaSugerida || _serieIntentoPrevio.categoriaSugerida;
+      }
+      _serieIntentoPrevio = null;
+      _mostrarVisualCandidatos(res.candidatos, nombreSugerido, categoriaSugerida, res.motivoEncuadre);
       return;
     }
     if (res.match === 'ninguno') {
-      _mostrarSerieCrearNuevo(res.serieLeida, res.marca, res.modelo);
+      _serieIntentoPrevio = null;
+      _mostrarSerieCrearNuevo(res.serieLeida, res.marca, res.modelo, res.motivoEncuadre);
       return;
     }
-    _mostrarSerieError('No se pudo leer ningún número de serie, prueba a acercar la cámara o mejorar la luz');
+    if (_serieIntentoPrevio && (_serieIntentoPrevio.nombreSugerido || _serieIntentoPrevio.categoriaSugerida)) {
+      const previo = _serieIntentoPrevio;
+      _serieIntentoPrevio = null;
+      _mostrarVisualCandidatos([], previo.nombreSugerido, previo.categoriaSugerida, res.motivoEncuadre);
+      return;
+    }
+    _serieIntentoPrevio = null;
+    _mostrarSerieError('No se pudo identificar nada en la foto, prueba a acercar la cámara, mejorar la luz o encuadrar solo el objeto', res.motivoEncuadre, true);
   } catch (e) {
     estado.style.display = 'none';
     _mostrarSerieError('No se pudo leer la etiqueta, inténtalo de nuevo');
@@ -448,12 +466,16 @@ async function capturarSerie() {
   }
 }
 
-function _mostrarSerieError(msg) {
+function _mostrarSerieError(msg, motivoEncuadre, permitirOtroAngulo) {
   const resultado = document.getElementById('serieResultado');
   resultado.style.display = 'block';
+  const hint = motivoEncuadre ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">💡 ${escHtml(motivoEncuadre)}</div>` : '';
+  const btnAngulo = permitirOtroAngulo ? `<button class="btn" onclick="serieProbarOtroAngulo()" style="margin-top:8px">📷 Probar otro ángulo</button>` : '';
   resultado.innerHTML = `
     <div style="color:var(--red);margin-bottom:12px">${escHtml(msg)}</div>
-    <button class="btn" onclick="serieReintentar()">Reintentar</button>`;
+    ${hint}
+    <button class="btn" onclick="serieReintentar()">Reintentar</button>
+    ${btnAngulo}`;
 }
 
 function _mostrarSerieCandidatos(candidatos, confianza = 0) {
@@ -472,16 +494,19 @@ function _mostrarSerieCandidatos(candidatos, confianza = 0) {
   resultado.innerHTML = `${_renderConfianzaBadge(confianza)}<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}<button class="btn" onclick="serieReintentar()">Reintentar</button>`;
 }
 
-function _mostrarVisualCandidatos(candidatos, nombreSugerido, categoriaSugerida) {
+function _mostrarVisualCandidatos(candidatos, nombreSugerido, categoriaSugerida, motivoEncuadre) {
   _nombreSugeridoPendiente = nombreSugerido || '';
   _categoriaSugeridaPendiente = categoriaSugerida || '';
   const resultado = document.getElementById('serieResultado');
   resultado.style.display = 'block';
   if (!candidatos || !candidatos.length) {
     const nombreTexto = nombreSugerido ? escHtml(nombreSugerido) : 'este objeto';
+    const hint = motivoEncuadre ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">💡 ${escHtml(motivoEncuadre)}</div>` : '';
     resultado.innerHTML = `
       <div style="margin-bottom:12px">No se encontró ningún ítem parecido a <strong>${nombreTexto}</strong> en el inventario.</div>
+      ${hint}
       <button class="btn btn-p" onclick="_crearItemDesdeVisual()">Crear ítem nuevo${nombreSugerido ? ': ' + escHtml(nombreSugerido) : ''}</button>
+      <button class="btn" onclick="serieProbarOtroAngulo()" style="margin-top:8px">📷 Probar otro ángulo</button>
       <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar</button>`;
     return;
   }
@@ -498,7 +523,7 @@ function _mostrarVisualCandidatos(candidatos, nombreSugerido, categoriaSugerida)
     <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar</button>`;
 }
 
-function _mostrarSerieCrearNuevo(serieLeida, marca, modelo) {
+function _mostrarSerieCrearNuevo(serieLeida, marca, modelo, motivoEncuadre) {
   _serieLeidaPendiente = serieLeida;
   _marcaPendiente = marca || '';
   _modeloPendiente = modelo || '';
@@ -508,8 +533,10 @@ function _mostrarSerieCrearNuevo(serieLeida, marca, modelo) {
   const botonTexto = nombreDetectado
     ? `Crear ítem nuevo: ${escHtml(nombreDetectado)} (S/N: ${escHtml(serieLeida)})`
     : `Crear ítem nuevo con S/N: ${escHtml(serieLeida)}`;
+  const hint = motivoEncuadre ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">💡 ${escHtml(motivoEncuadre)}</div>` : '';
   resultado.innerHTML = `
     <div style="margin-bottom:12px">No se encontró ningún ítem con el número de serie <strong>${escHtml(serieLeida)}</strong>.</div>
+    ${hint}
     <button class="btn btn-p" onclick="_crearItemDesdeSerie()">${botonTexto}</button>
     <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar</button>`;
 }
@@ -582,6 +609,20 @@ function _crearItemDesdeVisual() {
 }
 
 function serieReintentar() {
+  closeCamaraSerie();
+  setTimeout(openCamaraSerie, 120);
+}
+
+// Guarda lo que ya se supo del objeto (nombre/categoría sugeridos por un
+// intento previo débil) y reabre la cámara para un segundo ángulo, en vez de
+// perder esa información al reintentar desde cero. Solo se usa en el modo de
+// búsqueda normal — el modo "captura para el formulario" no la necesita.
+function serieProbarOtroAngulo() {
+  _serieIntentoPrevio = {
+    nombreSugerido: _nombreSugeridoPendiente || '',
+    categoriaSugerida: _categoriaSugeridaPendiente || ''
+  };
+  _serieCarryIntentoPrevio = true;
   closeCamaraSerie();
   setTimeout(openCamaraSerie, 120);
 }
