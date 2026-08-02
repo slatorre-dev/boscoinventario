@@ -4,21 +4,21 @@ const HINT_CAMARA_KEY = 'hint_camara_visto_v1';
 const TOUR_PANTALLAS = [
   {
     titulo: '📷 Novedades: búsqueda por cámara',
-    texto: '<strong>🔢 Buscar por número de serie</strong><br>Apunta la cámara a la etiqueta de un equipo y encuéntralo al instante en el inventario. Si no existe, podrás pulsar <strong>➕ Añadir ítem nuevo</strong> desde el propio flujo de cámara.'
+    texto: '<strong class="camera-help-tip" title="Busca por número de serie y también puede entender códigos de barras o texto libre en la misma cámara.">🔢 Buscar por número de serie</strong><br>Apunta la cámara a la etiqueta de un equipo y encuéntralo al instante en el inventario. Si no existe, podrás pulsar <strong class="camera-help-tip" title="Abre el alta del ítem usando lo que la cámara ya haya leído.">➕ Añadir ítem nuevo</strong> desde el propio flujo de cámara.<br><span class="camera-help-tip" title="Al cerrar una ficha o crear un ítem, la cámara vuelve a abrirse sola para seguir escaneando.">Modo clase rápida</span> significa justo eso: seguir escaneando sin volver al botón.'
   },
   {
     titulo: '📷 Novedades: búsqueda por cámara',
-    texto: '<strong>📸 Multi-equipo en una foto</strong><br>Fotografía una mesa entera con varios equipos nuevos y créalos todos de golpe.',
+    texto: '<strong class="camera-help-tip" title="Permite crear varios equipos de una sola foto, pero solo dentro de una aula concreta.">📸 Multi-equipo en una foto</strong><br>Fotografía una mesa entera con varios equipos nuevos y créalos todos de golpe. Este modo necesita más espacio en pantalla, por eso también aparece en la ayuda como función de aula.<br><span class="camera-help-tip" title="Agranda textos, botones y controles para usar la cámara con más comodidad.">Modo accesible</span> solo cambia la interfaz para que sea más fácil pulsar y leer.' ,
     requiereEscritura: true
   },
   {
     titulo: '📷 Novedades: búsqueda por cámara',
-    texto: '<strong>📷 Inventario andando</strong><br>Recorre un aula fotografiando cada equipo, uno tras otro, y confirma que todo está donde debe.',
+    texto: '<strong class="camera-help-tip" title="Revisa un aula foto a foto para comprobar que cada equipo esté donde toca.">📷 Inventario andando</strong><br>Recorre un aula fotografiando cada equipo, uno tras otro, y confirma que todo está donde debe. Si activas el <span class="camera-help-tip" title="Al cerrar una ficha o crear un ítem, la cámara vuelve a abrirse sola para seguir escaneando.">modo clase rápida</span>, la cámara se relanza sola tras cada ficha.',
     requiereEscritura: true
   },
   {
     titulo: '📷 Novedades: búsqueda por cámara',
-    texto: '<strong>🧩 Reconocimiento visual</strong><br>Aunque el equipo no tenga ninguna etiqueta legible, la cámara puede reconocerlo igual.'
+    texto: '<strong class="camera-help-tip" title="Cuando no hay una etiqueta legible, la cámara puede reconocer la forma o el tipo de equipo.">🧩 Reconocimiento visual</strong><br>Aunque el equipo no tenga ninguna etiqueta legible, la cámara puede reconocerlo igual.'
   }
 ];
 

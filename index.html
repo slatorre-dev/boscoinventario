@@ -1519,11 +1519,11 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   <div class="modal" style="max-width:560px">
     <div class="mh"><div class="mt">❓ Funciones de cámara</div><button class="mx" onclick="closeAyudaCamara()">✕</button></div>
     <div style="font-size:13px;line-height:1.6;max-height:60vh;overflow-y:auto">
-      <div style="margin-bottom:14px"><strong>🔢 Buscar por número de serie</strong><br>Apunta la cámara a la etiqueta de un equipo — lee el número de serie (o un código de barras si lo tiene) y encuentra el ítem al instante. Si no existe, verás el botón <strong>➕ Añadir ítem nuevo</strong> desde el propio flujo de cámara.</div>
-      <div style="margin-bottom:14px"><strong>🧩 Reconocimiento visual</strong><br>Aunque el equipo no tenga ninguna etiqueta legible, la cámara puede reconocerlo igual y sugerir de qué se trata.</div>
-      <div style="margin-bottom:14px"><strong>✏️ Autocompletado al dar de alta</strong><br>Si el equipo no está en el inventario, se precargan marca y modelo automáticamente a partir de la foto.</div>
-      <div id="ayudaMultiEquipo" style="margin-bottom:14px"><strong>📸 Añadir varios equipos de una foto</strong><br>Fotografía una mesa entera con varios equipos nuevos y créalos todos de golpe, con cantidades. <em>Disponible dentro de la vista de una aula concreta, botón "Añadir varios".</em></div>
-      <div id="ayudaRevisionAula" style="margin-bottom:14px"><strong>📷 Revisar aula (inventario andando)</strong><br>Recorre un aula fotografiando cada equipo, uno tras otro, y confirma qué está donde debe. <em>Disponible dentro de la vista de una aula concreta, botón "Revisar aula".</em></div>
+      <div style="margin-bottom:14px"><strong class="camera-help-tip" title="Busca por número de serie y también entiende códigos de barras o texto libre dentro de la misma cámara.">🔢 Buscar por número de serie</strong><br>Apunta la cámara a la etiqueta de un equipo — lee el número de serie (o un código de barras si lo tiene) y encuentra el ítem al instante. Si no existe, verás el botón <strong class="camera-help-tip" title="Abre el alta del ítem usando lo que la cámara ya haya leído.">➕ Añadir ítem nuevo</strong> desde el propio flujo de cámara.</div>
+      <div style="margin-bottom:14px"><strong class="camera-help-tip" title="Cuando no hay una etiqueta legible, la cámara puede reconocer la forma o el tipo de equipo.">🧩 Reconocimiento visual</strong><br>Aunque el equipo no tenga ninguna etiqueta legible, la cámara puede reconocerlo igual y sugerir de qué se trata.</div>
+      <div style="margin-bottom:14px"><strong class="camera-help-tip" title="Rellena marca y modelo automáticamente para acelerar el alta cuando el equipo no existe.">✏️ Autocompletado al dar de alta</strong><br>Si el equipo no está en el inventario, se precargan marca y modelo automáticamente a partir de la foto.</div>
+      <div id="ayudaMultiEquipo" style="margin-bottom:14px"><strong class="camera-help-tip" title="Permite crear varios equipos de una sola foto, pero solo desde dentro de una aula concreta.">📸 Añadir varios equipos de una foto</strong><br>Fotografía una mesa entera con varios equipos nuevos y créalos todos de golpe, con cantidades. <em class="camera-help-tip" title="Disponible dentro de la vista de una aula concreta, botón 'Añadir varios'.">Disponible dentro de la vista de una aula concreta, botón "Añadir varios".</em></div>
+      <div id="ayudaRevisionAula" style="margin-bottom:14px"><strong class="camera-help-tip" title="Sirve para revisar un aula foto a foto y comprobar que cada equipo esté donde toca.">📷 Revisar aula (inventario andando)</strong><br>Recorre un aula fotografiando cada equipo, uno tras otro, y confirma qué está donde debe. <em class="camera-help-tip" title="Disponible dentro de la vista de una aula concreta, botón 'Revisar aula'.">Disponible dentro de la vista de una aula concreta, botón "Revisar aula".</em></div>
     </div>
     <div class="mf" style="margin-top:14px">
       <button class="btn" id="ayudaBtnVerTour" onclick="closeAyudaCamara();openTourCamara(true)">▶ Ver tour guiado</button>
@@ -1623,8 +1623,8 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       </div>
     </div>
     <div class="camera-options" style="margin-top:-8px;margin-bottom:10px">
-      <label><input type="checkbox" id="serieQuickMode"> Modo clase rápida</label>
-      <label><input type="checkbox" id="serieAccessibleMode"> Modo accesible</label>
+      <label title="Al cerrar una ficha o crear un ítem, la cámara vuelve a abrirse sola para seguir escaneando."><input type="checkbox" id="serieQuickMode"> <span class="camera-help-tip" title="Al cerrar una ficha o crear un ítem, la cámara vuelve a abrirse sola para seguir escaneando.">Modo clase rápida</span></label>
+      <label title="Agranda textos, botones y controles para usar la cámara con más comodidad."><input type="checkbox" id="serieAccessibleMode"> <span class="camera-help-tip" title="Agranda textos, botones y controles para usar la cámara con más comodidad.">Modo accesible</span></label>
       <button class="btn" id="serieFlashBtn" style="display:none" onclick="toggleSerieFlash()">💡 Linterna</button>
     </div>
     <div id="serieEstado" style="display:none;font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Leyendo etiqueta...</div>
@@ -1647,8 +1647,8 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       </div>
     </div>
     <div class="camera-options" style="margin-top:-8px;margin-bottom:10px">
-      <label><input type="checkbox" id="camUnifQuickMode"> Modo clase rápida</label>
-      <label><input type="checkbox" id="camUnifAccessibleMode"> Modo accesible</label>
+      <label title="Al cerrar una ficha o crear un ítem, la cámara vuelve a abrirse sola para seguir escaneando."><input type="checkbox" id="camUnifQuickMode"> <span class="camera-help-tip" title="Al cerrar una ficha o crear un ítem, la cámara vuelve a abrirse sola para seguir escaneando.">Modo clase rápida</span></label>
+      <label title="Agranda textos, botones y controles para usar la cámara con más comodidad."><input type="checkbox" id="camUnifAccessibleMode"> <span class="camera-help-tip" title="Agranda textos, botones y controles para usar la cámara con más comodidad.">Modo accesible</span></label>
       <button class="btn" id="camaraUnifFlashBtn" style="display:none" onclick="toggleCamaraUnifFlash()">💡 Linterna</button>
     </div>
     <div id="camaraUnifEstado" style="font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Buscando QR o código...</div>
