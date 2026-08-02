@@ -243,9 +243,8 @@ function groupConsumiblesByCategory(data){
 
 function renderItemsFragment(data, mode){
   const tmp = document.createElement('div');
-  const effectiveMode = mode === 'table' ? 'list' : mode;
-  if(effectiveMode === 'list') rList(data,tmp);
-  else rCards(data,tmp);
+  // En agrupado por tags siempre usamos tarjetas para evitar filas horizontales muy largas.
+  rCards(data,tmp);
   return tmp.innerHTML;
 }
 
