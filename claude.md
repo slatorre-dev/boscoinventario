@@ -1,18 +1,18 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v550 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+**Estado:** v551 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
 por departamento en todo el backend. **Roadmap "Modo Cámara Inteligente"
 completo**: ideas #1-#8 en producción (búsqueda por número de serie, texto
 libre, reconocimiento visual, multi-equipo, inventario andando, etc.) más
-lectura de código de barras (mejora de #1) y onboarding (tour guiado +
-ayuda permanente) — ver sesión del 01-02/08/2026 más abajo para el detalle
-completo de las 4 piezas construidas hoy. **Volt** (el chatbot) migrado a
-Cloudflare Workers AI tras la retirada de GitHub Models (30/07/2026).
-Pendiente de diseñar (no implementado aún): unificar los botones de QR y
-buscar-por-cámara en uno solo que decida internamente el tipo de código —
+lectura de código de barras (mejora de #1), onboarding (tour guiado +
+ayuda permanente), y unificación de los botones de QR + búsqueda por
+cámara en uno solo — ver sesión del 01-02/08/2026 más abajo para el
+detalle completo de las 5 piezas construidas hoy. **Volt** (el chatbot)
+migrado a Cloudflare Workers AI tras la retirada de GitHub Models
+(30/07/2026). Sin pendientes de diseño abiertos de esta sesión —
 ver sección de Pendientes.
 
 Inventario general del **IES El Bosco**: cada departamento gestiona su
@@ -312,13 +312,14 @@ js/
   state.js              — Estado global SESSION (departamento/departamentoNombre/departamentoIcono/passwordTemporal)
   auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword), dispara el tour de cámara tras loadData() exitoso
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
-  camara-serie.js       — Búsqueda por cámara desde Home (#gsSerie): serie/texto/visual (buscarPorSerie) + intento previo de código de barras (BarcodeDetector nativo, buscarSeriePorCodigo)
+  camara-unificada.js   — Botón único de Home (#gsCamara): escaneo continuo con BarcodeDetector (qr_code + barcode lineal) + jsQR condicional si el navegador no soporta qr_code nativo; QR reusa _showQrActionsStandalone() (qr-scanner.js), código/S/N reusa buscarSeriePorCodigo, botón manual tras ~3s sin detección entrega a camara-serie.js (IA)
+  camara-serie.js       — Flujo IA de serie/texto/visual (buscarPorSerie), invocado por camara-unificada.js o directo — #gsSerie/#gsQr siguen en el DOM ocultos (display:none) como red de seguridad, ver sección Pendiente
   revision-aula.js      — Modo "Revisar aula" (#btnRevisionAula, solo en vista de aula): confirma/corrige ubicación foto a foto, reusa buscarPorSerie
   multi-equipo.js        — Modo "Añadir varios" (#btnMultiEquipo, solo en vista de aula): alta masiva desde una foto, lista editable, confirma vía bulkImport
   onboarding-camara.js  — Tour guiado (4 pantallas, primera vez tras login) + ayuda permanente (#gsAyuda) de las funciones de cámara, respeta rol (Consulta no ve #5/#6)
-  qr-scanner.js         — Escaneo de QR propio de la app (#gsQr) — distinto del código de barras de fábrica que lee camara-serie.js
+  qr-scanner.js         — _showQrActions() (panel de acciones tras detectar QR) + _showQrActionsStandalone() (wrapper reusado por camara-unificada.js) — #gsQr propio ya no es el punto de entrada normal, ver camara-unificada.js
 
-sw.js                   — Service Worker, VERSION aquí (v550 actual)
+sw.js                   — Service Worker, VERSION aquí (v551 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -1239,35 +1240,66 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
 
 ## Pendiente (Próximas sesiones)
 
-### Pendiente prioritario de esta sesión: unificar botones QR + cámara
+### Unificar botones QR + cámara — ✅ implementado y verificado (02/08/2026, v551)
 
-**Pedido explícito del usuario, sin diseñar aún — primer punto a retomar.**
-Hoy hay dos botones separados en Home (`.gsearch-extra-btns`, `index.html`):
-"Escanear QR" (`#gsQr`, abre `js/qr-scanner.js`) y "Buscar con la cámara"
-(`#gsSerie`, abre `js/camara-serie.js`). La idea: un solo botón "Buscar con
-cámara (QR o S/N)" donde la propia cámara decida internamente qué tipo de
-código está viendo (QR propio de la app, código de barras de fábrica, o
-ninguno de los dos → cae a OCR de IA como ya hace `buscarPorSerie`).
+Home tenía dos botones separados: "Escanear QR" (`#gsQr`, escaneo continuo
+con `jsQR`) y "Buscar con la cámara" (`#gsSerie`, foto fija + IA). Ahora un
+solo botón "🎥 Buscar con cámara (QR o S/N)" (`#gsCamara`,
+`js/camara-unificada.js`) abre un escaneo continuo único que decide
+internamente qué está viendo: `BarcodeDetector` nativo con
+`formats: ['qr_code','code_128','ean_13','ean_8','upc_a','upc_e']` en
+cada frame, con `jsQR` como fallback condicional solo si
+`BarcodeDetector.getSupportedFormats()` no incluye `qr_code` en ese
+navegador. QR detectado reusa `_showQrActions()` sin cambios (vía un
+wrapper `_showQrActionsStandalone()` en `js/qr-scanner.js` que solo
+reabre `#mQrScanner` y delega); código de barras/S/N detectado reusa
+`buscarSeriePorCodigo` sin cambios; sin detección tras ~3s, un botón
+manual "No lo detecta, buscar con IA" congela el frame y entrega al
+flujo `openCamaraSerie()`/`capturarSerie()` existente sin modificar.
 
-Antes de empezar, hace falta un brainstorming completo (no iniciado) que
-resuelva al menos:
-- `js/qr-scanner.js` usa escaneo continuo (frames en bucle, sin foto fija)
-  mientras que `js/camara-serie.js` usa foto fija con botón "Capturar" —
-  son dos patrones de UX distintos, hay que decidir si el botón unificado
-  adopta uno solo para todo o mezcla ambos según lo que detecte.
-- Qué pasa si el escaneo continuo de QR está ya corriendo y aparece un
-  código de barras en el mismo frame — ¿se decodifica ahí mismo (ya existe
-  `BarcodeDetector` integrado en `camara-serie.js` desde v549, reusable) o
-  solo se intenta tras pulsar algo?
-- Cómo se comunican al usuario los 3 resultados posibles (QR reconocido →
-  abre el ítem directo; código de barras/S/N reconocido → misma cascada ya
-  existente; nada reconocido → OCR de IA) sin que la UI parezca confusa
-  sobre qué está pasando en cada momento.
+**Riesgo de esta pieza, distinto a las 5 anteriores de la sesión:**
+elimina los ÚNICOS 2 puntos de entrada existentes a QR/cámara, sin
+feature flag ni entrada alternativa — a diferencia de las features
+anteriores (todas aditivas, con un botón nuevo sin quitar nada). Decisión
+explícita del usuario tras planteárselo en la revisión final: **`#gsQr` y
+`#gsSerie` se mantienen en el DOM con `style="display:none"`** como red
+de seguridad — si el flujo unificado falla en producción, reactivarlos
+es cambiar un `display:none` por `display:flex` en `index.html`, sin
+necesitar un deploy nuevo con `git revert`.
 
-Seguir el proceso ya establecido en esta sesión: brainstorming →
-spec en `docs/superpowers/specs/` → plan en `docs/superpowers/plans/` →
-subagent-driven-development en worktree aislado → revisión final de rama
-→ deploy → verificación Playwright en producción.
+**Revisión final de rama encontró 3 bugs Important reales, ninguno
+detectado por las revisiones por tarea:**
+1. `js/roles.js` tenía entradas obsoletas `['gsQr', ...]`/`['gsSerie', ...]`
+   apuntando a ids ya borrados — mismo patrón de "registro desincronizado"
+   que ya causó 2 bugs reales antes en esta sesión (aunque esta vez
+   inofensivo por casualidad, no por diseño: `#gsCamara` no tenía
+   `display:none` inline que necesitara ser gestionado). Corregido
+   reemplazando ambas entradas por una sola `['gsCamara', ...]`.
+2. La rama `match:'fuzzy'` de código de barras en el flujo unificado no
+   tenía botón "Reintentar" (a diferencia de `_mostrarSerieCandidatos()`
+   en el flujo ya existente) y dejaba la cámara en vivo visible detrás de
+   la lista de candidatos — mismo patrón de "UI no desmontada" ya visto
+   con el código de barras original. Corregido añadiendo
+   `camaraUnifReintentar()` (mismo patrón cierre+reapertura que
+   `serieReintentar()`/`qrResumeScan()`) y ocultando el vídeo antes de
+   mostrar candidatos.
+3. Un fallo de red al comprobar un código detectado se ignoraba en
+   silencio y, como el escaneo es continuo (a diferencia de la foto fija
+   del flujo original), el mismo código seguía en el encuadre y disparaba
+   la misma petición fallida en cada frame siguiente — un bucle de
+   peticiones sin límite contra el backend. Corregido con cooldown de 2s
+   por valor de código + un solo `toast()` de aviso por fallo real (no
+   uno por frame saltado).
+
+Verificado end-to-end en producción con Playwright (mockeando
+`BarcodeDetector`/`getSupportedFormats` en el navegador, ya que el
+entorno de test no tiene hardware de cámara real): QR abre panel de
+acciones, código de barras exacto llama `buscarSeriePorCodigo`, fallback
+a `jsQR` se activa cuando falta soporte de `qr_code`, botón de IA aparece
+tras 3s y el handoff a `#mCamaraSerie` funciona (verificado aislado tras
+un fallo inicial de timing en el propio script de prueba, no en la app),
+caso fuzzy oculta la cámara y el botón Reintentar funciona, y
+`#gsQr`/`#gsSerie` siguen en el DOM ocultos pero presentes.
 
 ### Volt (chatbot): ✅ migrado y verificado, con una limitación conocida
 

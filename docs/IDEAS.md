@@ -209,18 +209,18 @@ usuario — el rol `Consulta` (solo lectura) no ve las 2 funciones de
 solo-escritura (#5/#6) que nunca podría usar. Spec:
 `docs/superpowers/specs/2026-08-02-onboarding-camara-design.md`.
 
-### 13. Unificar botones de QR y búsqueda por cámara — pendiente, sin diseñar
-Propuesta del usuario (02/08/2026): un solo botón "Buscar con cámara (QR
-o S/N)" en vez de los dos actuales (`#gsQr` para QR propio de la app,
-`#gsSerie` para serie/texto/visual/código de barras) — la cámara decide
-internamente qué tipo de código está viendo. Complejidad principal:
-`js/qr-scanner.js` usa escaneo continuo (frames en bucle) mientras que
-`js/camara-serie.js` usa foto fija con botón "Capturar" — son dos
-patrones de UX distintos a conciliar. Sin brainstorming ni spec todavía
-— ver detalle completo en `CLAUDE.md`, sección "Pendiente prioritario de
-esta sesión".
-
-**Prioridad:** Alta (primer punto a retomar en la próxima sesión)
+### 13. Unificar botones de QR y búsqueda por cámara — ✅ implementado (02/08/2026)
+Un solo botón "🎥 Buscar con cámara (QR o S/N)" (`#gsCamara`,
+`js/camara-unificada.js`) sustituye a los dos anteriores. Escaneo continuo
+único con `BarcodeDetector` nativo (`qr_code` + formatos lineales), con
+`jsQR` como fallback condicional solo si el navegador no soporta `qr_code`
+nativamente. QR reusa el panel de acciones ya existente
+(`_showQrActionsStandalone()` en `js/qr-scanner.js`); código de barras/S/N
+reusa `buscarSeriePorCodigo`; sin detección tras ~3s, botón manual entrega
+al flujo de IA existente (`js/camara-serie.js`) sin cambios. `#gsQr` y
+`#gsSerie` se mantienen ocultos en el DOM como red de seguridad
+reactivable sin deploy. Spec:
+`docs/superpowers/specs/2026-08-02-unificar-camara-qr-serie-design.md`.
 
 ### 9. Generar QR automáticamente tras el alta — ✅ ya cubierto (sin cambios, 02/08/2026)
 El modal de ítem ya llama a `renderItemQr()` (`js/modal-item.js`) al
@@ -361,11 +361,11 @@ CSV o PDF con items problemáticos agrupados por aula/categoría.
 ## Estado
 
 - **Última actualización:** 02/08/2026
-- **Versión actual:** v550
+- **Versión actual:** v551
 - **Roadmap "Modo Cámara Inteligente":** completo — ideas #1-#8 implementadas
   y en producción, #9 resultó ya cubierta por código existente (sin
   cambios necesarios), #10 descartada por bajo valor frente a su
-  complejidad. Dos ideas nuevas surgidas después (#11 código de barras,
-  #12 onboarding) también implementadas. Pendiente sin diseñar: #13
-  (unificar botones QR + búsqueda por cámara). Detalle completo de las
-  sesiones en `CLAUDE.md`.
+  complejidad. Tres ideas nuevas surgidas después del cierre original
+  (#11 código de barras, #12 onboarding, #13 unificación de botones QR+S/N)
+  también implementadas. Sin pendientes abiertos del roadmap de cámara.
+  Detalle completo de las sesiones en `CLAUDE.md`.
