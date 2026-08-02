@@ -46,6 +46,56 @@ function _seriePulseDetected() {
   if (navigator.vibrate) navigator.vibrate(70);
 }
 
+function _frameSharpnessScore(imageData) {
+  const d = imageData.data;
+  const w = imageData.width;
+  const h = imageData.height;
+  let score = 0;
+  // Muestreo escalonado para no bloquear en móviles.
+  for (let y = 2; y < h - 2; y += 3) {
+    for (let x = 2; x < w - 2; x += 3) {
+      const i = (y * w + x) * 4;
+      const ir = d[i], ig = d[i + 1], ib = d[i + 2];
+      const l = (ir * 299 + ig * 587 + ib * 114) / 1000;
+
+      const i2 = (y * w + (x + 1)) * 4;
+      const r2 = d[i2], g2 = d[i2 + 1], b2 = d[i2 + 2];
+      const l2 = (r2 * 299 + g2 * 587 + b2 * 114) / 1000;
+
+      const i3 = ((y + 1) * w + x) * 4;
+      const r3 = d[i3], g3 = d[i3 + 1], b3 = d[i3 + 2];
+      const l3 = (r3 * 299 + g3 * 587 + b3 * 114) / 1000;
+
+      score += Math.abs(l - l2) + Math.abs(l - l3);
+    }
+  }
+  return score;
+}
+
+async function _captureBestFrameBase64(video) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  let best = { score: -1, dataUrl: '' };
+  // 3 intentos rápidos para elegir el frame más nítido.
+  for (let i = 0; i < 3; i++) {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const score = _frameSharpnessScore(img);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.62);
+    if (score > best.score) best = { score, dataUrl };
+    await new Promise(r => requestAnimationFrame(r));
+  }
+
+  if (!best.dataUrl) {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    best.dataUrl = canvas.toDataURL('image/jpeg', 0.62);
+  }
+  return best.dataUrl.split(',')[1];
+}
+
 async function _setupSerieTorch() {
   const btn = document.getElementById('serieFlashBtn');
   if (!btn || !_serieTrack) return;
@@ -202,13 +252,12 @@ async function capturarSerie() {
       }
     }
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-    const imagenBase64 = dataUrl.split(',')[1];
+    const imagenBase64 = await _captureBestFrameBase64(video);
 
     video.style.display = 'none';
     capturarBtn.style.display = 'none';
     estado.style.display = 'block';
-    estado.textContent = 'Leyendo etiqueta...';
+    estado.textContent = 'Leyendo etiqueta (optimizando imagen)...';
     resultado.style.display = 'none';
 
     const res = await apiPost({ action: 'buscarPorSerie', imagen: imagenBase64 });

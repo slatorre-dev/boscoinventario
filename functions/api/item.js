@@ -328,36 +328,69 @@ export async function onRequestPost({ request, env, data }) {
       .bind(...catDeptBind).all();
     const categoriasDept = (catRows.results || []).map(r => r.name).filter(Boolean);
 
-    let aiData;
-    try {
-      const categoriasTexto = categoriasDept.length
-        ? categoriasDept.map(c => `"${c}"`).join(', ')
-        : '(ninguna categoría disponible)';
-      aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
+    const categoriasTexto = categoriasDept.length
+      ? categoriasDept.map(c => `"${c}"`).join(', ')
+      : '(ninguna categoría disponible)';
+
+    async function runVisionQuestion(question, maxTokens = 420) {
+      return env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         task: 'query',
         image: `data:image/jpeg;base64,${imagen}`,
-        question: `Analiza esta foto de un equipo o material de inventario. Primero busca una etiqueta con número de serie (S/N, Serial Number o Service Tag), marca del fabricante y modelo. Si no hay número de serie pero hay cualquier otro texto visible (nombre de producto impreso, texto en una caja, etc.), extráelo como texto libre. Si no hay ningún texto legible, describe brevemente el objeto que ves y, si encaja, elige UNA categoría de esta lista exacta: ${categoriasTexto}. Responde ÚNICAMENTE con un objeto JSON real usando los datos que veas, por ejemplo: {"serie": "220A4S1002886", "marca": "TP-Link", "modelo": "Archer TX3000E", "textoLibre": null, "descripcionVisual": null, "categoriaSugerida": null}. Otro ejemplo válido cuando no hay serie pero sí texto: {"serie": null, "marca": null, "modelo": null, "textoLibre": "Arduino UNO R3", "descripcionVisual": null, "categoriaSugerida": null}. Otro ejemplo válido cuando no hay ningún texto legible: {"serie": null, "marca": null, "modelo": null, "textoLibre": null, "descripcionVisual": "placa de desarrollo con microcontrolador y pines de conexión", "categoriaSugerida": "Electrónica"}. "categoriaSugerida" debe ser EXACTAMENTE uno de los nombres de la lista dada (copiado tal cual) o null si ninguno encaja — nunca inventes un nombre de categoría nuevo. Pon null en cualquier campo que no veas (nunca inventes datos ni copies estos ejemplos literalmente si no corresponden a la foto real). No añadas explicaciones ni texto fuera del JSON.`,
+        question,
         reasoning: true,
         stream: false,
-        max_tokens: 400
+        max_tokens: maxTokens
       });
+    }
+
+    let serieLeida = '', marca = '', modelo = '', textoLibre = '', descripcionVisual = '', categoriaSugerida = '';
+    let confianzaSerie = 0;
+    let alternativasSerie = [];
+
+    try {
+      const aiData = await runVisionQuestion(
+        `Analiza esta foto de un equipo o material de inventario. Devuelve SOLO JSON con estas claves exactas: {"serie": string|null, "marca": string|null, "modelo": string|null, "textoLibre": string|null, "descripcionVisual": string|null, "categoriaSugerida": string|null, "confianzaSerie": number, "alternativasSerie": string[]}. ` +
+        `Primero intenta leer número de serie (S/N, Serial Number o Service Tag). Si no hay serie, extrae texto visible útil en "textoLibre". Si no hay texto legible, describe el objeto en "descripcionVisual". ` +
+        `"categoriaSugerida" debe ser EXACTAMENTE uno de: ${categoriasTexto} o null. ` +
+        `"confianzaSerie" va de 0 a 1 y representa tu confianza sobre la serie. ` +
+        `"alternativasSerie" debe incluir hasta 3 variantes plausibles si hay ambigüedad OCR (ej. O/0, I/1, S/5). ` +
+        `No añadas texto fuera del JSON y no inventes datos.`
+      );
+
+      const parsed = extractJsonObject(aiData?.result?.answer || '');
+      serieLeida = safeText(parsed?.serie);
+      marca = safeText(parsed?.marca);
+      modelo = safeText(parsed?.modelo);
+      textoLibre = safeText(parsed?.textoLibre);
+      descripcionVisual = safeText(parsed?.descripcionVisual);
+      categoriaSugerida = safeText(parsed?.categoriaSugerida);
+      confianzaSerie = Number(parsed?.confianzaSerie || 0) || 0;
+      alternativasSerie = Array.isArray(parsed?.alternativasSerie)
+        ? parsed.alternativasSerie.map(safeText).filter(Boolean).slice(0, 3)
+        : [];
+
+      // Segunda pasada solo OCR si la primera no encontró señal útil.
+      if (!serieLeida && !textoLibre && !descripcionVisual) {
+        const aiData2 = await runVisionQuestion(
+          `Lee SOLO el texto de la etiqueta o carcasa del equipo. Devuelve SOLO JSON: {"serie": string|null, "textoLibre": string|null, "marca": string|null, "modelo": string|null, "confianzaSerie": number, "alternativasSerie": string[]}. ` +
+          `Si no puedes leer nada con certeza, devuelve null en serie y textoLibre. No añadas texto fuera del JSON.`,
+          320
+        );
+        const parsed2 = extractJsonObject(aiData2?.result?.answer || '');
+        serieLeida = serieLeida || safeText(parsed2?.serie);
+        textoLibre = textoLibre || safeText(parsed2?.textoLibre);
+        marca = marca || safeText(parsed2?.marca);
+        modelo = modelo || safeText(parsed2?.modelo);
+        confianzaSerie = Math.max(confianzaSerie, Number(parsed2?.confianzaSerie || 0) || 0);
+        const alt2 = Array.isArray(parsed2?.alternativasSerie)
+          ? parsed2.alternativasSerie.map(safeText).filter(Boolean).slice(0, 3)
+          : [];
+        alternativasSerie = [...new Set([...alternativasSerie, ...alt2])].slice(0, 4);
+      }
     } catch (e) {
       return Response.json({ ok: false, error: 'Error del servicio de IA' });
     }
 
-    let serieLeida = '', marca = '', modelo = '', textoLibre = '', descripcionVisual = '', categoriaSugerida = '';
-    const raw = aiData?.result?.answer || '';
-    try {
-      const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
-      serieLeida = String(parsed.serie || '').trim();
-      marca = String(parsed.marca || '').trim();
-      modelo = String(parsed.modelo || '').trim();
-      textoLibre = String(parsed.textoLibre || '').trim();
-      descripcionVisual = String(parsed.descripcionVisual || '').trim();
-      categoriaSugerida = String(parsed.categoriaSugerida || '').trim();
-    } catch (e) {
-      return Response.json({ ok: true, match: 'sin_lectura' });
-    }
     // categoriaSugerida solo es válida si coincide exactamente con una categoría real del departamento
     if (categoriaSugerida && !categoriasDept.includes(categoriaSugerida)) categoriaSugerida = '';
 
@@ -367,9 +400,28 @@ export async function onRequestPost({ request, env, data }) {
     const deptBind = superadmin ? [] : [dept];
 
     if (serieLeida) {
-      const r = await buscarSerieEnD1(env, serieLeida, dept, superadmin, genericDept);
-      if (r.match === 'ninguno') return Response.json({ ok: true, match: 'ninguno', serieLeida, marca, modelo });
-      return Response.json({ ok: true, ...r });
+      const serieRaw = serieLeida;
+      const variantes = [...new Set([
+        serieRaw,
+        ...alternativasSerie,
+        ...expandOcrCandidates(serieRaw)
+      ])].filter(Boolean).slice(0, 12);
+
+      const fuzzyMap = new Map();
+      for (const candidata of variantes) {
+        const r = await buscarSerieEnD1(env, candidata, dept, superadmin, genericDept);
+        if (r.match === 'exacto') return Response.json({ ok: true, confianzaSerie, ...r });
+        if (r.match === 'fuzzy') {
+          for (const c of r.candidatos || []) {
+            const k = String(c.id);
+            if (!fuzzyMap.has(k)) fuzzyMap.set(k, c);
+          }
+        }
+      }
+      if (fuzzyMap.size) {
+        return Response.json({ ok: true, match: 'fuzzy', confianzaSerie, candidatos: [...fuzzyMap.values()].slice(0, 5) });
+      }
+      return Response.json({ ok: true, match: 'ninguno', confianzaSerie, serieLeida: serieRaw, marca, modelo });
     }
 
     if (textoLibre) {
@@ -378,16 +430,34 @@ export async function onRequestPost({ request, env, data }) {
 
     if (descripcionVisual || categoriaSugerida) {
       const nombreSugerido = descripcionVisual || categoriaSugerida;
-      const palabraClave = descripcionVisual.split(/\s+/).filter(w => w.length >= 4)[0] || descripcionVisual;
+      const palabras = String(descripcionVisual || '')
+        .toLowerCase()
+        .split(/\s+/)
+        .map(w => w.trim())
+        .filter(w => w.length >= 4 && !['para','con','como','esta','este','equipo','objeto','material'].includes(w))
+        .slice(0, 4);
+      const palabraClave = palabras[0] || descripcionVisual;
       const catCond = categoriaSugerida ? ' AND cat=?' : '';
       const catBind = categoriaSugerida ? [categoriaSugerida] : [];
       const visualRes = await env.DB.prepare(
-        `SELECT id, item, ref, aula, cat FROM inventario WHERE item LIKE ?${catCond}${deptFilter} LIMIT 10`
-      ).bind(`%${palabraClave}%`, ...catBind, ...deptBind).all();
+        `SELECT id, item, ref, aula, cat FROM inventario WHERE (item LIKE ? OR ref LIKE ?)${catCond}${deptFilter} LIMIT 30`
+      ).bind(`%${palabraClave}%`, `%${palabraClave}%`, ...catBind, ...deptBind).all();
+
+      const ranked = (visualRes.results || [])
+        .map(r => {
+          const txt = `${String(r.item || '')} ${String(r.ref || '')}`.toLowerCase();
+          const scoreKw = palabras.reduce((acc, w) => acc + (txt.includes(w) ? 1 : 0), 0);
+          const scoreCat = categoriaSugerida && r.cat === categoriaSugerida ? 1 : 0;
+          return { ...r, _score: (scoreKw * 2) + scoreCat };
+        })
+        .sort((a, b) => b._score - a._score)
+        .slice(0, 10)
+        .map(({ _score, ...r }) => r);
+
       return Response.json({
         ok: true,
         match: 'visual',
-        candidatos: visualRes.results || [],
+        candidatos: ranked,
         nombreSugerido,
         categoriaSugerida
       });
@@ -415,18 +485,29 @@ export async function onRequestPost({ request, env, data }) {
     const categoriasDept = (catRows.results || []).map(r => r.name).filter(Boolean);
 
     let aiData;
-    try {
-      const categoriasTexto = categoriasDept.length
-        ? categoriasDept.map(c => `"${c}"`).join(', ')
-        : '(ninguna categoría disponible)';
-      aiData = await env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
+    const categoriasTexto = categoriasDept.length
+      ? categoriasDept.map(c => `"${c}"`).join(', ')
+      : '(ninguna categoría disponible)';
+
+    async function runMultiQuestion(question, maxTokens = 720) {
+      return env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         task: 'query',
         image: `data:image/jpeg;base64,${imagen}`,
-        question: `Analiza esta foto de una mesa o superficie con varios equipos o materiales de inventario. Identifica CADA objeto distinto que veas y agrupa los que sean iguales entre sí, contando cuántas unidades hay de cada uno. Para cada tipo de objeto distinto, indica un nombre breve y descriptivo, la cantidad de unidades de ese tipo, y si encaja, UNA categoría de esta lista exacta: ${categoriasTexto}. Responde ÚNICAMENTE con un array JSON real usando los datos que veas, por ejemplo: [{"nombre": "Fuente de alimentación de laboratorio", "cantidad": 4, "categoriaSugerida": "Equipos de medida"}, {"nombre": "Multímetro digital", "cantidad": 2, "categoriaSugerida": "Herramientas"}, {"nombre": "Osciloscopio", "cantidad": 1, "categoriaSugerida": null}]. "categoriaSugerida" debe ser EXACTAMENTE uno de los nombres de la lista dada (copiado tal cual) o null si ninguno encaja — nunca inventes un nombre de categoría nuevo. Si no detectas ningún objeto reconocible, responde con un array vacío: []. No añadas explicaciones ni texto fuera del array JSON. Nunca copies este ejemplo literalmente si no corresponde a la foto real.`,
+        question,
         reasoning: true,
         stream: false,
-        max_tokens: 600
+        max_tokens: maxTokens
       });
+    }
+
+    try {
+      aiData = await runMultiQuestion(
+        `Analiza esta foto de una mesa o superficie con varios equipos/materiales de taller. Devuelve SOLO un array JSON. ` +
+        `Cada elemento debe tener: {"nombre": string, "cantidad": number, "categoriaSugerida": string|null, "confianza": number}. ` +
+        `Agrupa objetos iguales en una sola fila con su cantidad. ` +
+        `"categoriaSugerida" debe ser EXACTAMENTE una de: ${categoriasTexto}, o null. ` +
+        `"confianza" va de 0 a 1. Si no detectas nada fiable, devuelve []. No escribas texto fuera del array JSON.`
+      );
     } catch (e) {
       return Response.json({ ok: false, error: 'Error del servicio de IA' });
     }
@@ -434,17 +515,45 @@ export async function onRequestPost({ request, env, data }) {
     let objetos = [];
     const raw = aiData?.result?.answer || '';
     try {
-      const parsed = JSON.parse(raw.match(/\[[\s\S]*\]/)?.[0] || '[]');
+      const parsed = extractJsonArray(raw);
       objetos = (Array.isArray(parsed) ? parsed : []).map(o => {
         const nombre = String(o?.nombre || '').trim();
         const cantidad = Math.max(1, parseInt(o?.cantidad, 10) || 1);
         let categoriaSugerida = String(o?.categoriaSugerida || '').trim();
+        const confianza = Math.max(0, Math.min(1, Number(o?.confianza || 0) || 0));
         if (categoriaSugerida && !categoriasDept.includes(categoriaSugerida)) categoriaSugerida = '';
-        return { nombre, cantidad, categoriaSugerida };
+        return { nombre, cantidad, categoriaSugerida, confianza };
       }).filter(o => o.nombre);
     } catch (e) {
-      return Response.json({ ok: true, objetos: [] });
+      objetos = [];
     }
+
+    // Segunda pasada más corta cuando no hay objetos fiables.
+    if (!objetos.length || objetos.every(o => (o.confianza || 0) < 0.45)) {
+      try {
+        const aiData2 = await runMultiQuestion(
+          `Cuenta objetos de taller visibles y devuelve SOLO array JSON [{"nombre":string,"cantidad":number,"categoriaSugerida":string|null,"confianza":number}]. ` +
+          `Incluye solo objetos con confianza media o alta. Categorías permitidas: ${categoriasTexto}. Sin texto extra.`,
+          420
+        );
+        const parsed2 = extractJsonArray(aiData2?.result?.answer || '[]');
+        const objetos2 = (Array.isArray(parsed2) ? parsed2 : []).map(o => {
+          const nombre = String(o?.nombre || '').trim();
+          const cantidad = Math.max(1, parseInt(o?.cantidad, 10) || 1);
+          let categoriaSugerida = String(o?.categoriaSugerida || '').trim();
+          const confianza = Math.max(0, Math.min(1, Number(o?.confianza || 0) || 0));
+          if (categoriaSugerida && !categoriasDept.includes(categoriaSugerida)) categoriaSugerida = '';
+          return { nombre, cantidad, categoriaSugerida, confianza };
+        }).filter(o => o.nombre);
+        if (objetos2.length > objetos.length) objetos = objetos2;
+      } catch (e) {
+        // ignore second pass failures
+      }
+    }
+
+    objetos = objetos
+      .sort((a, b) => (b.confianza || 0) - (a.confianza || 0))
+      .map(({ confianza, ...o }) => o);
 
     return Response.json({ ok: true, objetos });
   }
@@ -458,16 +567,20 @@ async function buscarSerieEnD1(env, serieLeida, dept, superadmin, genericDept) {
     : ` AND (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}')`;
   const deptBind = superadmin ? [] : [dept];
 
-  const serieNorm = normalizeSerieCodigo(serieLeida);
-
-  const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
-    .bind(serieLeida, ...deptBind).first();
-  if (exact) return { match: 'exacto', item: exact };
-
   const allWithSerieRes = await env.DB.prepare(`SELECT * FROM inventario WHERE serie != ''${deptFilter}`)
     .bind(...deptBind).all();
 
-  const allWithSerie = allWithSerieRes.results || [];
+  return buscarSerieEnRows(allWithSerieRes.results || [], serieLeida);
+}
+
+function buscarSerieEnRows(allWithSerie, serieLeida) {
+  const serieNorm = normalizeSerieCodigo(serieLeida);
+
+  if (!serieNorm) return { match: 'ninguno' };
+
+  const exactLiteral = allWithSerie.find(r => String(r.serie || '').trim() === String(serieLeida || '').trim());
+  if (exactLiteral) return { match: 'exacto', item: exactLiteral };
+
   const exactNormalizado = serieNorm
     ? allWithSerie.find(r => normalizeSerieCodigo(r.serie) === serieNorm)
     : null;
@@ -516,4 +629,73 @@ function normalizeSerieCodigo(v) {
   s = s.replace(/^SERVICETAG/, '');
   if (/^SN[A-Z0-9]{3,}$/.test(s)) s = s.slice(2);
   return s;
+}
+
+function extractJsonObject(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return {};
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return {};
+  try {
+    return JSON.parse(match[0]);
+  } catch (e) {
+    return {};
+  }
+}
+
+function extractJsonArray(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return [];
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) return [];
+  try {
+    const parsed = JSON.parse(match[0]);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function safeText(v) {
+  if (v == null) return '';
+  return String(v).trim();
+}
+
+function expandOcrCandidates(input) {
+  const base = normalizeSerieCodigo(input);
+  if (!base) return [];
+
+  const map = {
+    '0': ['O'], 'O': ['0'],
+    '1': ['I', 'L'], 'I': ['1', 'L'], 'L': ['1', 'I'],
+    '5': ['S'], 'S': ['5'],
+    '8': ['B'], 'B': ['8'],
+    '2': ['Z'], 'Z': ['2']
+  };
+
+  const out = new Set([base]);
+  const queue = [{ s: base, i: 0, changes: 0 }];
+  const maxChanges = 2;
+  const maxOut = 25;
+
+  while (queue.length && out.size < maxOut) {
+    const node = queue.shift();
+    if (!node) break;
+    for (let i = node.i; i < node.s.length; i++) {
+      const ch = node.s[i];
+      const swaps = map[ch] || [];
+      for (const r of swaps) {
+        if (node.changes + 1 > maxChanges) continue;
+        const cand = node.s.slice(0, i) + r + node.s.slice(i + 1);
+        if (!out.has(cand)) {
+          out.add(cand);
+          queue.push({ s: cand, i: i + 1, changes: node.changes + 1 });
+          if (out.size >= maxOut) break;
+        }
+      }
+      if (out.size >= maxOut) break;
+    }
+  }
+
+  return [...out];
 }
