@@ -3,7 +3,7 @@ const TOUR_CAMARA_KEY = 'tour_camara_visto_v1';
 const TOUR_PANTALLAS = [
   {
     titulo: '📷 Novedades: búsqueda por cámara',
-    texto: '<strong>🔢 Buscar por número de serie</strong><br>Apunta la cámara a la etiqueta de un equipo y encuéntralo al instante en el inventario.'
+    texto: '<strong>🔢 Buscar por número de serie</strong><br>Apunta la cámara a la etiqueta de un equipo y encuéntralo al instante en el inventario. Si no existe, podrás pulsar <strong>➕ Añadir ítem nuevo</strong> desde el propio flujo de cámara.'
   },
   {
     titulo: '📷 Novedades: búsqueda por cámara',

@@ -17,7 +17,7 @@ function openCamaraUnificada() {
 
   modal.classList.add('open');
   estado.style.display = 'block';
-  estado.textContent = 'Buscando QR o código...';
+  estado.textContent = 'Buscando QR o código... Si no existe, podrás añadirlo.';
   resultado.style.display = 'none';
   resultado.innerHTML = '';
   btnIA.style.display = 'none';
@@ -140,7 +140,7 @@ async function _manejarDeteccionUnificada(valor, formato) {
 
   if (valor === _camUnifUltimoCodigoFallido && (Date.now() - _camUnifUltimoFallidoTimestamp) < 2000) {
     _camUnifScanning = true;
-    document.getElementById('camaraUnifEstado').textContent = 'Buscando QR o código...';
+    document.getElementById('camaraUnifEstado').textContent = 'Buscando QR o código... Si no existe, podrás añadirlo.';
     return false;
   }
 
@@ -193,7 +193,7 @@ async function _manejarDeteccionUnificada(valor, formato) {
   }
 
   _camUnifScanning = true;
-  document.getElementById('camaraUnifEstado').textContent = 'Buscando QR o código...';
+  document.getElementById('camaraUnifEstado').textContent = 'Buscando QR o código... Si no existe, podrás añadirlo.';
   return false;
 }
 

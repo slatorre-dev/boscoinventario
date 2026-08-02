@@ -313,9 +313,9 @@
       <div class="gsr" id="gsResults" role="listbox"></div>
     </div>
     <div class="gsearch-extra-btns">
-      <button class="gsearch-extra-btn" id="gsCamara" onclick="openCamaraUnificada()" title="Buscar con cámara (QR o S/N)">
+      <button class="gsearch-extra-btn" id="gsCamara" onclick="openCamaraUnificada()" title="Buscar o añadir con cámara (QR o S/N)">
         🎥
-        <span>Buscar con cámara (QR o S/N)</span>
+        <span>Buscar o añadir con cámara</span>
       </button>
       <!-- Red de seguridad: si el flujo unificado (#gsCamara) falla en producción,
            cambiar display:none por display:flex aquí reactiva los botones antiguos
@@ -1612,7 +1612,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <!-- ══ CÁMARA UNIFICADA: QR + CÓDIGO DE BARRAS + S/N ══ -->
 <div class="mbg" id="mCamaraUnificada" onclick="if(event.target===this)closeCamaraUnificada()">
   <div class="modal" style="max-width:600px">
-    <div class="mh"><div class="mt">🎥 Apunta la cámara a un QR o etiqueta</div><button class="mx" onclick="closeCamaraUnificada()">✕</button></div>
+    <div class="mh"><div class="mt">🎥 Busca o añade: apunta a un QR o etiqueta</div><button class="mx" onclick="closeCamaraUnificada()">✕</button></div>
     <video id="camaraUnifVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px" autoplay playsinline></video>
     <div id="camaraUnifEstado" style="font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Buscando QR o código...</div>
     <div id="camaraUnifResultado" style="display:none"></div>
