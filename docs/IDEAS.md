@@ -118,8 +118,15 @@ posible diferenciador de Bosco Inventario frente a otros inventarios
 comerciales. Implementado con Cloudflare Workers AI (modelo
 `@cf/moondream/moondream3.1-9B-A2B`, gratuito, sin API externa de pago) en
 vez del enfoque local Roboflow+ONNX que se había considerado antes —
-detalle técnico completo de la primera pieza en `claude.md`, sesión del
-01/08/2026.
+detalle técnico completo en `CLAUDE.md`, sesiones del 01/08/2026 y
+01-02/08/2026.
+
+**Roadmap original completo:** #1-#8 implementados y en producción, #9
+resultó ya cubierto por código existente sin cambios necesarios, #10
+descartada por bajo valor frente a su complejidad. Dos ideas nuevas
+surgidas después del cierre (#11 código de barras, #12 onboarding)
+también implementadas. Una idea más (#13, unificar botones QR+cámara)
+propuesta a última hora, pendiente de diseñar.
 
 ### 1. Buscar por número de serie — ✅ implementado (01/08/2026)
 Foto de etiqueta → OCR extrae el S/N → busca el ítem (match exacto, fuzzy
@@ -141,50 +148,79 @@ Consecuencia directa de la idea #1: al buscar por S/N con match exacto, se
 evita crear un duplicado — se encuentra y abre el ítem ya existente en vez
 de darlo de alta otra vez.
 
-### 3. Reconocimiento visual (categoría/nombre sin S/N) — pendiente
-Fotografiar un objeto (osciloscopio, PLC, Arduino, polímetro, Raspberry
-Pi, soldador...) y que la IA proponga categoría, nombre y foto principal
-sin depender de leer ninguna etiqueta. Mismo proveedor (Workers AI,
-modelo de visión) que ya funciona para #1/#2 — el reto real es el prompt
-y decidir cómo mapear la respuesta libre de la IA a las categorías reales
-ya existentes en cada departamento (`categorias`, scoped por departamento).
+### 3. Reconocimiento visual (categoría/nombre sin S/N) — ✅ implementado (01/08/2026)
+Fotografiar un objeto sin etiqueta legible y que la IA proponga nombre y
+categoría, buscando candidatos en el inventario por nombre/categoría antes
+de ofrecer alta. Mismo prompt ampliado que #1 (una sola llamada a IA para
+serie/texto libre/visual, sin coste extra). Backend: rama `match:'visual'`
+de `buscarPorSerie`. Spec:
+`docs/superpowers/specs/2026-08-01-reconocimiento-visual-y-texto-libre-design.md`.
 
-**Prioridad:** Media-Alta
+### 4. Buscar cualquier texto con la cámara — ✅ implementado (01/08/2026)
+Texto en una etiqueta que no es un número de serie (ej. "Arduino UNO R3")
+se envía al buscador global existente (`js/search.js`) en vez de asumir
+que es siempre un S/N. Misma rama de `buscarPorSerie` que #3 (`match:'texto'`).
+Spec: `docs/superpowers/specs/2026-08-01-reconocimiento-visual-y-texto-libre-design.md`.
 
-### 4. Buscar cualquier texto con la cámara — pendiente
-Apuntar a un objeto o etiqueta con texto (ej. "Arduino UNO R3", "Cisco
-2960") y buscarlo directamente en el inventario, sin que tenga que ser
-específicamente un número de serie. Requiere generalizar `buscarPorSerie`
-(o crear una acción hermana) para no asumir que el texto detectado es
-siempre un S/N — el resto de la búsqueda (fuzzy, scoping por
-departamento) ya es reutilizable tal cual.
+### 5. Inventario andando (revisión rápida por aula) — ✅ implementado (02/08/2026)
+Botón "📷 Revisar aula" dentro de la vista de una aula concreta — recorre
+el aula foto a foto, confirma en verde si el ítem detectado está en el
+aula correcta, avisa en ámbar con corrección de un clic si está en otra.
+Resumen final (confirmados vs. no verificados) efímero, sin persistir en
+D1. Reutiliza `buscarPorSerie` sin cambios de backend. Spec:
+`docs/superpowers/specs/2026-08-01-inventario-andando-design.md`.
 
-**Prioridad:** Media
+### 6. Añadir múltiples equipos de una foto — ✅ implementado (02/08/2026)
+Botón "📸 Añadir varios" dentro de la vista de una aula concreta —
+fotografía una mesa con varios equipos nuevos, la IA propone una lista
+editable (nombre/cantidad/categoría por fila) antes de confirmar. Backend
+nuevo `detectarMultiples`; la creación reutiliza `bulkImport` ya existente
+(usado por importación CSV) sin modificarlo. Spec:
+`docs/superpowers/specs/2026-08-01-multi-equipo-foto-design.md`.
 
-### 5. Inventario andando (revisión rápida por aula) — pendiente
-Recorrer el taller apuntando la cámara a cada equipo, confirmando
-ubicación/estado uno tras otro sin abrir el modal completo cada vez. Se
-apoya en #1/#4 (identificar el ítem) + una UI nueva de "modo revisión"
-más ligera que el modal de edición normal.
+### 7. Buscar manuales/datasheets del equipo detectado — ✅ implementado (02/08/2026)
+3 enlaces (Manual/Datasheet/Vídeo) junto al campo Proveedor del modal de
+ítem, visibles si Proveedor+Nombre tienen contenido — abren una búsqueda
+de Google ya formada (`proveedor + nombre + "manual pdf"`, etc.), sin API
+de pago ni base de enlaces curados (decisión que simplificó radicalmente
+la estimación original del roadmap). Spec:
+`docs/superpowers/specs/2026-08-02-enlaces-manual-datasheet-design.md`.
 
-**Prioridad:** Media
+### 11. Lectura de código de barras (mejora de #1) — ✅ implementado (02/08/2026)
+Idea nueva, no numerada en el roadmap original de 10, propuesta por el
+usuario tras cerrar #1-#10. Antes de enviar la foto a la IA, intenta
+decodificar un código de barras lineal (Code128/EAN/UPC) con la API
+nativa `BarcodeDetector` del navegador — si decodifica un valor, lo busca
+directo en D1 sin pasar por IA (más rápido, sin margen de error de OCR).
+Sin soporte del navegador, cae automáticamente al flujo IA existente sin
+cambio de comportamiento. Requirió extraer `buscarSerieEnD1()` como
+función compartida entre el flujo IA (`buscarPorSerie`) y el nuevo
+(`buscarSeriePorCodigo`), decisión explícita para no repetir el patrón de
+bug de lógica duplicada ya visto 3 veces en este proyecto. Spec:
+`docs/superpowers/specs/2026-08-02-lectura-codigo-barras-design.md`.
 
-### 6. Añadir múltiples equipos de una foto — pendiente
-Fotografiar una mesa con varios objetos (4 fuentes de alimentación, 2
-multímetros, 1 osciloscopio) y que la IA proponga crear varios ítems de
-golpe, con cantidades agrupadas. Necesita detección de múltiples objetos
-en una imagen (no solo lectura de texto/etiqueta como #1/#2), un modelo o
-prompt más complejo que los ya probados.
+### 12. Onboarding de las funciones de cámara — ✅ implementado (02/08/2026)
+No es una función nueva — hace descubribles las 8+ funciones anteriores,
+que se construyeron sin ningún tipo de introducción para el profesorado.
+Tour guiado de 4 pantallas (#1, #6, #5, #3) tras el primer login de cada
+navegador (`localStorage`, sin D1), más botón "❓" permanente en Home con
+ayuda completa de las 8+ funciones. El tour/ayuda respetan el rol del
+usuario — el rol `Consulta` (solo lectura) no ve las 2 funciones de
+solo-escritura (#5/#6) que nunca podría usar. Spec:
+`docs/superpowers/specs/2026-08-02-onboarding-camara-design.md`.
 
-**Prioridad:** Baja-Media
+### 13. Unificar botones de QR y búsqueda por cámara — pendiente, sin diseñar
+Propuesta del usuario (02/08/2026): un solo botón "Buscar con cámara (QR
+o S/N)" en vez de los dos actuales (`#gsQr` para QR propio de la app,
+`#gsSerie` para serie/texto/visual/código de barras) — la cámara decide
+internamente qué tipo de código está viendo. Complejidad principal:
+`js/qr-scanner.js` usa escaneo continuo (frames en bucle) mientras que
+`js/camara-serie.js` usa foto fija con botón "Capturar" — son dos
+patrones de UX distintos a conciliar. Sin brainstorming ni spec todavía
+— ver detalle completo en `CLAUDE.md`, sección "Pendiente prioritario de
+esta sesión".
 
-### 7. Buscar manuales/datasheets del equipo detectado — pendiente
-Una vez identificado el modelo de un equipo (vía #2 o #3), ofrecer enlaces
-a su manual/datasheet/vídeos. Necesita decidir la fuente (búsqueda web
-real vía alguna API, o una base de enlaces curada a mano por el centro) —
-no es solo un cambio de prompt, es una pieza nueva de infraestructura.
-
-**Prioridad:** Baja
+**Prioridad:** Alta (primer punto a retomar en la próxima sesión)
 
 ### 9. Generar QR automáticamente tras el alta — ✅ ya cubierto (sin cambios, 02/08/2026)
 El modal de ítem ya llama a `renderItemQr()` (`js/modal-item.js`) al
@@ -325,8 +361,11 @@ CSV o PDF con items problemáticos agrupados por aula/categoría.
 ## Estado
 
 - **Última actualización:** 02/08/2026
-- **Versión actual:** v548+
+- **Versión actual:** v550
 - **Roadmap "Modo Cámara Inteligente":** completo — ideas #1-#8 implementadas
   y en producción, #9 resultó ya cubierta por código existente (sin
   cambios necesarios), #10 descartada por bajo valor frente a su
-  complejidad. Detalle completo de la sesión en `CLAUDE.md`.
+  complejidad. Dos ideas nuevas surgidas después (#11 código de barras,
+  #12 onboarding) también implementadas. Pendiente sin diseñar: #13
+  (unificar botones QR + búsqueda por cámara). Detalle completo de las
+  sesiones en `CLAUDE.md`.

@@ -1,16 +1,19 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v543+ | 01/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+**Estado:** v550 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
-por departamento en todo el backend. Feature nueva completa y verificada en
-producción: **búsqueda de ítems por número de serie vía cámara** (foto de
-etiqueta → OCR con Cloudflare Workers AI → busca en inventario). **Volt**
-(el chatbot) también migrado y verificado — GitHub Models, su proveedor de
-IA original, fue retirado el 30/07/2026; ahora usa Cloudflare Workers AI
-igual que la búsqueda por serie. Ambas migraciones completas, ver sesión
-del 01/08/2026 más abajo. Sin pendientes urgentes de esta sesión.
+por departamento en todo el backend. **Roadmap "Modo Cámara Inteligente"
+completo**: ideas #1-#8 en producción (búsqueda por número de serie, texto
+libre, reconocimiento visual, multi-equipo, inventario andando, etc.) más
+lectura de código de barras (mejora de #1) y onboarding (tour guiado +
+ayuda permanente) — ver sesión del 01-02/08/2026 más abajo para el detalle
+completo de las 4 piezas construidas hoy. **Volt** (el chatbot) migrado a
+Cloudflare Workers AI tras la retirada de GitHub Models (30/07/2026).
+Pendiente de diseñar (no implementado aún): unificar los botones de QR y
+buscar-por-cámara en uno solo que decida internamente el tipo de código —
+ver sección de Pendientes.
 
 Inventario general del **IES El Bosco**: cada departamento gestiona su
 propio inventario (aulas, categorías, ciclos, profesores, préstamos) desde
@@ -290,22 +293,32 @@ functions/api/          — Cloudflare Pages Functions (backend)
   prestar.js, item.js, list.js, historial.js, config.js, usuarios.js,
     profesores.js, meta.js — todos con scoping por departamento (ver arriba),
     todos con la misma constante GENERIC_DEPT='iesjuanbosco' duplicada
+  item.js — además de add/update/delete/bulkImport: buscarPorSerie (serie/texto/visual
+    vía IA, cascada), buscarSeriePorCodigo (mismo resultado sin IA, para código de
+    barras ya decodificado en el cliente), detectarMultiples (alta masiva desde una
+    foto). buscarPorSerie y buscarSeriePorCodigo comparten la función buscarSerieEnD1()
+    (búsqueda exacta/fuzzy) — NO duplicar esa lógica si se toca alguna de las dos
 
 js/
   agente-widget.js      — Agente Volt (NLP, chat, voz, aprendizaje)
   inventory.js          — Inventario principal, filtros, vistas, _pageSize persistente
   search.js             — Búsqueda global (#gsInput) + historial de búsquedas recientes (#srch)
-  modal-item.js         — Modal edición/creación items, contenedores SET-/CONT-, renderAulaOptions(), preselección de ciclo único
+  modal-item.js         — Modal edición/creación items, contenedores SET-/CONT-, renderAulaOptions(), preselección de ciclo único, enlaces manual/datasheet/vídeo junto a Proveedor
   modal-ciclos.js       — Gestión de ciclos/asignaturas propios (excluye el compartido iesjuanbosco)
   modal-aulas.js        — Gestión de aulas propias (excluye globales + iesjuanbosco)
   modal-auditoria.js    — Auditoría de datos: campos faltantes + filtro "Duplicados" (mismo nombre+aula), reusa selección/edición/borrado en lote de inventory.js
   roles.js              — Permisos por rol
   config.js             — CICLOS, AULAS, CATS (se sobreescriben con datos D1 al login, ya filtrados por departamento)
   state.js              — Estado global SESSION (departamento/departamentoNombre/departamentoIcono/passwordTemporal)
-  auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword)
+  auth.js               — Login, badge de departamento (#brandDept), icono de departamento (#deptGameIcon), cambio de contraseña obligatorio (#pForcePassword), dispara el tour de cámara tras loadData() exitoso
   prestamos.js          — Préstamos; desplegables de aula reutilizan renderAulaOptions()
+  camara-serie.js       — Búsqueda por cámara desde Home (#gsSerie): serie/texto/visual (buscarPorSerie) + intento previo de código de barras (BarcodeDetector nativo, buscarSeriePorCodigo)
+  revision-aula.js      — Modo "Revisar aula" (#btnRevisionAula, solo en vista de aula): confirma/corrige ubicación foto a foto, reusa buscarPorSerie
+  multi-equipo.js        — Modo "Añadir varios" (#btnMultiEquipo, solo en vista de aula): alta masiva desde una foto, lista editable, confirma vía bulkImport
+  onboarding-camara.js  — Tour guiado (4 pantallas, primera vez tras login) + ayuda permanente (#gsAyuda) de las funciones de cámara, respeta rol (Consulta no ve #5/#6)
+  qr-scanner.js         — Escaneo de QR propio de la app (#gsQr) — distinto del código de barras de fábrica que lee camara-serie.js
 
-sw.js                   — Service Worker, VERSION aquí (v522 actual)
+sw.js                   — Service Worker, VERSION aquí (v550 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -335,6 +348,11 @@ migrations/             — SQL de migraciones D1, ver tabla completa abajo
 | `0020_indices_inventario.sql` | Índices en `inventario`: `departamento` solo, y compuestos `(departamento, aula)`, `(departamento, ref)`, `(departamento, cat)`, más `parent_id` — tabla no tenía ningún índice salvo la PK |
 | `0021_limpiar_profesores_duplicados.sql` | Borra de `profesores` las filas que ya duplican (por nombre o email normalizado) un usuario de la app **del mismo departamento** — quedaron huérfanas de UI tras convertir el modal 👥 en "solo prestatarios externos" (v521) |
 | `0022_notificado_vencido.sql` | Columna `prestamos.notificado_vencido`, evita reenviar el email de recordatorio de vencidos en cada visita a Préstamos (v522) |
+| `0021_restaurar_ciclos_electricidad.sql` | Restaura ciclos de Electricidad/Electrónica borrados por error en una sesión anterior (número `0021` duplicado con `0021_limpiar_profesores_duplicados.sql` a propósito — ambas independientes, sin conflicto de columnas/tablas) |
+| `0023_iconos_categorias_representativos.sql` | Iconos (emoji) más representativos por categoría, sustituyendo el genérico por defecto en varias filas de `categorias` |
+| `0024_item_fotos.sql` | Tabla nueva `item_fotos(id, item_id, foto, orden)` — galería de hasta 3 fotos por ítem (v535-v536), copia las fotos ya existentes de `inventario.foto` como `orden=1` |
+| `0025_fecha_adquisicion_precio.sql` | Columnas `inventario.fecha_adquisicion` (TEXT) y `inventario.precio` (REAL) — sección Detalles del modal de ítem (v537-v542) |
+| `0026_inventario_serie.sql` | Columna `inventario.serie` (TEXT DEFAULT '') + índice compuesto `(departamento, serie)` — búsqueda por número de serie vía cámara (v543) |
 
 ---
 
@@ -1018,18 +1036,263 @@ desde v317 + tabla de versionado completa). Última sesión, resumen:
   existente, sigue mostrando el valor guardado (o vacío si nunca se rellenó,
   sin forzar una fecha falsa).
 
+- **01-02/08/2026 (v544-v550): cierre del roadmap "Modo Cámara
+  Inteligente" — 4 piezas nuevas + cierre de las 2 ideas restantes del
+  roadmap.** Continuación directa de la sesión anterior (v543, que dejó
+  implementadas #1/#2/#3/#4/#8 del roadmap). Todo implementado con
+  subagent-driven-development en worktrees aislados
+  (`.claude/worktrees/<nombre>`), cada pieza con: brainstorming → spec en
+  `docs/superpowers/specs/` → plan en `docs/superpowers/plans/` →
+  ejecución por tareas con revisión individual + revisión final de rama →
+  merge a `main` → deploy → verificación end-to-end en producción con
+  Playwright (mocks de red para no depender de fotos reales ni del modelo
+  de IA en cada verificación).
+
+  **1. Idea #5 — Inventario andando / modo revisión rápida por aula
+  (v545-v546).** Botón "📷 Revisar aula" nuevo, visible solo en vista de
+  aula (`js/nav.js`, `openSub()`). Modo cámara ligero (`js/revision-aula.js`,
+  mismo patrón de captura que `camara-serie.js`) que reutiliza
+  `buscarPorSerie` sin cambios: por cada foto, compara el aula del ítem
+  encontrado contra el aula que se está revisando — confirma en verde si
+  coincide, avisa en ámbar con botón "Actualizar a esta aula" si está en
+  otra (llama a la acción `update` ya existente con el patrón
+  `{...item, aula: nuevaAula}`, nunca un objeto parcial). Resumen final
+  efímero (solo en memoria del navegador, sin persistir "última
+  verificación" en D1): confirmados vs. ítems esperados en el aula nunca
+  fotografiados. **Bug real encontrado en la verificación de producción
+  (no en la revisión de código):** el botón quedaba visible en TODAS las
+  vistas, no solo en aula — causa raíz: `applyRoleUI()`
+  (`js/roles.js:140-142`) hace un `querySelectorAll('[data-perm]')` que
+  sobreescribe incondicionalmente la visibilidad de cualquier elemento con
+  ese atributo, pisando la lógica condicional por `cf.type` que
+  `openSub()` acababa de fijar. El botón se había creado con
+  `data-perm="items.write"` copiando el patrón de sus vecinos en
+  `.action-strip`, sin que ninguna revisión (ni por tarea, ni final de
+  rama) lo detectara — solo apareció al probar la app real en el
+  navegador. Corregido quitando `data-perm` del botón (`f6deef9`, fix
+  desplegado aparte, fuera del ciclo normal de tareas). **Lección
+  reutilizada en las 3 features siguientes de la sesión:** cualquier botón
+  nuevo cuya visibilidad dependa de algo más que un permiso (ej. también
+  de `cf.type`) NO debe llevar `data-perm` — cada plan posterior lo
+  advirtió explícitamente en sus Global Constraints y cada revisión lo
+  verificó como comprobación de máxima prioridad. Revisión final de rama
+  encontró además 2 bugs Important reales: `functions/api/list.js` tenía
+  su propia copia de `HEADERS_INV` (constante de columnas) sin las
+  columnas `fecha_adquisicion`/`precio` que sí tenía la copia de
+  `item.js` — mismo patrón de bug ya visto con `serie` en v543, ahora con
+  columnas distintas; y `_corregirAulaRevision()` no tenía forma de
+  recuperarse si el ítem detectado no estaba aún en el array `items` local
+  del frontend (mismo fallo ya resuelto en v543 para el flujo general de
+  cámara, no trasladado a esta feature nueva). Ambos corregidos.
+
+  **2. Idea #6 — Multi-equipo en una foto / alta masiva (v547).** Botón
+  "📸 Añadir varios" nuevo, también solo en vista de aula. Backend nuevo
+  `detectarMultiples` (`functions/api/item.js`): una sola llamada a
+  Workers AI pide identificar y agrupar por cantidad cada objeto distinto
+  en la foto, devolviendo un array `[{nombre, cantidad,
+  categoriaSugerida}]` (categoría validada contra las categorías reales
+  del departamento, mismo patrón `categoriasDept` que #3). Frontend
+  (`js/multi-equipo.js`) renderiza una lista editable (nombre/cantidad/
+  categoría por fila, filas eliminables) antes de confirmar — sin
+  búsqueda automática de duplicados por fila (la revisión humana de la
+  lista ya cubre ese riesgo, evita N búsquedas D1 en serie). Confirmar
+  reutiliza la acción `bulkImport` ya existente (usada por la importación
+  CSV) sin modificarla, incluyendo el patrón real de refresco
+  post-creación descubierto al revisar `js/import.js`:
+  `items.push(...res.items)` + `renderInv()`, NO `loadData()` (que
+  navegaría de vuelta a Home, UX equivocada). **Revisión final de rama
+  encontró 1 Critical + 3 Important reales, todos plantados por el propio
+  plan (código dado literal), no por los implementadores:** `est:
+  'Operativo'` no es un estado válido en este proyecto (los reales son
+  `Bueno/Deteriorado/Avería/Baja`) — cada ítem creado quedaba con un
+  estado que rompía badges, filtros, y se sobrescribía silenciosamente a
+  "Bueno" en la siguiente edición no relacionada; corregido a `'Bueno'`.
+  `mod: ''` (sin ciclo/asignatura asignado) bloqueaba guardar el ítem
+  después desde el modal normal — mismo bug ya documentado como backlog
+  #11 desde la sesión de galería de fotos (ítem 225 "Estaciones
+  Soldadura"), aquí lo habría reproducido en cada uso. Resuelto con una
+  pieza de UI nueva no contemplada en el plan original, decidida en vivo
+  con el usuario durante la revisión: selector de Ciclo/Asignatura
+  compartido para todas las filas del lote, con preselección automática
+  cuando el departamento tiene exactamente un ciclo con exactamente un
+  módulo (mismo criterio que ya usa `openModal()` para altas individuales),
+  pero siempre editable por si no aplica. Select de categoría por fila
+  rompía con nombres que contienen `"` o `&` (el código intentaba marcar
+  la opción sugerida con un `.replace()` de string sin escapar contra un
+  HTML ya escapado — nunca coincidía); corregido construyendo el
+  `<option selected>` de forma declarativa por fila en vez de post-hoc.
+  Sin guardia contra doble-envío en "Crear ítems" (`bulkImport` no es
+  idempotente, un doble clic crearía un lote duplicado completo);
+  corregido con un flag `_multiSubmitting`, mismo patrón que
+  `_multiCapturing` ya usaba la propia captura de foto.
+
+  **3. Idea #7 — Enlaces a manual/datasheet/vídeo (v548).** La más
+  simple de las 4: en el modal de editar/crear ítem, 3 enlaces junto al
+  campo Proveedor ("📄 Manual", "📋 Datasheet", "🎥 Vídeo"), visibles solo
+  si Proveedor + Nombre tienen contenido. Cada uno abre una búsqueda de
+  Google en pestaña nueva (`proveedor + nombre + "manual pdf"` / `...
+  "datasheet"` / `... "tutorial video"`), con `encodeURIComponent()`
+  sobre el texto combinado. Sin backend, sin IA, sin migración —
+  decisión de diseño clave que cambió por completo la estimación
+  original del roadmap (que preveía "pieza nueva de infraestructura"
+  asumiendo una API de búsqueda de pago o una base de enlaces curados a
+  mano). Se recalculan en vivo con un listener `input` dedicado en
+  `#f_proveedor`/`#f_item`, deliberadamente separado del sistema ya
+  existente de detección de "cambios sin guardar" (`checkModalForChanges`)
+  para no acoplar dos conceptos no relacionados. Sesión más limpia de
+  las 4: ambas tareas de código pasaron revisión sin ningún hallazgo.
+
+  **4. Mejora de #1 — Lectura de código de barras (v549).** Antes de
+  enviar la foto a la IA, intenta decodificar un código de barras lineal
+  (Code128/EAN/UPC) con la API nativa `BarcodeDetector` del navegador
+  (sin librería nueva; sin soporte nativo —ej. iOS Safari— cae
+  automáticamente al flujo actual sin cambio de comportamiento). Si
+  decodifica un valor, lo busca directo en D1 sin pasar por IA (más
+  rápido, sin el margen de error de OCR que ya causó un problema real en
+  v543). Requirió un refactor deliberado de `buscarPorSerie`
+  (`functions/api/item.js`): se extrajo la lógica de búsqueda
+  exacta/fuzzy a una función compartida `buscarSerieEnD1()`, reusada
+  tanto por el flujo IA existente como por la nueva acción
+  `buscarSeriePorCodigo` — decisión tomada explícitamente en el diseño
+  (no descubierta en una revisión) para evitar una cuarta instancia del
+  mismo patrón de bug que ya había aparecido 3 veces en el proyecto
+  (`HEADERS_INV` duplicado, scoping de categorías duplicado, `data-perm`
+  mal copiado esta misma sesión). El refactor en sí verificado sin
+  regresión (mismas formas de respuesta exacto/fuzzy/ninguno, rama
+  `visual` posterior de la función intacta). **Revisión final de rama
+  encontró 2 bugs Important reales en la integración nueva:** el camino
+  `fuzzy` del código de barras dejaba la cámara en vivo + botón
+  "Capturar" visibles y activos por encima de la lista de candidatos (el
+  código nuevo se insertó ANTES de las líneas que ya ocultaban esos
+  elementos en el flujo IA, sin replicar ese mismo ocultado en su propia
+  rama `fuzzy`); corregido replicando el ocultado antes de mostrar
+  candidatos. El `try/catch` alrededor del intento de código de barras
+  envolvía también la llamada de red a `buscarSeriePorCodigo`, así que un
+  fallo real de backend/sesión se camuflaba silenciosamente como "este
+  navegador no soporta códigos de barras" y caía a un segundo intento
+  (con IA) que fallaría por la misma razón; el fix inicial propuesto
+  (dejar la llamada de red completamente sin `try/catch`) habría dejado
+  colgado el flag `_serieCapturing` en `true` para siempre ante un error
+  real — el implementador se desvió deliberadamente de la instrucción
+  literal, ampliando en su lugar el `try/finally` externo ya existente
+  (el mismo que ya protege el flujo IA) para que también cubriera el
+  código nuevo, documentando el porqué; verificado en la re-revisión como
+  la solución correcta.
+
+  **5. Onboarding de las funciones de cámara (v550) — no es una función
+  nueva, es hacer descubribles las 4 anteriores.** Detectado por el
+  usuario tras cerrar el roadmap técnico: "hemos hecho muchas cosas con
+  la cámara pero el usuario no sabe usarlas". Dos piezas: (a) tour
+  guiado de 4 pantallas (#1 serie, #6 multi-equipo, #5 inventario
+  andando, #3 reconocimiento visual — no las 8+, para no desanimar con
+  demasiado contenido de golpe), disparado automáticamente tras el
+  primer login de cada navegador (flag en `localStorage`,
+  `tour_camara_visto_v1`, sin D1); (b) botón "❓" permanente junto al
+  buscador de cámara en Home, con ayuda completa de las 8+ funciones
+  (incluye nota explícita de que #5/#6 viven dentro de una aula, no en
+  Home) y capacidad de reabrir el mismo tour bajo demanda. **Hallazgo real
+  de la revisión final de rama, no contemplado ni en el spec ni en el
+  plan originales:** el tour se dispara automáticamente para CUALQUIER
+  usuario en su próximo login — incluido el rol `Consulta` (solo
+  lectura), que no tiene permiso `items.write` y por tanto nunca ve los
+  botones de #5/#6 en ninguna vista de aula. El tour le mostraba 2 de sus
+  4 pantallas explicando funciones que ese usuario nunca podría usar, y
+  la ayuda permanente listaba esas mismas 2 entradas sin ninguna
+  condición. Corregido filtrando dinámicamente las pantallas del tour
+  (`_tourPantallas = TOUR_PANTALLAS.filter(p => !p.requiereEscritura ||
+  can('items.write'))`, recalculado en cada apertura, no hardcodeado por
+  índice) y ocultando las 2 entradas correspondientes en la ayuda
+  permanente con el mismo criterio. Ni el spec ni el plan de esta pieza
+  mencionaban roles en ningún punto — atribuido explícitamente como
+  defecto del diseño, no de la implementación (cada agente construyó
+  exactamente lo que se le pidió). Segundo hallazgo, menor: ningún modal
+  nuevo respondía a la tecla Escape, a diferencia de los ~16 modales ya
+  existentes en la app (todos registrados en un único listener global en
+  `js/auth.js`); corregido añadiendo ambos a esa misma cadena.
+
+  **Patrón repetido en las 4 piezas, ya asumido como parte del proceso:**
+  cada revisión final de rama (modelo más capaz, diff completo de todas
+  las tareas juntas) encontró entre 1 y 4 hallazgos reales que ninguna
+  revisión individual por tarea pudo ver — porque viven en la
+  *intersección* de dos tareas que por separado parecían correctas
+  (botón + `applyRoleUI()` global; plan con un valor de estado inventado
+  + esquema real de estados; código nuevo insertado antes de líneas de
+  UI que solo una rama del código nuevo replicaba; contenido de
+  onboarding + sistema de permisos que nadie relacionó al diseñar el
+  contenido). Ninguna de las 4 piezas se desplegó sin pasar por ese
+  filtro final.
+
+  **Pendiente explícito para la próxima sesión (pedido por el usuario,
+  sin diseñar aún):** unificar los botones de "Escanear QR" (`#gsQr`,
+  `js/qr-scanner.js`, ya existente antes de todo este roadmap) y "Buscar
+  con la cámara" (`#gsSerie`) en Home en un solo botón — la cámara
+  decidiría internamente si lo que ve es un QR, un código de barras, o
+  necesita OCR de IA, en vez de que el usuario tenga que elegir de
+  antemano cuál de los dos botones pulsar. Complejidad principal a
+  resolver en el diseño: `js/qr-scanner.js` usa un patrón de escaneo
+  continuo (frames en bucle) mientras que `js/camara-serie.js` usa foto
+  fija — unificar la UX implica decidir si el nuevo botón único adopta
+  uno de los dos patrones para todo, o mantiene ambos internamente según
+  lo que detecte. Ver sección de Pendientes más abajo.
+
 ---
 
 ## Pendiente (Próximas sesiones)
 
-### Sin pendientes urgentes — búsqueda por serie y Volt, ambos resueltos
+### Pendiente prioritario de esta sesión: unificar botones QR + cámara
 
-**Búsqueda por número de serie: ✅ resuelta y verificada.**
-**Volt (chatbot): ✅ migrado y verificado.** Ambos detallados en la entrada
-de sesión del 01/08/2026 más abajo. Nota para el futuro: Volt perdió el
+**Pedido explícito del usuario, sin diseñar aún — primer punto a retomar.**
+Hoy hay dos botones separados en Home (`.gsearch-extra-btns`, `index.html`):
+"Escanear QR" (`#gsQr`, abre `js/qr-scanner.js`) y "Buscar con la cámara"
+(`#gsSerie`, abre `js/camara-serie.js`). La idea: un solo botón "Buscar con
+cámara (QR o S/N)" donde la propia cámara decida internamente qué tipo de
+código está viendo (QR propio de la app, código de barras de fábrica, o
+ninguno de los dos → cae a OCR de IA como ya hace `buscarPorSerie`).
+
+Antes de empezar, hace falta un brainstorming completo (no iniciado) que
+resuelva al menos:
+- `js/qr-scanner.js` usa escaneo continuo (frames en bucle, sin foto fija)
+  mientras que `js/camara-serie.js` usa foto fija con botón "Capturar" —
+  son dos patrones de UX distintos, hay que decidir si el botón unificado
+  adopta uno solo para todo o mezcla ambos según lo que detecte.
+- Qué pasa si el escaneo continuo de QR está ya corriendo y aparece un
+  código de barras en el mismo frame — ¿se decodifica ahí mismo (ya existe
+  `BarcodeDetector` integrado en `camara-serie.js` desde v549, reusable) o
+  solo se intenta tras pulsar algo?
+- Cómo se comunican al usuario los 3 resultados posibles (QR reconocido →
+  abre el ítem directo; código de barras/S/N reconocido → misma cascada ya
+  existente; nada reconocido → OCR de IA) sin que la UI parezca confusa
+  sobre qué está pasando en cada momento.
+
+Seguir el proceso ya establecido en esta sesión: brainstorming →
+spec en `docs/superpowers/specs/` → plan en `docs/superpowers/plans/` →
+subagent-driven-development en worktree aislado → revisión final de rama
+→ deploy → verificación Playwright en producción.
+
+### Volt (chatbot): ✅ migrado y verificado, con una limitación conocida
+
+Detallado en la entrada de sesión del 01/08/2026 más abajo. Volt perdió el
 efecto de streaming incremental (la respuesta aparece de golpe, no palabra
-por palabra) — ver la entrada de sesión para la razón y si alguien quiere
-recuperarlo más adelante con más tiempo para depurar el `ReadableStream`.
+por palabra) tras la migración a Cloudflare Workers AI — ver la entrada de
+sesión para la razón (un `ReadableStream` custom que nunca cerraba ni
+emitía, causa raíz no confirmada del todo) y si alguien quiere recuperarlo
+más adelante con más tiempo para depurar.
+
+### Verificación pendiente sin completar: onboarding con rol Consulta
+
+La sesión del 01-02/08/2026 (ver entrada completa más abajo) desplegó el
+onboarding de cámara (v550) y corrigió en la revisión final de rama que el
+tour/ayuda no debían mostrar las 2 funciones de solo-escritura (#5/#6) al
+rol `Consulta`. La verificación end-to-end en producción con Playwright
+del resto de casos (tour aparece en primer login, navegación de las 4
+pantallas, cierre marca el flag en las 3 vías, no reaparece en logins
+posteriores, botón ❓ abre ayuda completa, ayuda reabre el tour) **se
+interrumpió antes de llegar al caso específico del rol Consulta** — no
+hay ninguna cuenta de prueba conocida con ese rol entre las credenciales
+documentadas (todas son superadmin/jefe de departamento/profesor). Para
+retomar: crear o localizar una cuenta con rol `Consulta` real, o mockear
+`can()` en el navegador vía Playwright para simular el rol sin necesitar
+una cuenta real.
 
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 
