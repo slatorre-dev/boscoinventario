@@ -293,54 +293,72 @@
 <!-- ══ HOME ══ -->
 <div class="page" id="pH">
   <div class="home-hero">
-    <h1>¿Qué deseas consultar?</h1>
-    <h2>Acciones rápidas</h2>
-    <p>Selecciona un aula o un ciclo formativo para ver su inventario</p>
-    <div class="action-strip" style="justify-content:center;gap:10px;margin-top:18px">
-      <button class="btn btn-p icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openModal()">＋ <span class="btn-text">Añadir ítem rápido</span></button>
-      <button class="btn icon-btn" data-perm="loans.write" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="openPrestarPicker()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
-      <button class="btn btn-d icon-btn" data-perm="items.write" style="padding:11px 24px;font-size:14px" onclick="openDelModal()">🗑️ <span class="btn-text">Dar de baja</span></button>
-      <a class="btn icon-btn" href="javascript:void(0)" onclick="goDocsDpto()" style="display:inline-flex;padding:11px 24px;font-size:14px;border-color:#0891b2;color:#0891b2;text-decoration:none">📂 <span class="btn-text">Documentación</span></a>
-      <button class="btn icon-btn" style="padding:11px 24px;font-size:14px;border-color:var(--amber);color:var(--amber)" onclick="goMaintenance()">🛠️ <span class="btn-text">Mantenimiento</span></button>
-      <button class="btn icon-btn" id="btnGoHistorial" style="display:none;padding:11px 24px;font-size:14px;border-color:#6366f1;color:#6366f1" onclick="goHistorialPage()">📋 <span class="btn-text">Historial</span></button>
-    </div>
-    <div class="gsearch-wrap" id="gsWrap">
-      <span class="gsearch-ico">🔍</span>
-      <input class="gsearch" id="gsInput" type="text" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor…" autocomplete="off"
-        oninput="globalSearch(this.value)" onfocus="globalSearch(this.value)"
-        onkeydown="gsKey(event)">
-      <button class="gsearch-clear" id="gsClear" onclick="gsClear()" title="Limpiar">✕</button>
-      <div class="gsr" id="gsResults" role="listbox"></div>
-    </div>
-    <div class="gsearch-extra-btns">
-      <button class="gsearch-extra-btn" id="gsCamara" onclick="openCamaraUnificada()" title="Buscar o añadir con cámara (QR o S/N)">
-        🎥
-        <span>Buscar o añadir con cámara</span>
-      </button>
-      <!-- Red de seguridad: si el flujo unificado (#gsCamara) falla en producción,
-           cambiar display:none por display:flex aquí reactiva los botones antiguos
-           al instante, sin necesitar un nuevo deploy. Ver revisión final de rama,
-           02/08/2026. -->
-      <button class="gsearch-extra-btn" id="gsQr" onclick="openQrScanner()" title="Escanear QR" style="display:none">
-        <svg style="width:18px;height:18px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#fff" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M0.9472 0.9472h30.1056v30.1056H0.9472Z"/>
-          <path fill="currentColor" d="M5.9648 5.9648h2.5088v2.5088H5.9648Zm0 17.5616h2.5088v2.5088H5.9648Zm17.5616-17.5616h2.5088v2.5088h-2.5088Z"/>
-          <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
-        </svg>
-        <span>Escanear QR</span>
-      </button>
-      <button class="gsearch-extra-btn" id="gsSerie" onclick="openCamaraSerie()" title="Buscar con la cámara" style="display:none">
-        🔢
-        <span>Buscar con la cámara</span>
-      </button>
-      <button class="gsearch-extra-btn" id="gsAyuda" onclick="openAyudaCamara()" title="Ayuda: funciones de cámara">
-        ❓
-        <span>Ayuda</span>
-      </button>
-    </div>
-    <div id="camaraHint" class="camara-hint" style="display:none">
-      <div><strong>Consejo rápido:</strong> con la cámara puedes <strong>buscar</strong> y también <strong>añadir ítems nuevos</strong> si no existen.</div>
-      <button class="mini-btn" onclick="cerrarHintCamara()">Entendido</button>
+    <div class="home-hero-shell">
+      <div class="home-hero-main">
+        <div class="home-hero-kicker">Inventario rápido del centro</div>
+        <h1>Busca, abre o añade material sin dar rodeos</h1>
+        <h2>Empieza por el buscador o por la cámara</h2>
+        <p>Consulta por nombre, referencia, proveedor o usa la cámara para localizar y dar de alta material en el mismo flujo.</p>
+        <div class="home-hero-pills">
+          <span class="home-pill">Búsqueda inmediata</span>
+          <span class="home-pill">QR y número de serie</span>
+          <span class="home-pill">Alta guiada</span>
+        </div>
+        <div class="gsearch-wrap" id="gsWrap">
+          <span class="gsearch-ico">🔍</span>
+          <input class="gsearch" id="gsInput" type="text" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor…" autocomplete="off"
+            oninput="globalSearch(this.value)" onfocus="globalSearch(this.value)"
+            onkeydown="gsKey(event)">
+          <button class="gsearch-clear" id="gsClear" onclick="gsClear()" title="Limpiar">✕</button>
+          <div class="gsr" id="gsResults" role="listbox"></div>
+        </div>
+        <div class="gsearch-extra-btns">
+          <button class="gsearch-extra-btn" id="gsCamara" onclick="openCamaraUnificada()" title="Buscar o añadir con cámara (QR o S/N)">
+            🎥
+            <span>Buscar o añadir con cámara</span>
+          </button>
+          <!-- Red de seguridad: si el flujo unificado (#gsCamara) falla en producción,
+               cambiar display:none por display:flex aquí reactiva los botones antiguos
+               al instante, sin necesitar un nuevo deploy. Ver revisión final de rama,
+               02/08/2026. -->
+          <button class="gsearch-extra-btn" id="gsQr" onclick="openQrScanner()" title="Escanear QR" style="display:none">
+            <svg style="width:18px;height:18px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#fff" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M0.9472 0.9472h30.1056v30.1056H0.9472Z"/>
+              <path fill="currentColor" d="M5.9648 5.9648h2.5088v2.5088H5.9648Zm0 17.5616h2.5088v2.5088H5.9648Zm17.5616-17.5616h2.5088v2.5088h-2.5088Z"/>
+              <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
+            </svg>
+            <span>Escanear QR</span>
+          </button>
+          <button class="gsearch-extra-btn" id="gsSerie" onclick="openCamaraSerie()" title="Buscar con la cámara" style="display:none">
+            🔢
+            <span>Buscar con la cámara</span>
+          </button>
+          <button class="gsearch-extra-btn" id="gsAyuda" onclick="openAyudaCamara()" title="Ayuda: funciones de cámara">
+            ❓
+            <span>Ayuda</span>
+          </button>
+        </div>
+        <div id="camaraHint" class="camara-hint" style="display:none">
+          <div><strong>Consejo rápido:</strong> con la cámara puedes <strong>buscar</strong> y también <strong>añadir ítems nuevos</strong> si no existen.</div>
+          <button class="mini-btn" onclick="cerrarHintCamara()">Entendido</button>
+        </div>
+      </div>
+      <div class="home-hero-side">
+        <div class="home-quick-panel">
+          <div class="home-quick-head">
+            <span class="home-quick-kicker">Acciones rápidas</span>
+            <strong>Lo más usado en clase</strong>
+          </div>
+          <div class="home-quick-grid">
+            <button class="home-quick-btn accent" data-perm="items.write" onclick="openModal()"><span class="home-quick-ico">＋</span><span><strong>Añadir ítem</strong><small>Alta rápida manual</small></span></button>
+            <button class="home-quick-btn amber" data-perm="loans.write" onclick="openPrestarPicker()"><span class="home-quick-ico">⌛</span><span><strong>Nuevo préstamo</strong><small>Prestar o devolver</small></span></button>
+            <button class="home-quick-btn red" data-perm="items.write" onclick="openDelModal()"><span class="home-quick-ico">🗑️</span><span><strong>Dar de baja</strong><small>Eliminar material</small></span></button>
+            <a class="home-quick-btn cyan" href="javascript:void(0)" onclick="goDocsDpto()"><span class="home-quick-ico">📂</span><span><strong>Documentación</strong><small>Accesos del departamento</small></span></a>
+            <button class="home-quick-btn amber-soft" onclick="goMaintenance()"><span class="home-quick-ico">🛠️</span><span><strong>Mantenimiento</strong><small>Revisiones pendientes</small></span></button>
+            <button class="home-quick-btn violet" id="btnGoHistorial" style="display:none" onclick="goHistorialPage()"><span class="home-quick-ico">📋</span><span><strong>Historial</strong><small>Actividad reciente</small></span></button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="home-body">

@@ -12,17 +12,17 @@ function renderHome(){
   const units=items.reduce((a,x)=>a+(Number(x.qty)||0),0);
   const oc = (typeof can==='function' && can('visibility.manage')) ? items.filter(x=>x.oculto==1).length : 0;
   const ocCard = (typeof can==='function' && can('visibility.manage'))
-    ? `<div class="scard" onclick="goOcultos()" style="cursor:pointer"><div class="scard-icon">🙈</div><div class="scard-num">${oc}</div></div>`
+    ? `<div class="scard" onclick="goOcultos()" style="cursor:pointer"><div class="scard-icon">🙈</div><div class="scard-copy"><div class="scard-num">${oc}</div><div class="scard-lbl">Ocultos</div></div></div>`
     : '';
   document.getElementById('hStats').innerHTML= loading
-    ? `<div class="scard scard-loading"><div class="scard-icon">📦</div><div class="scard-num skel"></div></div>
-       <div class="scard scard-loading"><div class="scard-icon">🔢</div><div class="scard-num skel"></div></div>
-       <div class="scard scard-loading"><div class="scard-icon">⚠️</div><div class="scard-num skel"></div></div>
-       <div class="scard scard-loading"><div class="scard-icon">🛠️</div><div class="scard-num skel"></div></div>`
-    : `<div class="scard"><div class="scard-icon">📦</div><div class="scard-num">${total}</div></div>
-    <div class="scard"><div class="scard-icon">🔢</div><div class="scard-num">${units.toLocaleString()}</div></div>
-    <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-num" style="color:var(--red)">${low}</div></div>
-    <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-num" style="color:var(--amber)">${mant}</div></div>${ocCard}`;
+    ? `<div class="scard scard-loading"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Ítems</div></div></div>
+       <div class="scard scard-loading"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Unidades</div></div></div>
+       <div class="scard scard-loading"><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Stock bajo</div></div></div>
+       <div class="scard scard-loading"><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Mantenimiento</div></div></div>`
+    : `<div class="scard"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num">${total}</div><div class="scard-lbl">Ítems</div></div></div>
+    <div class="scard"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num">${units.toLocaleString()}</div><div class="scard-lbl">Unidades</div></div></div>
+    <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">Stock bajo</div></div></div>
+    <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">Mantenimiento</div></div></div>${ocCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
   const aulaEntries = loading ? AULAS : AULAS.filter(a=>items.some(x=>x.aula===a.id));
   document.getElementById('gAulas').innerHTML=aulaEntries.length
