@@ -186,25 +186,19 @@ no es solo un cambio de prompt, es una pieza nueva de infraestructura.
 
 **Prioridad:** Baja
 
-### 9. Generar QR automáticamente tras el alta — pendiente
-Tras crear un ítem nuevo desde el flujo de cámara (#1/#2), ofrecer
-generar e imprimir su etiqueta QR en el mismo flujo, sin tener que ir
-aparte al QR scanner existente. Cambio pequeño de UX, reutiliza QR ya
-implementado (`js/qr-scanner.js` y la impresión de etiquetas ya
-existente) — no requiere IA nueva.
+### 9. Generar QR automáticamente tras el alta — ✅ ya cubierto (sin cambios, 02/08/2026)
+El modal de ítem ya llama a `renderItemQr()` (`js/modal-item.js`) al
+abrirse, tanto en alta como en edición — cualquier ítem creado por
+cualquier flujo de cámara (#1/#2/#3/#6) ya tiene su QR generado y visible
+ahí mismo, sin pasos extra ni ir aparte al QR scanner. El hueco que esta
+idea buscaba cerrar no existía realmente; descartada sin implementación.
 
-**Prioridad:** Media (barato de implementar cuando se retome)
-
-### 10. Modo "Inspector" (cámara en vivo, verde/rojo/amarillo) — pendiente
-Cámara abierta en bucle, cada equipo detectado se marca en vivo como
-"inventariado en su aula" (verde), "no inventariado" (rojo), o
-"inventariado pero en otra aula" (amarillo) — permite auditar un taller
-entero en minutos. Es la idea más ambiciosa técnicamente: requiere
-detección continua (no una foto fija como el resto), y decidir el
-presupuesto de llamadas a la IA por segundo/minuto para que sea usable
-sin disparar costes ni latencia.
-
-**Prioridad:** Baja (la más compleja del roadmap, dejar para el final)
+### 10. Modo "Inspector" (cámara en vivo, verde/rojo/amarillo) — descartada (02/08/2026)
+Cámara en bucle con detección continua, aportaba poco frente a su coste
+de implementación (presupuesto de llamadas IA por segundo, latencia) una
+vez ya cubierto el caso de uso principal (auditar un aula) por la idea #5
+(inventario andando, foto a foto). Descartada, no se retoma salvo que
+surja una necesidad real que #5 no cubra.
 
 ---
 
@@ -330,5 +324,9 @@ CSV o PDF con items problemáticos agrupados por aula/categoría.
 
 ## Estado
 
-- **Última actualización:** 01/08/2026
-- **Versión actual:** v543+
+- **Última actualización:** 02/08/2026
+- **Versión actual:** v548+
+- **Roadmap "Modo Cámara Inteligente":** completo — ideas #1-#8 implementadas
+  y en producción, #9 resultó ya cubierta por código existente (sin
+  cambios necesarios), #10 descartada por bajo valor frente a su
+  complejidad. Detalle completo de la sesión en `CLAUDE.md`.
