@@ -367,21 +367,9 @@ export async function onRequestPost({ request, env, data }) {
     const deptBind = superadmin ? [] : [dept];
 
     if (serieLeida) {
-      const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
-        .bind(serieLeida, ...deptBind).first();
-      if (exact) return Response.json({ ok: true, match: 'exacto', item: exact });
-
-      const candidatesRes = await env.DB.prepare(`SELECT id, item, ref, aula, serie FROM inventario WHERE serie != ''${deptFilter}`)
-        .bind(...deptBind).all();
-      const candidatos = (candidatesRes.results || [])
-        .map(r => ({ ...r, _dist: levenshtein(r.serie, serieLeida) }))
-        .filter(r => r._dist <= 2)
-        .sort((a, b) => a._dist - b._dist)
-        .slice(0, 5)
-        .map(({ _dist, ...r }) => r);
-
-      if (candidatos.length) return Response.json({ ok: true, match: 'fuzzy', candidatos });
-      return Response.json({ ok: true, match: 'ninguno', serieLeida, marca, modelo });
+      const r = await buscarSerieEnD1(env, serieLeida, dept, superadmin, genericDept);
+      if (r.match === 'ninguno') return Response.json({ ok: true, match: 'ninguno', serieLeida, marca, modelo });
+      return Response.json({ ok: true, ...r });
     }
 
     if (textoLibre) {
@@ -455,6 +443,29 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   return Response.json({ ok: false, error: 'Accion desconocida' });
+}
+
+async function buscarSerieEnD1(env, serieLeida, dept, superadmin, genericDept) {
+  const deptFilter = superadmin
+    ? ''
+    : ` AND (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}')`;
+  const deptBind = superadmin ? [] : [dept];
+
+  const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
+    .bind(serieLeida, ...deptBind).first();
+  if (exact) return { match: 'exacto', item: exact };
+
+  const candidatesRes = await env.DB.prepare(`SELECT id, item, ref, aula, serie FROM inventario WHERE serie != ''${deptFilter}`)
+    .bind(...deptBind).all();
+  const candidatos = (candidatesRes.results || [])
+    .map(r => ({ ...r, _dist: levenshtein(r.serie, serieLeida) }))
+    .filter(r => r._dist <= 2)
+    .sort((a, b) => a._dist - b._dist)
+    .slice(0, 5)
+    .map(({ _dist, ...r }) => r);
+
+  if (candidatos.length) return { match: 'fuzzy', candidatos };
+  return { match: 'ninguno' };
 }
 
 function levenshtein(a, b) {
