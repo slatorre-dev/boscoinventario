@@ -5,6 +5,7 @@ let _marcaPendiente = '';
 let _modeloPendiente = '';
 let _nombreSugeridoPendiente = '';
 let _categoriaSugeridaPendiente = '';
+let _serieCandidatosPorId = {};
 
 function openCamaraSerie() {
   const modal = document.getElementById('mCamaraSerie');
@@ -24,6 +25,7 @@ function openCamaraSerie() {
   _modeloPendiente = '';
   _nombreSugeridoPendiente = '';
   _categoriaSugeridaPendiente = '';
+  _serieCandidatosPorId = {};
 
   if (!navigator.mediaDevices?.getUserMedia) {
     toast('Este navegador no permite acceder a la cámara', 'err');
@@ -84,6 +86,12 @@ async function capturarSerie() {
       }
       if (codigos.length) {
         const resCodigo = await apiPost({ action: 'buscarSeriePorCodigo', codigo: codigos[0].rawValue });
+        if (!resCodigo.ok) {
+          _mostrarSerieError(resCodigo.error || 'No se pudo comprobar el código detectado');
+          video.style.display = 'none';
+          capturarBtn.style.display = 'none';
+          return;
+        }
         if (resCodigo.ok && (resCodigo.match === 'exacto' || resCodigo.match === 'fuzzy')) {
           if (resCodigo.match === 'exacto') {
             closeCamaraSerie();
@@ -98,6 +106,10 @@ async function capturarSerie() {
           capturarBtn.style.display = 'none';
           return;
         }
+        _mostrarSerieCrearNuevo(String(codigos[0].rawValue || '').trim(), '', '');
+        video.style.display = 'none';
+        capturarBtn.style.display = 'none';
+        return;
       }
     }
 
@@ -166,10 +178,12 @@ function _mostrarSerieError(msg) {
 function _mostrarSerieCandidatos(candidatos) {
   const resultado = document.getElementById('serieResultado');
   resultado.style.display = 'block';
+  _serieCandidatosPorId = {};
   const filas = candidatos.map(c => {
+    _serieCandidatosPorId[String(c.id)] = c.serie || '';
     const aula = (typeof AULAS !== 'undefined' ? AULAS.find(a => a.id === c.aula) : null);
     const aulaNombre = aula ? aula.name : (c.aula || 'Sin aula');
-    return `<div class="serie-candidato" onclick="closeCamaraSerie();openItemRoute(${c.id})" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer">
+    return `<div class="serie-candidato" onclick="serieAbrirCandidato(${c.id})" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer">
       <div style="font-weight:600">${escHtml(c.item)}</div>
       <div style="font-size:12px;color:var(--muted)">${escHtml(aulaNombre)} · S/N: ${escHtml(c.serie)}</div>
     </div>`;
@@ -263,4 +277,22 @@ function _crearItemDesdeVisual() {
 function serieReintentar() {
   closeCamaraSerie();
   setTimeout(openCamaraSerie, 120);
+}
+
+async function serieAbrirCandidato(id) {
+  closeCamaraSerie();
+  openItemRoute(id);
+  if (typeof items !== 'undefined' && Array.isArray(items) && items.some(x => Number(x.id) === Number(id))) return;
+
+  const serie = _serieCandidatosPorId[String(id)] || '';
+  if (!serie) return;
+  try {
+    const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: serie });
+    if (res.ok && res.match === 'exacto' && res.item) {
+      if (!items.some(x => Number(x.id) === Number(res.item.id))) items.push(res.item);
+      openItemRoute(res.item.id);
+    }
+  } catch (e) {
+    // Dejar el comportamiento por defecto si la recuperación falla.
+  }
 }

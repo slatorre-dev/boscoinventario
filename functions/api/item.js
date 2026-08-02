@@ -458,15 +458,32 @@ async function buscarSerieEnD1(env, serieLeida, dept, superadmin, genericDept) {
     : ` AND (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}')`;
   const deptBind = superadmin ? [] : [dept];
 
+  const serieNorm = normalizeSerieCodigo(serieLeida);
+
   const exact = await env.DB.prepare(`SELECT * FROM inventario WHERE serie=?${deptFilter}`)
     .bind(serieLeida, ...deptBind).first();
   if (exact) return { match: 'exacto', item: exact };
 
-  const candidatesRes = await env.DB.prepare(`SELECT id, item, ref, aula, serie FROM inventario WHERE serie != ''${deptFilter}`)
+  const allWithSerieRes = await env.DB.prepare(`SELECT * FROM inventario WHERE serie != ''${deptFilter}`)
     .bind(...deptBind).all();
-  const candidatos = (candidatesRes.results || [])
-    .map(r => ({ ...r, _dist: levenshtein(r.serie, serieLeida) }))
-    .filter(r => r._dist <= 2)
+
+  const allWithSerie = allWithSerieRes.results || [];
+  const exactNormalizado = serieNorm
+    ? allWithSerie.find(r => normalizeSerieCodigo(r.serie) === serieNorm)
+    : null;
+  if (exactNormalizado) return { match: 'exacto', item: exactNormalizado };
+
+  const maxDist = serieNorm.length >= 12 ? 3 : 2;
+  const candidatos = allWithSerie
+    .map(r => ({
+      id: r.id,
+      item: r.item,
+      ref: r.ref,
+      aula: r.aula,
+      serie: r.serie,
+      _dist: levenshtein(normalizeSerieCodigo(r.serie), serieNorm)
+    }))
+    .filter(r => r.serie && r._dist <= maxDist)
     .sort((a, b) => a._dist - b._dist)
     .slice(0, 5)
     .map(({ _dist, ...r }) => r);
@@ -489,4 +506,14 @@ function levenshtein(a, b) {
     }
   }
   return dp[m][n];
+}
+
+function normalizeSerieCodigo(v) {
+  let s = String(v || '').toUpperCase().trim();
+  // Mantener solo alfanuméricos para evitar fallos por separadores comunes en etiquetas.
+  s = s.replace(/[^A-Z0-9]/g, '');
+  s = s.replace(/^SERIALNUMBER/, '');
+  s = s.replace(/^SERVICETAG/, '');
+  if (/^SN[A-Z0-9]{3,}$/.test(s)) s = s.slice(2);
+  return s;
 }

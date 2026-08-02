@@ -4,6 +4,9 @@ let _camUnifUsarJsQR = false;
 let _camUnifNoDetectadoTimer = null;
 let _camUnifUltimoCodigoFallido = null;
 let _camUnifUltimoFallidoTimestamp = 0;
+let _camUnifUltimoQrNoInventarioTs = 0;
+let _camUnifCandidatosPorId = {};
+let _camUnifCodigoPendienteAlta = '';
 
 function openCamaraUnificada() {
   const modal = document.getElementById('mCamaraUnificada');
@@ -19,6 +22,8 @@ function openCamaraUnificada() {
   resultado.innerHTML = '';
   btnIA.style.display = 'none';
   _camUnifScanning = true;
+  _camUnifCandidatosPorId = {};
+  _camUnifCodigoPendienteAlta = '';
 
   _camUnifUsarJsQR = true;
   if (typeof BarcodeDetector !== 'undefined' && BarcodeDetector.getSupportedFormats) {
@@ -115,7 +120,13 @@ function _iniciarEscaneoUnificado(video) {
 async function _manejarDeteccionUnificada(valor, formato) {
   if (formato === 'qr_code') {
     const itemMatch = valor.match(/item\/([a-zA-Z0-9_-]+)/);
-    if (!itemMatch) return false;
+    if (!itemMatch) {
+      if ((Date.now() - _camUnifUltimoQrNoInventarioTs) > 2000) {
+        _camUnifUltimoQrNoInventarioTs = Date.now();
+        toast('QR detectado, pero no es un QR de inventario válido', 'warn');
+      }
+      return false;
+    }
     _camUnifScanning = false;
     if (_camUnifNoDetectadoTimer) { clearTimeout(_camUnifNoDetectadoTimer); _camUnifNoDetectadoTimer = null; }
     document.getElementById('camaraUnifEstado').textContent = 'QR detectado: ' + itemMatch[1];
@@ -135,9 +146,14 @@ async function _manejarDeteccionUnificada(valor, formato) {
 
   document.getElementById('camaraUnifEstado').textContent = 'Comprobando código...';
   try {
+    _camUnifCodigoPendienteAlta = String(valor || '').trim();
     const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: valor });
+    if (!res.ok) {
+      throw new Error(res.error || 'No se pudo comprobar el código');
+    }
     if (res.ok && (res.match === 'exacto' || res.match === 'fuzzy')) {
       if (res.match === 'exacto') {
+        document.getElementById('camaraUnifEstado').textContent = 'Código encontrado. Abriendo ficha...';
         closeCamaraUnificada();
         if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === res.item.id)) {
           items.push(res.item);
@@ -150,17 +166,26 @@ async function _manejarDeteccionUnificada(valor, formato) {
       if (video) video.style.display = 'none';
       const resultado = document.getElementById('camaraUnifResultado');
       resultado.style.display = 'block';
+      _camUnifCandidatosPorId = {};
       const filas = res.candidatos.map(c => {
+        _camUnifCandidatosPorId[String(c.id)] = c.serie || '';
         const aula = (typeof AULAS !== 'undefined' ? AULAS.find(a => a.id === c.aula) : null);
         const aulaNombre = aula ? aula.name : (c.aula || 'Sin aula');
-        return `<div class="serie-candidato" onclick="closeCamaraUnificada();openItemRoute(${c.id})" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer">
+        return `<div class="serie-candidato" onclick="camaraUnifAbrirCandidato(${c.id})" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer">
           <div style="font-weight:600">${escHtml(c.item)}</div>
           <div style="font-size:12px;color:var(--muted)">${escHtml(aulaNombre)} · S/N: ${escHtml(c.serie)}</div>
         </div>`;
       }).join('');
-      resultado.innerHTML = `<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}<button class="btn" onclick="camaraUnifReintentar()">Reintentar</button>`;
+      resultado.innerHTML = `<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}
+      <button class="btn btn-p" onclick="camaraUnifCrearItemDesdeCodigo()">➕ Añadir ítem nuevo con este código</button>
+      <button class="btn" onclick="camaraUnifReintentar()" style="margin-top:8px">Reintentar</button>`;
       return true;
     }
+
+    document.getElementById('camaraUnifEstado').style.display = 'none';
+    document.getElementById('camaraUnifResultado').style.display = 'block';
+    document.getElementById('camaraUnifResultado').innerHTML = '<div style="margin-bottom:8px">No se encontró ningún ítem para ese código.</div><button class="btn btn-p" onclick="camaraUnifCrearItemDesdeCodigo()">➕ Añadir ítem nuevo con este código</button><button class="btn" onclick="camaraUnifReintentar()" style="margin-top:8px">Reintentar</button>';
+    return true;
   } catch (e) {
     _camUnifUltimoCodigoFallido = valor;
     _camUnifUltimoFallidoTimestamp = Date.now();
@@ -176,6 +201,36 @@ function camaraUnifReintentar() {
   if (_camUnifStream) { _camUnifStream.getTracks().forEach(t => t.stop()); _camUnifStream = null; }
   closeCamaraUnificada();
   setTimeout(openCamaraUnificada, 120);
+}
+
+function camaraUnifCrearItemDesdeCodigo() {
+  const codigo = String(_camUnifCodigoPendienteAlta || '').trim();
+  closeCamaraUnificada();
+  openModal();
+  setTimeout(() => {
+    const serieInput = document.getElementById('f_serie');
+    if (serieInput && codigo) serieInput.value = codigo;
+    const itemInput = document.getElementById('f_item');
+    if (itemInput) itemInput.focus();
+  }, 50);
+}
+
+async function camaraUnifAbrirCandidato(id) {
+  closeCamaraUnificada();
+  openItemRoute(id);
+  if (typeof items !== 'undefined' && Array.isArray(items) && items.some(x => Number(x.id) === Number(id))) return;
+
+  const serie = _camUnifCandidatosPorId[String(id)] || '';
+  if (!serie) return;
+  try {
+    const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: serie });
+    if (res.ok && res.match === 'exacto' && res.item) {
+      if (!items.some(x => Number(x.id) === Number(res.item.id))) items.push(res.item);
+      openItemRoute(res.item.id);
+    }
+  } catch (e) {
+    // Si falla, dejamos el comportamiento por defecto (openItemRoute ya lanzó toast).
+  }
 }
 
 function _mostrarAccionesQrEnModalUnificado(itemId) {
