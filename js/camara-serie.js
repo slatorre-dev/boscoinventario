@@ -71,10 +71,17 @@ async function capturarSerie() {
   canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  if (window.BarcodeDetector) {
-    try {
-      const detector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-      const codigos = await detector.detect(canvas);
+  try {
+    if (window.BarcodeDetector) {
+      let codigos = [];
+      try {
+        const detector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+        codigos = await detector.detect(canvas);
+      } catch (e) {
+        // Falla silenciosa: solo cubre new BarcodeDetector()/detect() —
+        // ej. formato no soportado por este navegador concreto. Se sigue
+        // con el flujo normal de IA sin interrumpir al usuario.
+      }
       if (codigos.length) {
         const resCodigo = await apiPost({ action: 'buscarSeriePorCodigo', codigo: codigos[0].rawValue });
         if (resCodigo.ok && (resCodigo.match === 'exacto' || resCodigo.match === 'fuzzy')) {
@@ -84,31 +91,25 @@ async function capturarSerie() {
               items.push(resCodigo.item);
             }
             openItemRoute(resCodigo.item.id);
-            _serieCapturing = false;
             return;
           }
           _mostrarSerieCandidatos(resCodigo.candidatos);
-          _serieCapturing = false;
+          video.style.display = 'none';
+          capturarBtn.style.display = 'none';
           return;
         }
       }
-    } catch (e) {
-      // Falla silenciosa: si BarcodeDetector existe pero lanza un error
-      // (ej. formato no soportado por este navegador concreto), se sigue
-      // con el flujo normal de IA sin interrumpir al usuario.
     }
-  }
 
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-  const imagenBase64 = dataUrl.split(',')[1];
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+    const imagenBase64 = dataUrl.split(',')[1];
 
-  video.style.display = 'none';
-  capturarBtn.style.display = 'none';
-  estado.style.display = 'block';
-  estado.textContent = 'Leyendo etiqueta...';
-  resultado.style.display = 'none';
+    video.style.display = 'none';
+    capturarBtn.style.display = 'none';
+    estado.style.display = 'block';
+    estado.textContent = 'Leyendo etiqueta...';
+    resultado.style.display = 'none';
 
-  try {
     const res = await apiPost({ action: 'buscarPorSerie', imagen: imagenBase64 });
     estado.style.display = 'none';
     if (!res.ok) {
