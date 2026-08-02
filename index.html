@@ -325,6 +325,10 @@
         🔢
         <span>Buscar con la cámara</span>
       </button>
+      <button class="gsearch-extra-btn" id="gsAyuda" onclick="openAyudaCamara()" title="Ayuda: funciones de cámara">
+        ❓
+        <span>Ayuda</span>
+      </button>
     </div>
   </div>
   <div class="home-body">
@@ -1466,6 +1470,39 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
     <div style="display:flex;gap:10px;justify-content:center">
       <button class="btn" onclick="closeConf()">Cancelar</button>
       <button class="btn btn-d" id="cOk">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOUR GUIADO: FUNCIONES DE CÁMARA ══ -->
+<div class="mbg" id="mTourCamara" onclick="if(event.target===this)closeTourCamara()">
+  <div class="modal" style="max-width:480px">
+    <div class="mh"><div class="mt" id="tourTitulo">📷 Novedades: búsqueda por cámara</div><button class="mx" onclick="closeTourCamara()">✕</button></div>
+    <div id="tourContenido" style="min-height:120px;font-size:14px;line-height:1.5"></div>
+    <div style="text-align:center;margin:14px 0;font-size:12px;color:var(--muted)" id="tourPasos">1 / 4</div>
+    <div class="mf" style="margin-top:8px;gap:8px">
+      <button class="btn" id="tourBtnSaltar" onclick="closeTourCamara()">Saltar</button>
+      <div style="flex:1"></div>
+      <button class="btn" id="tourBtnAtras" onclick="tourAnterior()" style="display:none">Atrás</button>
+      <button class="btn btn-p" id="tourBtnSiguiente" onclick="tourSiguiente()">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AYUDA: FUNCIONES DE CÁMARA (COMPLETA) ══ -->
+<div class="mbg" id="mAyudaCamara" onclick="if(event.target===this)closeAyudaCamara()">
+  <div class="modal" style="max-width:560px">
+    <div class="mh"><div class="mt">❓ Funciones de cámara</div><button class="mx" onclick="closeAyudaCamara()">✕</button></div>
+    <div style="font-size:13px;line-height:1.6;max-height:60vh;overflow-y:auto">
+      <div style="margin-bottom:14px"><strong>🔢 Buscar por número de serie</strong><br>Apunta la cámara a la etiqueta de un equipo — lee el número de serie (o un código de barras si lo tiene) y encuentra el ítem al instante. Si el texto no es un número de serie, lo busca igual en el inventario.</div>
+      <div style="margin-bottom:14px"><strong>🧩 Reconocimiento visual</strong><br>Aunque el equipo no tenga ninguna etiqueta legible, la cámara puede reconocerlo igual y sugerir de qué se trata.</div>
+      <div style="margin-bottom:14px"><strong>✏️ Autocompletado al dar de alta</strong><br>Si el equipo no está en el inventario, se precargan marca y modelo automáticamente a partir de la foto.</div>
+      <div style="margin-bottom:14px"><strong>📸 Añadir varios equipos de una foto</strong><br>Fotografía una mesa entera con varios equipos nuevos y créalos todos de golpe, con cantidades. <em>Disponible dentro de la vista de una aula concreta, botón "Añadir varios".</em></div>
+      <div style="margin-bottom:14px"><strong>📷 Revisar aula (inventario andando)</strong><br>Recorre un aula fotografiando cada equipo, uno tras otro, y confirma qué está donde debe. <em>Disponible dentro de la vista de una aula concreta, botón "Revisar aula".</em></div>
+    </div>
+    <div class="mf" style="margin-top:14px">
+      <button class="btn" id="ayudaBtnVerTour" onclick="closeAyudaCamara();openTourCamara(true)">▶ Ver tour guiado</button>
+      <button class="btn btn-p" onclick="closeAyudaCamara()">Cerrar</button>
     </div>
   </div>
 </div>
