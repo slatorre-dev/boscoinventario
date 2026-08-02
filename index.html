@@ -507,10 +507,10 @@
       <div class="print-header-title" id="printTitle"></div>
       <div class="print-header-meta" id="printMeta"></div>
     </div>
-    <div class="toolbar">
+    <div class="toolbar inv-toolbar">
       <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" list="srchHistoryList" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor..." oninput="renderInv()" onchange="saveRecentSearch(this.value)"></div>
       <datalist id="srchHistoryList"></datalist>
-      <div id="invFilters">
+      <div id="invFilters" class="inv-filters-row">
         <div style="display:flex;gap:4px;align-items:center">
           <select id="fCat" onchange="renderInv()"><option value="">Todas las categorías</option></select>
           <button class="mini-btn" onclick="openCatsModal()" title="Gestionar categorías">⚙️</button>
@@ -551,7 +551,7 @@
       <button class="mini-btn" onclick="bulkPrintSelected()">Imprimir</button>
       <button class="mini-btn" onclick="clearBulkSelection()">Limpiar</button>
     </div>
-    <div class="srow">
+    <div class="srow inv-summary-row">
       <span class="clbl" id="iCount"></span>
       <span class="lalert" id="iLow"></span>
       <div class="tipo-filter-buttons">
@@ -569,7 +569,7 @@
         </button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div class="inv-view-row" style="display:flex;align-items:center;gap:8px">
       <div class="pager-top print-no" id="pagerTop" style="flex:1"></div>
       <div class="view-toggle-btns print-no">
         <button id="btnGroupView" class="view-btn active" onclick="setGroupView(!_groupView)" title="Alternar vista agrupada / lista">Agrupado</button>
