@@ -1324,30 +1324,33 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .brand-dept-select{display:none}
   #connTxt{display:none}
   .breadcrumb{display:none}
-  .mob-menu-btn{display:flex}
+  .mob-menu-btn{display:none}
   /* En móvil: chip solo muestra avatar, nombre y botón ⏻ se ocultan */
   #userName{display:none}
   .user-logout{display:none}
   .user-chip{padding:2px 4px;gap:0;background:none}
   /* Logout aparece en el menú hamburguesa */
   .tbtn-logout-mob{display:flex}
+  .topbar-right{gap:6px;flex-wrap:nowrap;overflow:hidden}
   .topbar-btns{
-    position:absolute;top:58px;right:0;
-    background:var(--white);
-    border:1px solid var(--border);
-    border-radius:0 0 12px 12px;
-    border-top:2px solid var(--accent);
-    padding:8px;
-    flex-direction:column;
-    gap:4px;
-    min-width:200px;
-    box-shadow:var(--shh);
-    z-index:200;
-    display:none;
-    overflow:visible;
+    position:static;
+    right:auto;
+    top:auto;
+    background:none;
+    border:none;
+    border-radius:0;
+    padding:0;
+    flex-direction:row;
+    gap:6px;
+    min-width:0;
+    box-shadow:none;
+    z-index:auto;
+    display:flex;
+    flex-wrap:nowrap;
+    overflow:hidden;
   }
   .topbar-btns.open{display:flex}
-  .topbar-btns .tbtn{width:auto;justify-content:center;font-size:0;padding:8px 10px;min-height:40px;min-width:40px;flex:0 0 auto}
+  .topbar-btns .tbtn{width:36px;justify-content:center;font-size:0;padding:0;min-height:36px;min-width:36px;flex:0 0 36px}
   .topbar-btns .btn-top-label,.topbar-btns .btn-install-label{display:none}
   .topbar-btns .tbtn svg,.topbar-btns .tbtn img{display:block;margin-right:0}
   .dept-menu-wrap{position:static;display:flex !important;flex-direction:column;width:100%}
@@ -1473,6 +1476,8 @@ textarea.fi-w{resize:vertical;min-height:60px}
 }
 
 @media (max-width: 1024px){
+  .mob-menu-btn{display:none}
+  .topbar-right{flex-wrap:nowrap;gap:6px;overflow:hidden}
   .topbar-btns{
     flex-direction:row;
     align-items:center;
