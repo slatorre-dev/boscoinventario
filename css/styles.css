@@ -813,6 +813,7 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .cons-group-icon{width:32px;height:32px;flex:0 0 32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid rgba(148,163,184,.28)}
 .cons-group-main{display:flex;flex-direction:column;min-width:0;gap:1px;flex:1 1 auto;padding-right:18px}
 .cons-group-title{font-size:13px;font-weight:800;color:var(--text);line-height:1.2}
+.cons-group-kind{display:inline-flex;align-items:center;margin-right:6px;padding:2px 6px;border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.04em;color:#1d4ed8;background:#dbeafe;border:1px solid #93c5fd;vertical-align:middle}
 .cons-group-sub{font-size:10px;color:var(--muted);line-height:1.2}
 .cons-metrics{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}
 .cons-group.open .cons-metrics{justify-content:flex-start;width:100%}
@@ -830,10 +831,11 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 .cons-subgroup{border:1px solid #dbe2ef;border-radius:10px;background:#ffffff;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.05)}
 .cons-subgroup.open{border-color:#60a5fa;box-shadow:0 6px 16px rgba(37,99,235,.14)}
 .cons-subgroup.open{grid-column:1/-1}
-.cons-subgroup-btn{width:100%;display:flex;align-items:center;gap:8px;padding:9px 11px;background:#f8fafc;border:none;text-align:left;cursor:pointer;min-height:40px}
-.cons-subgroup-btn:hover{background:#f1f5f9}
-.cons-subgroup.open .cons-subgroup-btn{background:linear-gradient(90deg,#eaf3ff,#f8fbff);box-shadow:inset 4px 0 0 #2563eb}
-.cons-subgroup-title{font-size:12px;font-weight:800;color:#1e40af;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
+.cons-subgroup-btn{width:100%;display:flex;align-items:center;gap:8px;padding:9px 11px;background:#faf5ff;border:none;text-align:left;cursor:pointer;min-height:40px}
+.cons-subgroup-btn:hover{background:#f3e8ff}
+.cons-subgroup.open .cons-subgroup-btn{background:linear-gradient(90deg,#f5f3ff,#faf5ff);box-shadow:inset 4px 0 0 #7c3aed}
+.cons-subgroup-title{font-size:12px;font-weight:800;color:#6d28d9;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
+.cons-subgroup-kind{display:inline-flex;align-items:center;margin-right:6px;padding:2px 6px;border-radius:999px;font-size:9px;font-weight:800;letter-spacing:.04em;color:#6d28d9;background:#ede9fe;border:1px solid #c4b5fd;vertical-align:middle}
 .cons-subgroup-metrics{font-size:11px;color:#334155;background:#e2e8f0;border-radius:999px;padding:2px 7px;line-height:1.2}
 .cons-subgroup-low{font-size:11px;color:#c2410c;background:#ffedd5;border-radius:999px;padding:2px 7px;line-height:1.2}
 .cons-subgroup-chevron{font-size:9px;color:var(--muted);min-width:10px;text-align:right}

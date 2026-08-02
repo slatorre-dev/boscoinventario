@@ -375,7 +375,7 @@ function renderConsumibleTagGroups(catKey, items, mode){
     const icon = tagIcon(g.tag);
     return `<section class="cons-subgroup${isOpen?' open':''}">
       <button class="cons-subgroup-btn" type="button" onclick="toggleConsumibleTagGroup('${catEncoded}','${tagEncoded}')">
-        <span class="cons-subgroup-title" title="${escHtml(g.tag)}"><span class="cons-subgroup-icon">${icon} </span>${escHtml(g.tag)}</span>
+        <span class="cons-subgroup-title" title="${escHtml(g.tag)}"><span class="cons-subgroup-kind">TAG</span><span class="cons-subgroup-icon">${icon} </span>${escHtml(g.tag)}</span>
         <span class="cons-subgroup-metrics">${g.refs}</span>
         ${g.low?`<span class="cons-subgroup-low" title="Stock bajo">⚠ ${g.low}</span>`:''}
         <span class="cons-subgroup-chevron">${isOpen ? '▲' : '▼'}</span>
@@ -411,7 +411,7 @@ function renderConsumibleGroups(mc,data,mode){
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
           <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || CAT_ICON_GENERIC_HTML}</span>
           <span class="cons-group-main">
-            <span class="cons-group-title">${escHtml(g.name)}</span>
+            <span class="cons-group-title"><span class="cons-group-kind">CATEGORÍA</span>${escHtml(g.name)}</span>
           </span>
           <span class="cons-metrics">
             ${matchBadge}
@@ -440,7 +440,7 @@ function renderConsumibleGroups(mc,data,mode){
         <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('__inventariable__')">
           <span class="cons-group-icon" style="background:#eff6ff;color:#1d4ed8">📦</span>
           <span class="cons-group-main">
-            <span class="cons-group-title">Inventariables</span>
+            <span class="cons-group-title"><span class="cons-group-kind">TIPO</span>Inventariables</span>
           </span>
           <span class="cons-metrics">
             ${q ? `<span class="cons-metric cons-metric-match">${fmtNum(inventariables.length)} coincid.</span>` : `<span class="cons-metric">${fmtNum(inventariables.length)} refs</span><span class="cons-metric">${fmtNum(inventariables.reduce((a,x)=>a+(Number(x.qty)||0),0))} uds</span>`}
@@ -463,7 +463,7 @@ function renderConsumibleGroups(mc,data,mode){
       <button class="cons-group-btn" type="button" onclick="toggleConsumibleGroup('${k}')">
         <span class="cons-group-icon" style="background:${catCfg.bg};color:${catCfg.c}">${catCfg.i || CAT_ICON_GENERIC_HTML}</span>
         <span class="cons-group-main">
-          <span class="cons-group-title">${escHtml(g.name)}</span>
+          <span class="cons-group-title"><span class="cons-group-kind">CATEGORÍA</span>${escHtml(g.name)}</span>
         </span>
         <span class="cons-metrics">
           ${matchBadge}
