@@ -2,6 +2,8 @@ let _camUnifStream = null;
 let _camUnifScanning = false;
 let _camUnifUsarJsQR = false;
 let _camUnifNoDetectadoTimer = null;
+let _camUnifUltimoCodigoFallido = null;
+let _camUnifUltimoFallidoTimestamp = 0;
 
 function openCamaraUnificada() {
   const modal = document.getElementById('mCamaraUnificada');
@@ -124,6 +126,13 @@ async function _manejarDeteccionUnificada(valor, formato) {
 
   _camUnifScanning = false;
   if (_camUnifNoDetectadoTimer) { clearTimeout(_camUnifNoDetectadoTimer); _camUnifNoDetectadoTimer = null; }
+
+  if (valor === _camUnifUltimoCodigoFallido && (Date.now() - _camUnifUltimoFallidoTimestamp) < 2000) {
+    _camUnifScanning = true;
+    document.getElementById('camaraUnifEstado').textContent = 'Buscando QR o código...';
+    return false;
+  }
+
   document.getElementById('camaraUnifEstado').textContent = 'Comprobando código...';
   try {
     const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: valor });
@@ -137,6 +146,8 @@ async function _manejarDeteccionUnificada(valor, formato) {
         return true;
       }
       document.getElementById('camaraUnifEstado').style.display = 'none';
+      const video = document.getElementById('camaraUnifVideo');
+      if (video) video.style.display = 'none';
       const resultado = document.getElementById('camaraUnifResultado');
       resultado.style.display = 'block';
       const filas = res.candidatos.map(c => {
@@ -147,14 +158,24 @@ async function _manejarDeteccionUnificada(valor, formato) {
           <div style="font-size:12px;color:var(--muted)">${escHtml(aulaNombre)} · S/N: ${escHtml(c.serie)}</div>
         </div>`;
       }).join('');
-      resultado.innerHTML = `<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}`;
+      resultado.innerHTML = `<div style="margin-bottom:8px">No hay coincidencia exacta, ¿es alguno de estos?</div>${filas}<button class="btn" onclick="camaraUnifReintentar()">Reintentar</button>`;
       return true;
     }
-  } catch (e) { /* fallo de red al comprobar el código: se sigue escaneando */ }
+  } catch (e) {
+    _camUnifUltimoCodigoFallido = valor;
+    _camUnifUltimoFallidoTimestamp = Date.now();
+    toast('No se pudo comprobar el código, revisa tu conexión', 'err');
+  }
 
   _camUnifScanning = true;
   document.getElementById('camaraUnifEstado').textContent = 'Buscando QR o código...';
   return false;
+}
+
+function camaraUnifReintentar() {
+  if (_camUnifStream) { _camUnifStream.getTracks().forEach(t => t.stop()); _camUnifStream = null; }
+  closeCamaraUnificada();
+  setTimeout(openCamaraUnificada, 120);
 }
 
 function _mostrarAccionesQrEnModalUnificado(itemId) {

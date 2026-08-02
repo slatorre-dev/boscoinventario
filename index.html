@@ -317,6 +317,22 @@
         🎥
         <span>Buscar con cámara (QR o S/N)</span>
       </button>
+      <!-- Red de seguridad: si el flujo unificado (#gsCamara) falla en producción,
+           cambiar display:none por display:flex aquí reactiva los botones antiguos
+           al instante, sin necesitar un nuevo deploy. Ver revisión final de rama,
+           02/08/2026. -->
+      <button class="gsearch-extra-btn" id="gsQr" onclick="openQrScanner()" title="Escanear QR" style="display:none">
+        <svg style="width:18px;height:18px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#fff" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M0.9472 0.9472h30.1056v30.1056H0.9472Z"/>
+          <path fill="currentColor" d="M5.9648 5.9648h2.5088v2.5088H5.9648Zm0 17.5616h2.5088v2.5088H5.9648Zm17.5616-17.5616h2.5088v2.5088h-2.5088Z"/>
+          <path fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="0.8889" d="M3.456 3.456h7.5264v7.5264H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM3.456 21.0176h7.5264V28.544H3.456Zm2.5088 2.5088h2.5088v2.5088H5.9648ZM21.0176 3.456H28.544v7.5264h-7.5264Zm2.5088 2.5088h2.5088v2.5088h-2.5088Z"/>
+        </svg>
+        <span>Escanear QR</span>
+      </button>
+      <button class="gsearch-extra-btn" id="gsSerie" onclick="openCamaraSerie()" title="Buscar con la cámara" style="display:none">
+        🔢
+        <span>Buscar con la cámara</span>
+      </button>
       <button class="gsearch-extra-btn" id="gsAyuda" onclick="openAyudaCamara()" title="Ayuda: funciones de cámara">
         ❓
         <span>Ayuda</span>
