@@ -1278,21 +1278,21 @@ sesión para la razón (un `ReadableStream` custom que nunca cerraba ni
 emitía, causa raíz no confirmada del todo) y si alguien quiere recuperarlo
 más adelante con más tiempo para depurar.
 
-### Verificación pendiente sin completar: onboarding con rol Consulta
+### Onboarding con rol Consulta: ✅ verificado (02/08/2026)
 
-La sesión del 01-02/08/2026 (ver entrada completa más abajo) desplegó el
-onboarding de cámara (v550) y corrigió en la revisión final de rama que el
-tour/ayuda no debían mostrar las 2 funciones de solo-escritura (#5/#6) al
-rol `Consulta`. La verificación end-to-end en producción con Playwright
-del resto de casos (tour aparece en primer login, navegación de las 4
-pantallas, cierre marca el flag en las 3 vías, no reaparece en logins
-posteriores, botón ❓ abre ayuda completa, ayuda reabre el tour) **se
-interrumpió antes de llegar al caso específico del rol Consulta** — no
-hay ninguna cuenta de prueba conocida con ese rol entre las credenciales
-documentadas (todas son superadmin/jefe de departamento/profesor). Para
-retomar: crear o localizar una cuenta con rol `Consulta` real, o mockear
-`can()` en el navegador vía Playwright para simular el rol sin necesitar
-una cuenta real.
+La sesión del 01-02/08/2026 desplegó el onboarding de cámara (v550) y
+corrigió en la revisión final de rama que el tour/ayuda no debían mostrar
+las 2 funciones de solo-escritura (#5/#6) al rol `Consulta`. No hay
+ninguna cuenta de prueba conocida con ese rol entre las credenciales
+documentadas (todas son superadmin/jefe de departamento/profesor), así
+que se verificó mockeando `can()` en el navegador vía Playwright
+(`window.can = perm => perm !== 'items.write'`) en vez de usar una cuenta
+real — confirmado: con el mock activo, el tour muestra exactamente 2/2
+pantallas (ninguna de #5/#6), la ayuda oculta ambos bloques
+(`#ayudaMultiEquipo`/`#ayudaRevisionAula`); restaurando `can()` real
+(sesión superadmin), ambos bloques vuelven a mostrarse correctamente —
+confirma que el toggle es dinámico en ambos sentidos, sin quedar fijo en
+un estado tras el primer cálculo.
 
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 
