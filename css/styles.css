@@ -547,6 +547,16 @@ body{
 .inv-view-row .view-toggle-btns{background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:10px;padding:4px}
 .inv-view-row .view-btn{border-radius:7px}
 .inv-view-row #btnGroupView{padding:0 12px}
+
+@media(max-width:1024px){
+  #pS .sub-header{padding:22px 20px 16px}
+  #pS .sub-title{font-size:24px;max-width:none}
+  #pS .sub-title-row{gap:12px;align-items:center}
+  #pS .sub-meta{font-size:12px;max-width:none}
+  #pS .sub-body{padding:18px 16px}
+  .inv-toolbar{position:static;top:auto;padding:12px 14px}
+  .inv-summary-row,.inv-view-row{padding:8px}
+}
 .bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-8px 0 18px;background:#f8fafc;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:10px 12px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .bulk-count{font-size:12px;font-weight:800;color:var(--accent);background:var(--accent-l);border-radius:999px;padding:6px 10px;white-space:nowrap}
 .bulkbar select,.bulkbar input{min-height:36px;padding:8px 10px;font-size:12px}
@@ -1354,7 +1364,24 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .inv-filters-row{display:none}
   .sbox{min-width:unset}
   #invFilters{display:none}
-    #pS .sub-meta{text-align:left}
+  #pS .sub-meta{text-align:left}
+
+  /* En subpágina de inventario mantenemos filtros visibles también en móvil */
+  #pS #invFilters.inv-filters-row{
+    display:grid!important;
+    grid-template-columns:1fr;
+    gap:8px;
+    width:100%;
+  }
+  #pS #invFilters.inv-filters-row > *{min-width:0}
+  #pS #invFilters.inv-filters-row select,
+  #pS #invFilters.inv-filters-row .fi,
+  #pS #invFilters.inv-filters-row button{width:100%}
+
+  #pS .inv-summary-row,
+  #pS .inv-view-row{padding:8px 9px;border-radius:10px}
+  #pS .inv-view-row{gap:6px!important;flex-wrap:wrap}
+  #pS .inv-view-row .view-toggle-btns{margin-left:auto}
   .bulkbar{align-items:stretch}
   .bulkbar select,.bulkbar input,.bulkbar .mini-btn{width:100%}
   .bulk-control{width:100%;min-width:0}
