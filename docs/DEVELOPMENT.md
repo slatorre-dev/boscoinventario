@@ -4,6 +4,45 @@ Registro de desarrollo y mejoras implementadas en la aplicación.
 
 ## Sesiones de trabajo
 
+### Sesión 02/08/2026 — Hardening cámara+IA + feedback learning (v552→v557)
+
+#### Objetivo
+- Consolidar el modo cámara para uso real en taller con profesorado no técnico.
+- Subir precisión IA sin proveedor adicional ni coste extra (Cloudflare-only).
+- Cerrar ciclo de mejora con aprendizaje desde decisiones reales de usuario.
+
+#### Cambios por versión
+- **v552** (`3dc9cba`): robustez de flujo cámara y apertura de ítems/candidatos.
+- **v553** (`d167317`): claridad UX, se explicita que cámara también permite alta.
+- **v554** (`b5517d4`): mejoras para usuario novel (linterna, quick mode, accesibilidad, hint).
+- **v555** (`9621d06`): doble pasada OCR, variantes OCR y mejor frame de captura.
+- **v556** (`5b1eba0`): guía visual y capa de confianza IA para decisiones seguras.
+- **v557** (`9d2c456`): aprendizaje por feedback real persistido en backend.
+
+#### Implementación técnica de v557
+- Backend (`functions/api/item.js`):
+  - Acción nueva `registrarFeedbackDeteccion`.
+  - Tabla autocreada `ia_deteccion_ejemplos`.
+  - Retención: últimos 300 ejemplos por departamento.
+  - Reuso de ejemplos recientes en prompt de `buscarPorSerie` (few-shot textual).
+- Frontend:
+  - `js/camara-serie.js`: envío automático de feedback en puntos clave:
+    `exacto_auto`, `exacto_confirmado`, `fuzzy_seleccionado`, `texto_libre`,
+    `alta_desde_serie`, `alta_desde_visual`.
+  - `js/api.js`: registro de acción `registrarFeedbackDeteccion`.
+  - `js/roles.js`: permiso de acción ligado a `serie.read`.
+- Deploy:
+  - `sw.js` actualizado a `v557` para cache-bust.
+
+#### Resultado
+- La app ya no depende solo de prompt estático: incorpora señal real de uso.
+- La precisión puede seguir mejorando sesión a sesión con datos del propio centro.
+
+#### Deuda técnica abierta
+- Formalizar migración SQL para `ia_deteccion_ejemplos` (ahora runtime).
+- Añadir métricas agregadas de calidad por departamento.
+- Definir limpieza por antigüedad para dataset de feedback.
+
 ### Sesión 27/05/2026 — Inventario agrupado por tags + normalización D1 (v424→v435)
 
 #### Topbar y despliegue

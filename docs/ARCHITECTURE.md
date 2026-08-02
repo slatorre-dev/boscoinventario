@@ -151,7 +151,9 @@ Request → _middleware.js → Valida auth → Valida permisos → Endpoint
 
 #### functions/api/item.js
 - **Endpoint:** GET/POST/DELETE `/api/item`
-- **Acciones:** add, edit, delete, get
+- **Acciones principales:** add, update, delete, bulkImport, fotosGet,
+  fotosSync, toggleOculto, restoreBackup, buscarPorSerie,
+  buscarSeriePorCodigo, detectarMultiples, registrarFeedbackDeteccion
 - **Validación:** Usa `.bind()` con placeholders (✅ seguro contra SQL injection)
 
 #### functions/api/auth.js
@@ -167,9 +169,9 @@ Request → _middleware.js → Valida auth → Valida permisos → Endpoint
 #### functions/api/proxy-ai.js
 - **Endpoint:** `/api/proxy-ai` (antes `/proxy/ai`, movido para quedar bajo la
   protección de `_middleware.js` — vivía sin ninguna autenticación)
-- **Función:** Proxy a GitHub Models API
-- **Modelo:** gpt-4o-mini (gratis con GitHub Copilot)
-- **Streaming:** Respuestas en tiempo real
+- **Función:** Proxy al binding `AI` de Cloudflare Workers AI
+- **Modelo actual:** `@cf/zai-org/glm-4.7-flash`
+- **Streaming:** respuesta SSE compatible en modo respuesta única (sin token streaming incremental)
 
 ---
 
@@ -208,6 +210,13 @@ ciclos (
 departamentos (slug PRIMARY KEY, nombre, icono, color, orden)  -- 0007_departamentos.sql, 24 filas
 
 profesores (id PRIMARY KEY, nombre, departamento, email)
+
+ia_deteccion_ejemplos (
+  id PRIMARY KEY AUTOINCREMENT,
+  fecha, departamento, tipo, nombre, categoria, serie,
+  marca, modelo, texto_libre, confianza, imagen_base64
+)
+-- tabla de aprendizaje IA autocreada en runtime por functions/api/item.js (v557)
 -- departamento aquí SÍ se usa para scoping (antes era solo decorativo)
 
 prestamos (id, itemId, itemNombre, cantidad, aulaOrigen, aulaDestino,

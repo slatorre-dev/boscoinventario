@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v551 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+**Estado:** v557 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
@@ -10,7 +10,10 @@ libre, reconocimiento visual, multi-equipo, inventario andando, etc.) más
 lectura de código de barras (mejora de #1), onboarding (tour guiado +
 ayuda permanente), y unificación de los botones de QR + búsqueda por
 cámara en uno solo — ver sesión del 01-02/08/2026 más abajo para el
-detalle completo de las 5 piezas construidas hoy. **Volt** (el chatbot)
+detalle completo de las 5 piezas construidas hoy. **Fase de mejora IA
+post-roadmap completada (v552-v557):** robustez OCR/visual, guía de cámara,
+UX para usuario novel y aprendizaje por feedback real en producción.
+**Volt** (el chatbot)
 migrado a Cloudflare Workers AI tras la retirada de GitHub Models
 (30/07/2026). Sin pendientes de diseño abiertos de esta sesión —
 ver sección de Pendientes.
@@ -26,6 +29,74 @@ Documentación técnica detallada en `docs/` — este archivo es el resumen
 operativo para retomar el trabajo desde cero, incluso desde otro PC. Ver
 sección [Documentación en GitHub](#documentación-en-github-docs) al final.
 
+- **02/08/2026 (v552-v557): hardening total de cámara + aprendizaje real por feedback (post-roadmap).**
+  Continuación directa tras cerrar el roadmap v551: foco en precisión real en aula,
+  robustez ante OCR ambiguo y reducción de fricción para profesorado no técnico,
+  sin añadir proveedores de pago (Cloudflare-only, gratis). Cronología exacta
+  en commits: `3dc9cba` (v552), `d167317` (v553), `b5517d4` (v554), `9621d06`
+  (v555), `5b1eba0` (v556), `9d2c456` (v557).
+
+  **v552 (`3dc9cba`) — robustez de flujo cámara + alta de ítems más estable.**
+  Se reforzó la navegación cuando el ítem detectado no estaba en cache local,
+  evitando callejones sin salida en `openItemRoute()`. Se ajustaron rutas de
+  fallback para abrir candidatos y mantener continuidad de UX al volver de cámara
+  a inventario.
+
+  **v553 (`d167317`) — claridad UX crítica: la cámara también sirve para ALTA.**
+  Se corrigió el principal malentendido del usuario final: muchos profesores
+  asumían que cámara = solo buscar. Se reescribieron textos CTA/ayuda para dejar
+  explícito que también permite crear ítems cuando no hay coincidencia.
+
+  **v554 (`b5517d4`) — paquete de accesibilidad para usuario novel.**
+  Añadidos quick mode, modo accesible, control de linterna y feedback táctil/visual
+  de detección (`pulse`). Objetivo: minimizar pasos y reducir errores en móvil
+  durante uso real de pasillo/taller.
+
+  **v555 (`9621d06`) — salto grande de precisión IA.**
+  `buscarPorSerie` pasó a estrategia de doble pasada OCR (general + rescate),
+  expansión de variantes OCR (O/0, I/1, S/5...) y captura del mejor frame
+  (nitidez) antes de enviar a IA. Se reducen falsos negativos por blur, reflejos
+  y tipografía de etiqueta pequeña.
+
+  **v556 (`5b1eba0`) — guía visual + confianza y confirmación humana.**
+  Se añadió presentación de confianza IA y comportamiento seguro en baja confianza:
+  en exactos dudosos, pedir confirmación antes de abrir ficha. Además, mejoras en
+  flujo objeto/visual para mantener decisiones comprensibles por usuario final.
+
+  **v557 (`9d2c456`) — aprendizaje real en producción desde feedback del usuario.**
+  Implementación de la pieza que faltaba para cerrar el ciclo de mejora continua:
+  la app aprende de cómo el usuario confirma/corrige resultados de cámara.
+
+  1. Backend:
+     - Acción nueva `registrarFeedbackDeteccion` en `functions/api/item.js`.
+     - Tabla autocreada en runtime: `ia_deteccion_ejemplos`.
+     - Retención automática por departamento: últimos 300 ejemplos.
+     - Datos guardados por ejemplo: tipo de resultado, nombre, categoría, serie,
+       marca, modelo, texto libre, confianza, imagen base64 recortada.
+  2. Prompting:
+     - `buscarPorSerie` inyecta hasta 4 ejemplos recientes (few-shot) del propio
+       departamento para adaptar terminología y contexto real del centro.
+  3. Frontend:
+     - `js/camara-serie.js` envía feedback automático en puntos clave:
+       `exacto_auto`, `exacto_confirmado`, `fuzzy_seleccionado`, `texto_libre`,
+       `alta_desde_serie`, `alta_desde_visual`.
+     - Se reutilizan imagen y confianza de la captura actual para enriquecer
+       el dataset de aprendizaje.
+  4. Seguridad de despliegue:
+     - Acción registrada en `js/api.js` y permisos en `js/roles.js`.
+     - Validación estática sin errores en archivos tocados.
+
+  **Lecciones operativas de esta fase (clave para continuar desde otro PC):**
+  - Mantener Cloudflare Workers AI como único proveedor simplifica soporte y evita
+    drift de configuración multi-vendor.
+  - Los mejores resultados no vinieron solo de prompting; vinieron del conjunto:
+    mejor frame + variantes OCR + confirmación humana + feedback persistido.
+  - Guardar feedback en backend (no en localStorage) permite aprendizaje cross-sesión
+    y cross-dispositivo por departamento.
+  - La tabla de learning está en autocreación runtime (sin migración): útil para
+    iterar rápido, pero si se quiere hardening máximo conviene migración SQL formal
+    en próxima sesión para trazabilidad completa de esquema.
+
 ---
 
 ## Para retomar desde un PC nuevo
@@ -33,7 +104,7 @@ sección [Documentación en GitHub](#documentación-en-github-docs) al final.
 1. `git clone https://github.com/slatorre-dev/boscoinventario.git` (o `git pull` si ya existe)
 2. Leer este archivo entero + [docs/PLAN_MULTIDEPARTAMENTO.md](docs/PLAN_MULTIDEPARTAMENTO.md)
 3. `npx wrangler login` (interactivo, abre navegador) — la cuenta de Cloudflare que tiene acceso al D1 es `slatorre@iesjuanbosco.es`
-4. Todas las migraciones (`migrations/0001` a `0015`) ya están aplicadas en la base remota `boscoinventario` — no hace falta re-ejecutarlas salvo que se recree la base desde cero (ver [Modo de Operación](#modo-de-operación))
+4. Todas las migraciones (`migrations/0001` a `0026`) ya están aplicadas en la base remota `boscoinventario` — no hace falta re-ejecutarlas salvo que se recree la base desde cero (ver [Modo de Operación](#modo-de-operación)). Nota: la tabla de aprendizaje IA (`ia_deteccion_ejemplos`) se autocrea en runtime por `functions/api/item.js` (sin migración dedicada)
 5. Credenciales de prueba: ver [Usuarios y credenciales](#usuarios-y-credenciales-actuales)
 6. Antes de cualquier comando de `git`, comprobar que no hay `desktop.ini` corrompiendo `.git/` (ver [Entorno](#entorno)) — riesgo conocido por vivir el repo dentro de una carpeta sincronizada por Google Drive
 
@@ -294,10 +365,12 @@ functions/api/          — Cloudflare Pages Functions (backend)
     profesores.js, meta.js — todos con scoping por departamento (ver arriba),
     todos con la misma constante GENERIC_DEPT='iesjuanbosco' duplicada
   item.js — además de add/update/delete/bulkImport: buscarPorSerie (serie/texto/visual
-    vía IA, cascada), buscarSeriePorCodigo (mismo resultado sin IA, para código de
-    barras ya decodificado en el cliente), detectarMultiples (alta masiva desde una
-    foto). buscarPorSerie y buscarSeriePorCodigo comparten la función buscarSerieEnD1()
-    (búsqueda exacta/fuzzy) — NO duplicar esa lógica si se toca alguna de las dos
+    vía IA, cascada + segunda pasada OCR + variantes de ambigüedad OCR + ranking visual),
+    buscarSeriePorCodigo (mismo resultado sin IA, para código de barras ya decodificado
+    en el cliente), detectarMultiples (alta masiva desde una foto), registrarFeedbackDeteccion
+    (aprendizaje por feedback real del usuario). buscarPorSerie y buscarSeriePorCodigo
+    comparten la función buscarSerieEnD1() (búsqueda exacta/fuzzy) — NO duplicar esa
+    lógica si se toca alguna de las dos
 
 js/
   agente-widget.js      — Agente Volt (NLP, chat, voz, aprendizaje)
@@ -319,7 +392,7 @@ js/
   onboarding-camara.js  — Tour guiado (4 pantallas, primera vez tras login) + ayuda permanente (#gsAyuda) de las funciones de cámara, respeta rol (Consulta no ve #5/#6)
   qr-scanner.js         — _showQrActions() (panel de acciones tras detectar QR) + _showQrActionsStandalone() (wrapper reusado por camara-unificada.js) — #gsQr propio ya no es el punto de entrada normal, ver camara-unificada.js
 
-sw.js                   — Service Worker, VERSION aquí (v551 actual)
+sw.js                   — Service Worker, VERSION aquí (v557 actual)
 migrations/             — SQL de migraciones D1, ver tabla completa abajo
 ```
 
@@ -1413,6 +1486,18 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
     corregido el dato en D1 (`UPDATE aulas SET orden=115 WHERE id='dept-
     tecnologia'`), pero el bug de código sigue sin arreglar — afecta a
     cualquier departamento con pocas aulas propias que use ese modal.
+  15. Convertir la tabla `ia_deteccion_ejemplos` en migración SQL formal
+    (`migrations/0027_...`) para evitar dependencia de autocreación runtime
+    en `item.js` y dejar el esquema auditado/reproducible desde cero.
+  16. Añadir endpoint interno de métricas de calidad de cámara (por
+    departamento): ratio exacto/fuzzy/sin lectura y top ambigüedades OCR,
+    usando los datos ya capturados en `ia_deteccion_ejemplos`.
+  17. Añadir limpieza programada (o por acción manual en Config) de
+    `ia_deteccion_ejemplos` por antigüedad además del límite por cantidad,
+    para controlar crecimiento en centros con uso intensivo de cámara.
+  18. Evaluar uso opcional de ejemplos visuales reales (`imagen_base64`) en
+    prompts future-proof de `buscarPorSerie` (ahora se usa few-shot textual
+    por coste/latencia; la imagen queda guardada para iteración posterior).
 
 ---
 
@@ -1434,6 +1519,7 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
 - `docs/ROADMAP.md` — hoja de ruta a corto/medio plazo
 - `docs/IDEAS.md` — ideas sugeridas sin priorizar (con estado ✅/pendiente)
 - `docs/DEVELOPMENT.md` — registro de sesiones de desarrollo y versionado
+- `docs/HANDOFF_2026-08-02_v557.md` — traspaso operativo completo de la fase de cámara+IA (v552-v557)
 - `docs/MIGRACION_APACHE.md` — migración a Ubuntu + Apache + Node.js + SQLite
 - `.claude/memory/` — memorias de sesiones para Claude (sincronizadas con git)
 - Ver: https://github.com/slatorre-dev/boscoinventario

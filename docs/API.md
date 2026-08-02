@@ -300,6 +300,115 @@ Response (200):
 
 ---
 
+### POST /api/item (Acciones IA de cámara)
+
+Estas acciones cuelgan del mismo endpoint `POST /api/item` con campo `action`.
+
+#### action=buscarPorSerie
+
+Analiza una imagen y resuelve uno de estos matches: `exacto`, `fuzzy`, `texto`, `visual`, `ninguno`, `sin_lectura`.
+
+```http
+POST /api/item?u=usuario&p=password
+Content-Type: application/json
+
+Body:
+{
+  "action": "buscarPorSerie",
+  "imagen": "<base64-jpeg-sin-prefijo-data-uri>"
+}
+```
+
+Respuesta típica:
+
+```json
+{
+  "ok": true,
+  "match": "exacto",
+  "confianzaSerie": 0.82,
+  "item": { "id": 1097, "item": "100K", "serie": "220A4S1002886" }
+}
+```
+
+Notas:
+- Usa Workers AI (`env.AI`) con dos pasadas OCR cuando hace falta.
+- Añade variantes OCR para ambigüedades comunes.
+- Inyecta pocos ejemplos recientes de uso real (few-shot textual por departamento).
+
+#### action=buscarSeriePorCodigo
+
+Busca directamente por código ya decodificado en cliente (sin OCR IA).
+
+```http
+POST /api/item?u=usuario&p=password
+Content-Type: application/json
+
+Body:
+{
+  "action": "buscarSeriePorCodigo",
+  "codigo": "220A4S1002886"
+}
+```
+
+#### action=detectarMultiples
+
+Detecta varios objetos en una sola foto para alta masiva asistida.
+
+```http
+POST /api/item?u=usuario&p=password
+Content-Type: application/json
+
+Body:
+{
+  "action": "detectarMultiples",
+  "imagen": "<base64-jpeg-sin-prefijo-data-uri>"
+}
+```
+
+Respuesta:
+
+```json
+{
+  "ok": true,
+  "objetos": [
+    { "nombre": "Multimetro digital", "cantidad": 2, "categoriaSugerida": "Herramientas" }
+  ]
+}
+```
+
+#### action=registrarFeedbackDeteccion (v557)
+
+Guarda feedback real de usuario para aprendizaje continuo por departamento.
+
+```http
+POST /api/item?u=usuario&p=password
+Content-Type: application/json
+
+Body:
+{
+  "action": "registrarFeedbackDeteccion",
+  "tipo": "exacto_confirmado",
+  "nombre": "Osciloscopio Tektronix",
+  "categoria": "Herramientas",
+  "serie": "ABC123",
+  "marca": "Tektronix",
+  "modelo": "TBS1052B",
+  "textoLibre": "",
+  "confianza": 0.61,
+  "imagen": "<base64-jpeg-opcional>"
+}
+```
+
+Respuesta:
+
+```json
+{ "ok": true }
+```
+
+Permiso asociado en frontend (`ACTION_PERMISSIONS`): `serie.read`.
+
+---
+
 ## Configuración
 
 ### GET /api/config
