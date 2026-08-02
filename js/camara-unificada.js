@@ -178,7 +178,10 @@ function camaraUnifPasarAIA() {
   video.srcObject = null;
   closeCamaraUnificada();
   openCamaraSerie();
-  setTimeout(() => {
+  const serieVideo = document.getElementById('serieVideo');
+  const onReady = () => {
+    serieVideo.removeEventListener('loadedmetadata', onReady);
     if (typeof capturarSerie === 'function') capturarSerie();
-  }, 400);
+  };
+  serieVideo.addEventListener('loadedmetadata', onReady);
 }
