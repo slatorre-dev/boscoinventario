@@ -599,7 +599,6 @@ select:focus,.fi:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2563eb1a
 .btn:hover{background:var(--surface2);transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .btn:active,.tbtn:active,.mini-btn:active,.view-btn:active,.tipo-btn:active{transform:translateY(0) scale(.98)}
 .icon-btn .btn-text{display:inline}
- .btn-top-label{display:inline}
 @media (max-width: 640px){
   .icon-btn .btn-text{display:none}
   .icon-btn{padding:11px 16px !important;justify-content:center}
@@ -1324,35 +1323,31 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .brand-dept-select{display:none}
   #connTxt{display:none}
   .breadcrumb{display:none}
-  .mob-menu-btn{display:none}
+  .mob-menu-btn{display:flex}
   /* En móvil: chip solo muestra avatar, nombre y botón ⏻ se ocultan */
   #userName{display:none}
   .user-logout{display:none}
   .user-chip{padding:2px 4px;gap:0;background:none}
   /* Logout aparece en el menú hamburguesa */
   .tbtn-logout-mob{display:flex}
-  .topbar-right{gap:6px;flex-wrap:nowrap;overflow:hidden}
   .topbar-btns{
-    position:static;
-    right:auto;
-    top:auto;
-    background:none;
-    border:none;
-    border-radius:0;
-    padding:0;
-    flex-direction:row;
-    gap:6px;
-    min-width:0;
-    box-shadow:none;
-    z-index:auto;
-    display:flex;
-    flex-wrap:nowrap;
-    overflow:hidden;
+    position:absolute;top:58px;right:0;
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:0 0 12px 12px;
+    border-top:2px solid var(--accent);
+    padding:8px;
+    flex-direction:column;
+    gap:4px;
+    min-width:200px;
+    box-shadow:var(--shh);
+    z-index:200;
+    display:none;
+    overflow:visible;
   }
   .topbar-btns.open{display:flex}
-  .topbar-btns .tbtn{width:36px;justify-content:center;font-size:0;padding:0;min-height:36px;min-width:36px;flex:0 0 36px}
-  .topbar-btns .btn-top-label,.topbar-btns .btn-install-label{display:none}
-  .topbar-btns .tbtn svg,.topbar-btns .tbtn img{display:block;margin-right:0}
+  .topbar-btns .tbtn{width:100%;justify-content:flex-start;font-size:13px;padding:10px 14px;min-height:44px}
+  .topbar-btns .tbtn svg,.topbar-btns .tbtn img{display:inline-block;margin-right:6px}
   .dept-menu-wrap{position:static;display:flex !important;flex-direction:column;width:100%}
   .dept-menu{position:relative;top:auto;right:auto;box-shadow:none;border:none;background:none;padding:0;margin-top:4px;min-width:auto;width:100%;display:flex !important;flex-direction:column}
 
@@ -1476,34 +1471,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
 }
 
 @media (max-width: 1024px){
-  .mob-menu-btn{display:none}
-  .topbar-right{flex-wrap:nowrap;gap:6px;overflow:hidden}
-  .topbar-btns{
-    flex-direction:row;
-    align-items:center;
-    flex-wrap:nowrap;
-    gap:6px;
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-  .topbar-btns::-webkit-scrollbar{display:none}
-  .topbar-btns .tbtn{
-    width:auto;
-    min-width:40px;
-    padding:8px 10px;
-    justify-content:center;
-    flex:0 0 auto;
-  }
-  .topbar-btns .btn-top-label,
-  .topbar-btns .btn-install-label{
-    display:none;
-  }
-  .topbar-btns .tbtn svg,
-  .topbar-btns .tbtn img{
-    display:block;
-    margin-right:0;
-  }
+  .mob-menu-btn{display:flex}
 }
 
 @media(max-width:960px){

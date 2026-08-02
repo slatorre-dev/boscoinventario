@@ -58,16 +58,16 @@
     <div class="breadcrumb" id="bc"></div>
     <button class="mob-menu-btn" id="mobMenuBtn" onclick="toggleMobMenu()" title="Menú">⋮</button>
     <div class="topbar-btns" id="topbarBtns" onclick="closeMobMenu()">
-      <button class="tbtn" id="btnN" style="display:none" onclick="openModal()">＋ <span class="btn-top-label">Nuevo ítem</span></button>
-      <button class="tbtn" id="btnPres" style="display:none;position:relative" onclick="goPrestamos()">⌛ <span class="btn-top-label">Préstamos</span><span id="presVencBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px"></span></button>
-      <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 <span class="btn-top-label">Pedidos</span><span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
-      <button class="tbtn" id="btnE" style="display:none" onclick="openExportModal()">📥 <span class="btn-top-label">Exportar</span></button>
-      <button class="tbtn" id="btnImp" onclick="openImportModal()">📤 <span class="btn-top-label">Importar</span></button>
+      <button class="tbtn" id="btnN" style="display:none" onclick="openModal()">＋ Nuevo ítem</button>
+      <button class="tbtn" id="btnPres" style="display:none;position:relative" onclick="goPrestamos()">⌛ Préstamos<span id="presVencBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px"></span></button>
+      <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 Pedidos<span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
+      <button class="tbtn" id="btnE" style="display:none" onclick="openExportModal()">📥 Exportar</button>
+      <button class="tbtn" id="btnImp" onclick="openImportModal()">📤 Importar</button>
       <button class="tbtn" id="btnInstall" style="display:none" onclick="installPWA()" title="Instalar app" aria-label="Instalar app">📲 <span class="btn-install-label">Instalar</span></button>
-      <button class="tbtn tbtn-logout-mob" id="btnLogoutMob" onclick="logout()" title="Cerrar sesión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> <span class="btn-top-label">Cerrar sesión</span></button>
-      <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintChoiceModal()" title="Imprimir inventario">🖨️ <span class="btn-top-label">Imprimir</span></button>
+      <button class="tbtn tbtn-logout-mob" id="btnLogoutMob" onclick="logout()" title="Cerrar sesión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Cerrar sesión</button>
+      <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintChoiceModal()" title="Imprimir inventario">🖨️ Imprimir</button>
       <div class="dept-menu-wrap" id="deptMenuWrap" style="display:none">
-        <button class="tbtn tbtn-dept" id="btnDept" onclick="toggleDeptMenu()">⚙️ <span class="btn-top-label">Departamento</span></button>
+        <button class="tbtn tbtn-dept" id="btnDept" onclick="toggleDeptMenu()">⚙️ Departamento</button>
         <div class="dept-menu" id="deptMenu">
           <div class="dept-menu-title">Gestión del departamento</div>
           <button class="dept-menu-item" onclick="closeDeptMenu();openAulasModal()">🏫 Gestionar aulas</button>
