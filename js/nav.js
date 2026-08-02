@@ -195,6 +195,8 @@ function openSub(){
   document.getElementById('btnE').style.display = noActions ? 'none' : 'flex';
   const btnRevision = document.getElementById('btnRevisionAula');
   if (btnRevision) btnRevision.style.display = (cf.type === 'aula' && typeof can === 'function' && can('items.write')) ? 'flex' : 'none';
+  const btnMulti = document.getElementById('btnMultiEquipo');
+  if (btnMulti) btnMulti.style.display = (cf.type === 'aula' && typeof can === 'function' && can('items.write')) ? 'flex' : 'none';
   _hideHomeButtons();
   if(typeof applyRoleUI === 'function') applyRoleUI();
   const _fab=document.getElementById('fabNuevo');
