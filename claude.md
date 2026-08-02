@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v557 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+**Estado:** v560 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
@@ -13,6 +13,11 @@ cámara en uno solo — ver sesión del 01-02/08/2026 más abajo para el
 detalle completo de las 5 piezas construidas hoy. **Fase de mejora IA
 post-roadmap completada (v552-v557):** robustez OCR/visual, guía de cámara,
 UX para usuario novel y aprendizaje por feedback real en producción.
+**v558-v559:** sin cambios de código — sincronización de precisión de
+`docs/API.md`/`README.md`/resto de `docs/*.md` con el contrato real del
+backend (ej. `action` va en el body de `/api/item`, no en query string;
+nombres de campo cortos `min`/`est`/`aula`/`cat`/`mod`; modelo Volt real
+`@cf/zai-org/glm-4.7-flash`), sin relación con cámara/IA.
 **Volt** (el chatbot)
 migrado a Cloudflare Workers AI tras la retirada de GitHub Models
 (30/07/2026). Sin pendientes de diseño abiertos de esta sesión —
@@ -1399,6 +1404,38 @@ pantallas (ninguna de #5/#6), la ayuda oculta ambos bloques
 confirma que el toggle es dinámico en ambos sentidos, sin quedar fijo en
 un estado tras el primer cálculo.
 
+### 02/08/2026 (v560): mejora de calidad de reconocimiento visual (sin S/N)
+
+Motivado por feedback directo del usuario tras probar la cámara: "el
+reconocimiento es regular actualmente". Tres mejoras en `buscarPorSerie`
+(`functions/api/item.js`) + `js/camara-serie.js`, deliberadamente sin
+infraestructura nueva — ver detalle completo en
+[`docs/IDEAS.md`](docs/IDEAS.md#14-mejora-de-calidad-de-reconocimiento-visual-sin-sn--implementado-02082026):
+1. Autoevaluación de encuadre dentro del mismo prompt Moondream ya
+   verificado (dos claves JSON nuevas, `encuadreOk`/`motivoEncuadre`) — se
+   descartó explícitamente introducir `@cf/facebook/detr-resnet-50` (solo
+   conoce las 80 clases de COCO, no herramientas de taller) y el modo
+   `detect` de Moondream (exige nombrar de antemano el objeto a buscar,
+   problema de huevo y gallina). Investigado con las docs reales de Workers
+   AI antes de escribir código, para no repetir el patrón de "asumir un
+   esquema y perder horas depurando" ya documentado varias veces en este
+   archivo.
+2. Tercera pasada dedicada a identificación de objeto cuando no hay ningún
+   texto legible (antes terminaba en `match:'sin_lectura'` sin alternativa
+   — mismo patrón que la pasada OCR-only ya existente, aplicado al caso
+   simétrico).
+3. Botón "📷 Probar otro ángulo" en resultados débiles, que conserva y
+   fusiona el nombre/categoría sugeridos entre el primer y el segundo
+   intento en vez de perderlos al reintentar desde cero.
+
+Sin cambios de esquema D1, sin acción nueva registrada en `js/api.js`/
+`js/roles.js` (solo amplía la respuesta ya existente de `buscarPorSerie`).
+Una cuarta idea (similitud visual contra fotos ya guardadas del propio
+inventario, vía Vectorize) se evaluó pero se dejó pendiente a petición
+explícita del usuario — necesita un binding nuevo (mismo tipo de paso
+manual en el dashboard que ya hizo falta para `AI`) y backfill con coste
+de IA sobre `item_fotos`; ver punto 19 en Pendiente.
+
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 
 Claude Code en este PC tiene instalados los siguientes plugins/skills
@@ -1498,6 +1535,17 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
   18. Evaluar uso opcional de ejemplos visuales reales (`imagen_base64`) en
     prompts future-proof de `buscarPorSerie` (ahora se usa few-shot textual
     por coste/latencia; la imagen queda guardada para iteración posterior).
+  19. Similitud visual contra fotos ya guardadas del inventario (evaluada y
+    diseñada a alto nivel en la sesión de v560, no implementada a petición
+    explícita del usuario). Cloudflare Workers AI no tiene embeddings de
+    imagen nativos — la vía realista es generar una descripción de texto de
+    cada foto de `item_fotos` (una vez, en background) y usar Vectorize para
+    buscar la más parecida a la descripción de una foto nueva. Requiere: (a)
+    binding `VECTORIZE` nuevo en el dashboard de Cloudflare Pages (mismo tipo
+    de paso manual que ya hizo falta para `AI`, ver más abajo), y (b) decidir
+    el alcance/coste del backfill inicial sobre las fotos ya existentes
+    (pueden ser cientos, cada una con su llamada a IA para generar la
+    descripción a indexar) antes de arrancarlo.
 
 ---
 

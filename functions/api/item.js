@@ -419,14 +419,16 @@ export async function onRequestPost({ request, env, data }) {
     let serieLeida = '', marca = '', modelo = '', textoLibre = '', descripcionVisual = '', categoriaSugerida = '';
     let confianzaSerie = 0;
     let alternativasSerie = [];
+    let motivoEncuadre = '';
 
     try {
       const aiData = await runVisionQuestion(
-        `Analiza esta foto de un equipo o material de inventario. Devuelve SOLO JSON con estas claves exactas: {"serie": string|null, "marca": string|null, "modelo": string|null, "textoLibre": string|null, "descripcionVisual": string|null, "categoriaSugerida": string|null, "confianzaSerie": number, "alternativasSerie": string[]}. ` +
+        `Analiza esta foto de un equipo o material de inventario. Devuelve SOLO JSON con estas claves exactas: {"serie": string|null, "marca": string|null, "modelo": string|null, "textoLibre": string|null, "descripcionVisual": string|null, "categoriaSugerida": string|null, "confianzaSerie": number, "alternativasSerie": string[], "encuadreOk": boolean, "motivoEncuadre": string|null}. ` +
         `Primero intenta leer número de serie (S/N, Serial Number o Service Tag). Si no hay serie, extrae texto visible útil en "textoLibre". Si no hay texto legible, describe el objeto en "descripcionVisual". ` +
         `"categoriaSugerida" debe ser EXACTAMENTE uno de: ${categoriasTexto} o null. ` +
         `"confianzaSerie" va de 0 a 1 y representa tu confianza sobre la serie. ` +
         `"alternativasSerie" debe incluir hasta 3 variantes plausibles si hay ambigüedad OCR (ej. O/0, I/1, S/5). ` +
+        `"encuadreOk" es false si la foto dificulta identificar el objeto (demasiado lejos, varios objetos superpuestos, muy borrosa u oscura); en ese caso "motivoEncuadre" da una instrucción corta y accionable para repetir la foto (ej. "Acércate más al objeto", "Encuadra solo una pieza, hay varias juntas"). Si el encuadre es correcto, "encuadreOk": true y "motivoEncuadre": null. ` +
         `${ejemplosTexto}` +
         `No añadas texto fuera del JSON y no inventes datos.`
       );
@@ -442,6 +444,7 @@ export async function onRequestPost({ request, env, data }) {
       alternativasSerie = Array.isArray(parsed?.alternativasSerie)
         ? parsed.alternativasSerie.map(safeText).filter(Boolean).slice(0, 3)
         : [];
+      if (parsed?.encuadreOk === false) motivoEncuadre = safeText(parsed?.motivoEncuadre);
 
       // Segunda pasada solo OCR si la primera no encontró señal útil.
       if (!serieLeida && !textoLibre && !descripcionVisual) {
@@ -460,6 +463,20 @@ export async function onRequestPost({ request, env, data }) {
           ? parsed2.alternativasSerie.map(safeText).filter(Boolean).slice(0, 3)
           : [];
         alternativasSerie = [...new Set([...alternativasSerie, ...alt2])].slice(0, 4);
+      }
+
+      // Tercera pasada dedicada solo a identificar el objeto (sin repartir
+      // atención con serie/OCR) cuando ninguna de las dos anteriores sacó nada.
+      if (!serieLeida && !textoLibre && !descripcionVisual && !categoriaSugerida) {
+        const aiData3 = await runVisionQuestion(
+          `No hay texto legible en la foto. Identifica qué objeto de taller es: nombre genérico y concreto (ej. "multímetro digital", "destornillador de estrella", "router WiFi") y su categoría. Devuelve SOLO JSON: {"descripcionVisual": string|null, "categoriaSugerida": string|null, "confianzaVisual": number}. ` +
+          `"categoriaSugerida" debe ser EXACTAMENTE uno de: ${categoriasTexto} o null. Si no puedes identificarlo con razonable certeza, devuelve null en ambos campos y confianzaVisual en 0. No añadas texto fuera del JSON.`,
+          280
+        );
+        const parsed3 = extractJsonObject(aiData3?.result?.answer || '');
+        descripcionVisual = safeText(parsed3?.descripcionVisual);
+        categoriaSugerida = categoriaSugerida || safeText(parsed3?.categoriaSugerida);
+        confianzaSerie = Math.max(confianzaSerie, Number(parsed3?.confianzaVisual || 0) || 0);
       }
     } catch (e) {
       return Response.json({ ok: false, error: 'Error del servicio de IA' });
@@ -495,7 +512,7 @@ export async function onRequestPost({ request, env, data }) {
       if (fuzzyMap.size) {
         return Response.json({ ok: true, match: 'fuzzy', confianzaSerie, candidatos: [...fuzzyMap.values()].slice(0, 5) });
       }
-      return Response.json({ ok: true, match: 'ninguno', confianzaSerie, serieLeida: serieRaw, marca, modelo });
+      return Response.json({ ok: true, match: 'ninguno', confianzaSerie, serieLeida: serieRaw, marca, modelo, motivoEncuadre });
     }
 
     if (textoLibre) {
@@ -534,11 +551,12 @@ export async function onRequestPost({ request, env, data }) {
         candidatos: ranked,
         nombreSugerido,
         categoriaSugerida,
-        confianzaSerie
+        confianzaSerie,
+        motivoEncuadre
       });
     }
 
-    return Response.json({ ok: true, match: 'sin_lectura', confianzaSerie });
+    return Response.json({ ok: true, match: 'sin_lectura', confianzaSerie, motivoEncuadre });
   }
 
   if (action === 'buscarSeriePorCodigo') {

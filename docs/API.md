@@ -335,9 +335,19 @@ Respuesta típica:
 ```
 
 Notas:
-- Usa Workers AI (`env.AI`) con dos pasadas OCR cuando hace falta.
+- Usa Workers AI (`env.AI`) con hasta tres pasadas cuando hace falta: la
+  combinada inicial, una OCR-only si no hay ninguna señal de texto, y una
+  tercera dedicada solo a identificar el objeto (v560) si tampoco hay
+  descripción/categoría — antes de v560 este último caso terminaba siempre
+  en `match:"sin_lectura"` sin alternativa.
 - Añade variantes OCR para ambigüedades comunes.
 - Inyecta pocos ejemplos recientes de uso real (few-shot textual por departamento).
+- **`motivoEncuadre`** (string, opcional, v560): presente en las respuestas
+  `ninguno`, `visual` y `sin_lectura` cuando la propia IA considera que el
+  encuadre de la foto dificultó la identificación (demasiado lejos, varios
+  objetos superpuestos, borrosa/oscura) — instrucción corta y accionable
+  para repetir la foto (ej. "Acércate más al objeto"). Ausente/vacío si el
+  encuadre era correcto.
 
 #### action=buscarSeriePorCodigo
 

@@ -221,6 +221,44 @@ al flujo de IA existente (`js/camara-serie.js`) sin cambios. `#gsQr` y
 reactivable sin deploy. Spec:
 `docs/superpowers/specs/2026-08-02-unificar-camara-qr-serie-design.md`.
 
+### 14. Mejora de calidad de reconocimiento visual (sin S/N) — ✅ implementado (02/08/2026)
+Motivado por feedback directo del usuario: "el reconocimiento es regular
+actualmente". Tres mejoras en `buscarPorSerie` (`functions/api/item.js`) +
+`js/camara-serie.js`, sin infraestructura nueva:
+1. **Autoevaluación de encuadre**: el mismo prompt combinado ya existente
+   gana dos claves más, `"encuadreOk"`/`"motivoEncuadre"` — si la IA
+   considera que la foto dificulta identificar el objeto (lejos, varios
+   objetos superpuestos, borrosa), devuelve una instrucción corta y
+   accionable ("Acércate más", "Encuadra solo una pieza") que se muestra
+   como aviso en los resultados débiles. Se descartó explícitamente usar un
+   modelo de detección de objetos aparte (`@cf/facebook/detr-resnet-50`,
+   solo reconoce las 80 clases de COCO, inútil para herramientas de taller)
+   y el modo `detect` de Moondream (exige indicar de antemano qué buscar —
+   problema de huevo y gallina cuando el objetivo es precisamente identificar
+   qué es). Reusar el prompt ya verificado evita el riesgo de esquema
+   desconocido que ya causó horas de depuración en v543.
+2. **Tercera pasada dedicada a identificación de objeto**: cuando ni
+   serie/texto ni descripción visual ni categoría salen de las dos pasadas
+   existentes (caso: objeto sin ninguna etiqueta legible, antes terminaba en
+   `match:'sin_lectura'` sin ninguna alternativa), una pasada nueva enfocada
+   solo en "qué objeto es esto" (mismo patrón que la pasada OCR-only ya
+   existente para el caso simétrico).
+3. **Botón "📷 Probar otro ángulo"** en los resultados débiles (visual sin
+   candidatos, o sin ninguna lectura) — reabre la cámara conservando el
+   nombre/categoría sugeridos del primer intento (`_serieIntentoPrevio` en
+   `js/camara-serie.js`), y los fusiona con el segundo intento si este
+   también sale débil, en vez de perder esa información al reintentar desde
+   cero.
+
+Sin cambios de esquema D1, sin acción nueva registrada en `js/api.js`/
+`js/roles.js` (solo se amplía la respuesta ya existente de `buscarPorSerie`).
+Idea #15 (similitud visual contra fotos ya guardadas del propio inventario,
+vía Vectorize) se evaluó en la misma sesión pero se dejó pendiente
+explícitamente — necesita un binding nuevo (mismo tipo de paso manual en el
+dashboard de Cloudflare que ya hizo falta para `AI`) y un backfill con coste
+de IA sobre las fotos ya existentes en `item_fotos`; decisión del usuario:
+no acometerla sin evaluar antes el coste/alcance del backfill.
+
 ### 9. Generar QR automáticamente tras el alta — ✅ ya cubierto (sin cambios, 02/08/2026)
 El modal de ítem ya llama a `renderItemQr()` (`js/modal-item.js`) al
 abrirse, tanto en alta como en edición — cualquier ítem creado por
