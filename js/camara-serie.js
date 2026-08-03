@@ -533,8 +533,9 @@ function _mostrarSerieCrearNuevo(serieLeida, marca, modelo, motivoEncuadre, nomb
   const resultado = document.getElementById('serieResultado');
   resultado.style.display = 'block';
   const nombreDetectado = nombreProducto || [marca, modelo].filter(Boolean).join(' ').trim();
+  const nombreDetectadoCorto = nombreDetectado.length > 40 ? nombreDetectado.slice(0, 40) + '…' : nombreDetectado;
   const botonTexto = nombreDetectado
-    ? `Crear ítem nuevo: ${escHtml(nombreDetectado)} (S/N: ${escHtml(serieLeida)})`
+    ? `Crear ítem nuevo: ${escHtml(nombreDetectadoCorto)} (S/N: ${escHtml(serieLeida)})`
     : `Crear ítem nuevo con S/N: ${escHtml(serieLeida)}`;
   const hint = motivoEncuadre ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">💡 ${escHtml(motivoEncuadre)}</div>` : '';
   resultado.innerHTML = `
@@ -580,6 +581,7 @@ function _crearItemDesdeSerie() {
       const provInput = document.getElementById('f_proveedor');
       if (provInput) provInput.value = marca;
     }
+    if (typeof _actualizarEnlacesManual === 'function') _actualizarEnlacesManual();
   }, 50);
 }
 

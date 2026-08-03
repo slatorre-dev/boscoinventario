@@ -322,6 +322,7 @@ function camaraUnifCrearItemDesdeCodigo() {
       const provInput = document.getElementById('f_proveedor');
       if (provInput) provInput.value = producto.marca;
     }
+    if (typeof _actualizarEnlacesManual === 'function') _actualizarEnlacesManual();
   }, 50);
 }
 
