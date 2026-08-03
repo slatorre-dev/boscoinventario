@@ -1,6 +1,16 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v577 | 02/08/2026 | Multi-departamento (Fases 0, 1, 2 y 3 del
+**Estado:** v578 | 03/08/2026 | Sesión de diseño (brainstorming) del roadmap
+de mejora "detección de un solo aparato → captura de mesa → captura de
+aula", empezando por la primera pieza: al dar de alta un ítem nuevo desde
+un código de barras real (EAN/UPC) sin match en D1, la app ahora intenta un
+lookup gratuito a **UPCitemdb** (sin API key, ~100 consultas/día) para
+prellenar nombre/marca reales del producto en vez de dejarlos vacíos —
+implementado con subagent-driven-development en worktree aislado, verificado
+en producción con `curl` directo (no con Playwright, ver detalle de sesión
+más abajo). Las piezas #2 (captura de mesa) y #3 (captura de aula completa)
+del roadmap quedan pendientes para la próxima sesión. Multi-departamento
+(Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
 24 departamentos + 1 genérico compartido (`iesjuanbosco`), aislamiento real
@@ -1510,6 +1520,121 @@ del modal decía "Duplicar ítem" para cualquier precarga, no solo al
 duplicar — ahora distingue por si el objeto precargado trae `id` (duplicar)
 o no (nombre nuevo). Sin cambios de backend ni de esquema.
 
+### 03/08/2026 (v578): lookup de producto real vía código de barras — primera pieza del roadmap de revisión cámara+IA
+
+Sesión iniciada como brainstorming abierto ("revisa la realización de
+inventario con la cámara con IA... cómo mejorar la detección de objetos,
+lector de QR y S/N, tanto a nivel de un solo aparato como en método de
+captura de mesa o captura de un aula"). Se decompuso en 3 sub-proyectos
+independientes por prioridad explícita del usuario: 1) detección de un solo
+aparato por S/N, 2) captura de mesa, 3) captura de aula completa + revisión
+de aula — cada uno con su propio spec/plan. Esta sesión solo cerró el
+primero; #2 y #3 quedan para la próxima.
+
+**Hallazgo de diseño clave:** un número de serie no es buscable en internet
+(identificador único por unidad, sin base de datos pública que lo resuelva)
+— lo que sí es buscable es un código de barras EAN/UPC real de producto de
+consumo. Se investigó "AI Gateway Web Search" de Cloudflare (existe, pero
+exige proveedor externo de pago vía proxy — rompe el patrón "solo
+Cloudflare, gratis" que este proyecto mantiene a propósito desde la
+retirada de GitHub Models) y se optó por una alternativa gratuita real y
+acotada: **UPCitemdb** (`api.upcitemdb.com/prod/trial/lookup`, sin API key,
+sin registro, ~100 consultas/día, con el riesgo conocido de que servicios
+gratuitos limitados "por IP" pueden fallar en producción por el pool de IPs
+compartido de Cloudflare Workers — aceptado explícitamente por el usuario
+con fallback silencioso).
+
+**Lo construido:**
+1. `functions/api/item.js`, acción `buscarSeriePorCodigo`: nuevo parámetro
+   opcional `formato` en la entrada; cuando `match:'ninguno'` Y el formato
+   es EAN/UPC (nunca `code_128`) Y el código tiene forma numérica de 8-14
+   dígitos, intenta el lookup a UPCitemdb con timeout de 4s (cubriendo
+   tanto la petición como la lectura del cuerpo de la respuesta). Cualquier
+   fallo colapsa silenciosamente a la respuesta ya existente, sin campo
+   `producto` — el alta sigue funcionando exactamente igual que antes.
+2. `js/camara-unificada.js` y `js/camara-serie.js`: ambos envían el
+   `formato` detectado y, si la respuesta trae `producto:{nombre,marca}`,
+   prellenan `f_item`/`f_proveedor` al abrir el modal de alta — mismo
+   patrón que ya usaba el autocompletado marca/modelo por OCR (v543).
+3. `js/camara-serie.js` ganó un 5º parámetro opcional `nombreProducto` en
+   `_mostrarSerieCrearNuevo()`, con prioridad sobre la concatenación
+   marca+modelo, sin afectar al llamante existente del flujo IA/OCR (que
+   nunca pasa ese argumento).
+
+**Proceso:** brainstorming → spec
+([`docs/superpowers/specs/2026-08-03-lookup-producto-codigo-barras-design.md`](docs/superpowers/specs/2026-08-03-lookup-producto-codigo-barras-design.md))
+→ plan
+([`docs/superpowers/plans/2026-08-03-lookup-producto-codigo-barras.md`](docs/superpowers/plans/2026-08-03-lookup-producto-codigo-barras.md))
+→ ejecución con subagent-driven-development en worktree aislado (4 tareas,
+cada una con revisión individual) → revisión final de rama → merge a
+`main`. La revisión final (modelo más capaz) encontró 1 hallazgo Important
+real que ninguna revisión por tarea pudo ver — mismo patrón "intersección
+de dos tareas" ya documentado varias veces en este archivo: la Tarea 1
+truncó el título del producto a 120 caracteres pensando en el campo del
+formulario, y la Tarea 3 metió ese mismo string en un botón `.btn` con
+`white-space:nowrap` sin que ninguna de las dos revisiones viera el
+resultado combinado — un título largo real (ej. "Apple iPhone 6, Space
+Gray, 64 GB (T-Mobile)") desbordaba el botón en móvil. Corregido truncando
+solo el texto visible del botón (40 caracteres), preservando el valor
+completo para el campo real del formulario. Otros 4 hallazgos Minor
+corregidos en el mismo pase: el backend aceptaba como "éxito" un resultado
+con marca pero sin nombre (causaba que los dos frontends divergieran ante
+la misma respuesta — corregido exigiendo nombre no vacío); el prellenado
+programático no disparaba `_actualizarEnlacesManual()` (enlaces
+Manual/Datasheet/Vídeo de v548, que dependen de eventos `input` que
+`.value =` no dispara); sin validación de forma del código antes de gastar
+cuota gratuita (añadido guard `/^\d{8,14}$/`); el timeout solo cubría la
+cabecera HTTP, no la lectura del cuerpo de la respuesta.
+
+**Incidente operativo durante la ejecución (no relacionado con el código de
+la feature):** el subagente del bump de versión (Tarea 4) commiteó
+directamente en `main` del repo principal en vez de en el worktree, pese a
+instrucción explícita — mismo patrón de fallo ya documentado en las
+sesiones v521/v531. Esta vez coincidió con una edición en vivo del usuario
+en `index.html` (typo suelto "aña" que el usuario ya estaba corrigiendo sin
+commitear) directamente en `main` mientras la sesión trabajaba en el
+worktree en paralelo. Resuelto sin pérdida de datos: verificado que el
+commit del usuario y su edición sin guardar eran ajenos al incidente,
+`git reset --soft` solo del commit erróneo del subagente, bump de versión
+rehecho a mano por el controlador directamente en el worktree (con
+`git rev-parse --show-toplevel` verificado antes de commitear, dado el
+historial de este fallo). De paso se encontró y limpió una corrupción
+severa de `desktop.ini` de Google Drive dentro de `.git/refs`, `.git/objects`
+y `.git/logs` (cientos de archivos, no solo los pocos ya documentados en
+sesiones anteriores) que rompía `git log --all`/`git fsck` — limpiada con
+el remedio ya documentado (`find .git -iname desktop.ini -type f -delete`).
+**Lección reforzada:** el riesgo de que un subagente ignore "Work from:
+&lt;worktree&gt;" y commitee en el repo principal ya se ha visto 3 veces en
+este proyecto — para cambios triviales de un solo archivo (ej. bump de
+versión), puede compensar que el controlador lo haga directamente en vez de
+delegarlo, con revisión de todas formas.
+
+**Verificación en producción — parcial, con gap documentado:** la skill de
+Playwright que sesiones anteriores documentaron como instalada **no estaba
+disponible en esta sesión/entorno** (es configuración de perfil de Claude
+Code, no del repo — puede variar entre PCs/cuentas, ver sección de
+herramientas más abajo). Se verificó lo que sí fue posible: `curl` directo
+contra el backend ya desplegado en producción, confirmando en vivo (no solo
+por inspección de código) que UPCitemdb responde correctamente desde
+Cloudflare Workers con un código EAN real
+(`0885909950805` → `{"nombre":"Apple iPhone 6, Space Gray, 64 GB
+(T-Mobile)","marca":"Apple"}`), que `code_128` nunca dispara el lookup, que
+un código no numérico tampoco, y que peticiones sin el parámetro `formato`
+(compatibilidad con cualquier llamador antiguo) se comportan exactamente
+igual que antes. **No verificado en esta sesión:** el comportamiento real
+en navegador (que el prellenado del formulario funcione visualmente, que el
+botón truncado se vea bien en móvil) — cubierto solo por las 3 revisiones
+de código (por tarea + final + re-revisión), no por una prueba de UI real.
+Pendiente repetir con Playwright quien tenga la skill disponible.
+
+**Decisión de producto pendiente, señalada por la revisión final y no
+resuelta esta sesión:** los títulos de producto reales de UPCitemdb (en
+inglés, estilo e-commerce) ahora pueden alimentar la tabla de aprendizaje
+few-shot de `buscarPorSerie` (`ia_deteccion_ejemplos`, v557) si el usuario
+escanea varios códigos de barras seguidos — sin que nadie haya decidido si
+eso diluye la adaptación de terminología del propio departamento que esa
+tabla existe para lograr. Ver punto 20 en Pendiente.
+
 ### Entorno y herramientas de esta sesión (por si el PC nuevo no las tiene)
 
 Claude Code en este PC tiene instalados los siguientes plugins/skills
@@ -1525,7 +1650,11 @@ puede que no estén disponibles automáticamente y haya que reinstalarlos):
 - **supermemory**: memoria persistente cross-sesión indexada (búsqueda,
   guardado de contexto de proyecto).
 - **playwright-skill**: automatización de navegador, usado en sesiones
-  anteriores para verificación end-to-end en producción.
+  anteriores para verificación end-to-end en producción. **No disponible en
+  la sesión del 03/08/2026 (v578)** pese a estar documentado aquí — confirma
+  que esta lista depende del perfil/cuenta de Claude Code del PC concreto,
+  no del repo; si falta, la verificación de producción cae a `curl` directo
+  contra el backend (cubre lógica de servidor, no comportamiento de UI).
 - **claude-code-plugins**: marketplace con `frontend-design` y otros skills
   de propósito general.
 
@@ -1620,6 +1749,27 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
     el alcance/coste del backfill inicial sobre las fotos ya existentes
     (pueden ser cientos, cada una con su llamada a IA para generar la
     descripción a indexar) antes de arrancarlo.
+20. Decidir si los títulos de producto reales de UPCitemdb (sesión v578, ver
+    detalle arriba) deben excluirse de la tabla de aprendizaje few-shot
+    `ia_deteccion_ejemplos` — hoy se guardan igual que cualquier alta manual,
+    con el riesgo de diluir la adaptación de terminología del departamento
+    con nombres de e-commerce en inglés si se escanean varios códigos de
+    barras seguidos. Opciones sobre la mesa: tag distinto (`tipo:
+    'alta_desde_codigo'`) excluido del `SELECT` de ejemplos, o dejarlo tal
+    cual a propósito.
+21. Piezas #2 (captura de mesa) y #3 (captura de aula completa + revisión de
+    aula) del roadmap de mejora cámara+IA iniciado en la sesión v578 —
+    priorizadas por el usuario en ese orden, sin diseñar aún. Nota: #2
+    (captura de mesa/multi-objeto) y #3 (aula completa) YA tienen una
+    primera versión en producción desde antes (`multi-equipo.js`/
+    `detectarMultiples` y `revision-aula.js` respectivamente, ver
+    Arquitectura de archivos clave) — esta pieza pendiente es sobre
+    *mejorar* la precisión de detección de esas dos, no construirlas desde
+    cero.
+22. Repetir la verificación de producción de la sesión v578 con Playwright
+    en cuanto la skill esté disponible en el PC/cuenta que retome el
+    trabajo — quedó pendiente el comportamiento real de UI (prellenado
+    visual del formulario, que el botón truncado se vea bien en móvil).
 
 ---
 
