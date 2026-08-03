@@ -296,12 +296,12 @@
     <div class="home-hero-shell">
       <div class="home-hero-main">
         <div class="home-hero-kicker">Inventario rápido del centro</div>
-        <h1>Busca, abre o añade material sin dar rodeos</h1>
+        <h1>Busca, abre o añade material </h1>
         <h2>Empieza por el buscador o por la cámara</h2>
-        <p>Consulta por nombre, referencia, proveedor o usa la cámara para localizar y dar de alta material en el mismo flujo.</p>
+        <p>Consulta por nombre, referencia, proveedor, S/N o usa la cámara para localizar y dar de alta material en el mismo flujo.</p>
         <div class="gsearch-wrap" id="gsWrap">
           <span class="gsearch-ico">🔍</span>
-          <input class="gsearch" id="gsInput" type="text" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor…" autocomplete="off"
+          <input class="gsearch" id="gsInput" type="text" placeholder="Buscar por nombre, ref, tags, S/N, ubicación, proveedor…" autocomplete="off"
             oninput="globalSearch(this.value)" onfocus="globalSearch(this.value)"
             onkeydown="gsKey(event)">
           <button class="gsearch-clear" id="gsClear" onclick="gsClear()" title="Limpiar">✕</button>
@@ -503,7 +503,7 @@
       <div class="print-header-meta" id="printMeta"></div>
     </div>
     <div class="toolbar inv-toolbar">
-      <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" list="srchHistoryList" placeholder="Buscar por nombre, ref, tags, ubicación, proveedor..." oninput="renderInv()" onchange="saveRecentSearch(this.value)"></div>
+      <div class="sbox"><span class="si">🔍</span><input type="text" id="srch" list="srchHistoryList" placeholder="Buscar por nombre, ref, tags, S/N ubicación, proveedor..." oninput="renderInv()" onchange="saveRecentSearch(this.value)"></div>
       <datalist id="srchHistoryList"></datalist>
       <div id="invFilters" class="inv-filters-row">
         <div style="display:flex;gap:4px;align-items:center">
@@ -888,7 +888,7 @@
         <div class="sbox" style="flex:2;min-width:0"><span class="si">🔍</span><input type="text" id="pres_filtQ" placeholder="Buscar..." oninput="filterPresItems()" autocomplete="off"></div>
       </div>
       <select class="fi-w" id="pres_item" onchange="onPresItemChange(this.value)"></select>
-    </div>
+    </div>aña
     <div id="prestarItemInfo" style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:10px;padding:12px 14px;margin-bottom:18px"></div>
     <div class="fg">
       <div class="full"><label class="fl">Profesor/a que pide *</label>

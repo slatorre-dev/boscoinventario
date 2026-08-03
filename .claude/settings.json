@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "supermemory@supermemory-plugins": true,
+    "superpowers@superpowers-dev": true
+  }
+}
