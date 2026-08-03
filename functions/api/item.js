@@ -561,8 +561,17 @@ export async function onRequestPost({ request, env, data }) {
 
   if (action === 'buscarSeriePorCodigo') {
     const codigo = String(body.codigo || '').trim();
+    const formato = String(body.formato || '').trim();
     if (!codigo) return Response.json({ ok: false, error: 'Falta el código' });
     const r = await buscarSerieEnD1(env, codigo, dept, superadmin, genericDept);
+    if (
+      r.match === 'ninguno' &&
+      ['ean_13', 'ean_8', 'upc_a', 'upc_e'].includes(formato) &&
+      /^\d{8,14}$/.test(codigo)
+    ) {
+      const producto = await lookupProductoUpcItemDb(codigo);
+      if (producto) return Response.json({ ok: true, ...r, producto });
+    }
     return Response.json({ ok: true, ...r });
   }
 
@@ -664,6 +673,28 @@ async function buscarSerieEnD1(env, serieLeida, dept, superadmin, genericDept) {
     .bind(...deptBind).all();
 
   return buscarSerieEnRows(allWithSerieRes.results || [], serieLeida);
+}
+
+async function lookupProductoUpcItemDb(codigo) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  try {
+    const resp = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(codigo)}`, {
+      signal: controller.signal
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (data?.code !== 'OK' || !Array.isArray(data.items) || !data.items.length) return null;
+    const item = data.items[0];
+    const nombre = String(item.title || '').trim().slice(0, 120);
+    const marca = String(item.brand || '').trim();
+    if (!nombre) return null;
+    return { nombre, marca };
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function buscarSerieEnRows(allWithSerie, serieLeida) {

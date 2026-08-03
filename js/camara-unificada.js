@@ -7,6 +7,7 @@ let _camUnifUltimoFallidoTimestamp = 0;
 let _camUnifUltimoQrNoInventarioTs = 0;
 let _camUnifCandidatosPorId = {};
 let _camUnifCodigoPendienteAlta = '';
+let _camUnifProductoPendienteAlta = null;
 let _camUnifTrack = null;
 let _camUnifTorchOn = false;
 
@@ -93,6 +94,7 @@ function openCamaraUnificada() {
   _camUnifScanning = true;
   _camUnifCandidatosPorId = {};
   _camUnifCodigoPendienteAlta = '';
+  _camUnifProductoPendienteAlta = null;
 
   if (chkQuick) {
     chkQuick.checked = _camPrefBoolGet(CAM_PREF_QUICK, false);
@@ -234,7 +236,7 @@ async function _manejarDeteccionUnificada(valor, formato) {
   document.getElementById('camaraUnifEstado').textContent = 'Comprobando código...';
   try {
     _camUnifCodigoPendienteAlta = String(valor || '').trim();
-    const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: valor });
+    const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: valor, formato });
     if (!res.ok) {
       throw new Error(res.error || 'No se pudo comprobar el código');
     }
@@ -271,6 +273,7 @@ async function _manejarDeteccionUnificada(valor, formato) {
       return true;
     }
 
+    _camUnifProductoPendienteAlta = res.producto || null;
     document.getElementById('camaraUnifEstado').style.display = 'none';
     document.getElementById('camaraUnifResultado').style.display = 'block';
     document.getElementById('camaraUnifResultado').innerHTML = '<div style="margin-bottom:8px">No se encontró ningún ítem para ese código.</div><button class="btn btn-p" onclick="camaraUnifCrearItemDesdeCodigo()">➕ Añadir ítem nuevo con este código</button><button class="btn" onclick="camaraUnifReintentar()" style="margin-top:8px">Reintentar</button>';
@@ -294,6 +297,7 @@ function camaraUnifReintentar() {
 
 function camaraUnifCrearItemDesdeCodigo() {
   const codigo = String(_camUnifCodigoPendienteAlta || '').trim();
+  const producto = _camUnifProductoPendienteAlta;
   window._camaraReturnToScanner = _camUnifQuickMode();
   closeCamaraUnificada();
   openModal();
@@ -310,7 +314,15 @@ function camaraUnifCrearItemDesdeCodigo() {
       catSel.dataset.prev = catPref;
     }
     const itemInput = document.getElementById('f_item');
-    if (itemInput) itemInput.focus();
+    if (itemInput) {
+      if (producto?.nombre) itemInput.value = producto.nombre;
+      itemInput.focus();
+    }
+    if (producto?.marca) {
+      const provInput = document.getElementById('f_proveedor');
+      if (provInput) provInput.value = producto.marca;
+    }
+    if (typeof _actualizarEnlacesManual === 'function') _actualizarEnlacesManual();
   }, 50);
 }
 

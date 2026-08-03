@@ -13,6 +13,7 @@ let _serieTorchOn = false;
 let _serieDestinoFormulario = false;
 let _serieIntentoPrevio = null;
 let _serieCarryIntentoPrevio = false;
+let _productoNombrePendiente = '';
 
 const SERIE_PREF_QUICK = 'camara_quick_mode_v1';
 const SERIE_PREF_ACCESS = 'camara_access_mode_v1';
@@ -243,6 +244,7 @@ function openCamaraSerie() {
   _marcaPendiente = '';
   _modeloPendiente = '';
   _nombreSugeridoPendiente = '';
+  _productoNombrePendiente = '';
   _categoriaSugeridaPendiente = '';
   _serieCandidatosPorId = {};
   _ultimaImagenDetectada = '';
@@ -337,7 +339,7 @@ async function capturarSerie() {
           _aplicarSerieEnFormulario(codigos[0].rawValue, 'S/N capturado por código de barras');
           return;
         }
-        const resCodigo = await apiPost({ action: 'buscarSeriePorCodigo', codigo: codigos[0].rawValue });
+        const resCodigo = await apiPost({ action: 'buscarSeriePorCodigo', codigo: codigos[0].rawValue, formato: codigos[0].format });
         if (!resCodigo.ok) {
           _mostrarSerieError(resCodigo.error || 'No se pudo comprobar el código detectado');
           video.style.display = 'none';
@@ -360,7 +362,7 @@ async function capturarSerie() {
           capturarBtn.style.display = 'none';
           return;
         }
-        _mostrarSerieCrearNuevo(String(codigos[0].rawValue || '').trim(), '', '');
+        _mostrarSerieCrearNuevo(String(codigos[0].rawValue || '').trim(), resCodigo.producto?.marca || '', '', undefined, resCodigo.producto?.nombre || '');
         video.style.display = 'none';
         capturarBtn.style.display = 'none';
         return;
@@ -523,15 +525,17 @@ function _mostrarVisualCandidatos(candidatos, nombreSugerido, categoriaSugerida,
     <button class="btn" onclick="serieReintentar()" style="margin-top:8px">Reintentar</button>`;
 }
 
-function _mostrarSerieCrearNuevo(serieLeida, marca, modelo, motivoEncuadre) {
+function _mostrarSerieCrearNuevo(serieLeida, marca, modelo, motivoEncuadre, nombreProducto) {
   _serieLeidaPendiente = serieLeida;
   _marcaPendiente = marca || '';
   _modeloPendiente = modelo || '';
+  _productoNombrePendiente = nombreProducto || '';
   const resultado = document.getElementById('serieResultado');
   resultado.style.display = 'block';
-  const nombreDetectado = [marca, modelo].filter(Boolean).join(' ').trim();
+  const nombreDetectado = nombreProducto || [marca, modelo].filter(Boolean).join(' ').trim();
+  const nombreDetectadoCorto = nombreDetectado.length > 40 ? nombreDetectado.slice(0, 40) + '…' : nombreDetectado;
   const botonTexto = nombreDetectado
-    ? `Crear ítem nuevo: ${escHtml(nombreDetectado)} (S/N: ${escHtml(serieLeida)})`
+    ? `Crear ítem nuevo: ${escHtml(nombreDetectadoCorto)} (S/N: ${escHtml(serieLeida)})`
     : `Crear ítem nuevo con S/N: ${escHtml(serieLeida)}`;
   const hint = motivoEncuadre ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px">💡 ${escHtml(motivoEncuadre)}</div>` : '';
   resultado.innerHTML = `
@@ -545,9 +549,10 @@ function _crearItemDesdeSerie() {
   const serie = _serieLeidaPendiente;
   const marca = _marcaPendiente;
   const modelo = _modeloPendiente;
+  const nombreProducto = _productoNombrePendiente;
   _registrarFeedbackDeteccion({
     tipo: 'alta_desde_serie',
-    nombre: [marca, modelo].filter(Boolean).join(' ').trim(),
+    nombre: nombreProducto || [marca, modelo].filter(Boolean).join(' ').trim(),
     serie,
     marca,
     modelo
@@ -567,7 +572,7 @@ function _crearItemDesdeSerie() {
       catSel.value = catPref;
       catSel.dataset.prev = catPref;
     }
-    const nombreDetectado = [marca, modelo].filter(Boolean).join(' ').trim();
+    const nombreDetectado = nombreProducto || [marca, modelo].filter(Boolean).join(' ').trim();
     if (nombreDetectado) {
       const itemInput = document.getElementById('f_item');
       if (itemInput) itemInput.value = nombreDetectado;
@@ -576,6 +581,7 @@ function _crearItemDesdeSerie() {
       const provInput = document.getElementById('f_proveedor');
       if (provInput) provInput.value = marca;
     }
+    if (typeof _actualizarEnlacesManual === 'function') _actualizarEnlacesManual();
   }, 50);
 }
 
