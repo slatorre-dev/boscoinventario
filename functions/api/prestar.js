@@ -221,8 +221,8 @@ export async function onRequestPost({ request, env, data }) {
 
   if (action === 'reservaCrear') {
     const { cicloId, moduloCod, moduloNombre, aulaDestino, profesorId, profesorNombre, fecha, franja, obs, lineas } = body;
-    if (!fecha || !String(franja || '').trim() || !Array.isArray(lineas) || !lineas.length) {
-      return Response.json({ ok: false, error: 'Faltan datos de la reserva (fecha, franja o ítems)' });
+    if (!fecha || !Array.isArray(lineas) || !lineas.length) {
+      return Response.json({ ok: false, error: 'Faltan datos de la reserva (fecha o ítems)' });
     }
     const franjaNorm = String(franja).trim();
 
@@ -263,7 +263,7 @@ export async function onRequestPost({ request, env, data }) {
       const yaReservado = Number(reservadoRow?.total || 0);
       const disponible = Number(itemRow.qty) - yaReservado;
       if (cantidadTotal > disponible) {
-        return Response.json({ ok: false, error: `${itemRow.item}: solo quedan ${disponible} libre(s) para ${fecha} · ${franjaNorm}` });
+        return Response.json({ ok: false, error: `${itemRow.item}: solo quedan ${disponible} libre(s) para ${fecha}${franjaNorm ? ' · ' + franjaNorm : ''}` });
       }
     }
 
@@ -366,7 +366,6 @@ export async function onRequestPost({ request, env, data }) {
       return Response.json({ ok: true, enviados: 0 });
     }
 
-    const ids = vencidos.results.map(p => p.id);
     const jefeRow = await env.DB.prepare(
       "SELECT email FROM usuarios WHERE departamento=? AND rol='jefe/a departamento' AND email!='' LIMIT 1"
     ).bind(dept).first();
@@ -385,9 +384,12 @@ export async function onRequestPost({ request, env, data }) {
       await sendGmail(env, jefeRow.email, `${vencidos.results.length} préstamo(s) vencido(s)`, html);
     }
 
-    const placeholders = ids.map(() => '?').join(',');
-    await env.DB.prepare(`UPDATE prestamos SET notificado_vencido=1 WHERE id IN (${placeholders})`)
-      .bind(...ids).run();
+    await env.DB.prepare(`
+      UPDATE prestamos SET notificado_vencido=1
+      WHERE id IN (SELECT p.id FROM prestamos p JOIN inventario i ON i.id = p.itemId
+        WHERE p.estado IN ('Activo','Parcial') AND p.fechaPrevista != '' AND p.fechaPrevista < ?
+        AND p.notificado_vencido = 0 AND i.departamento = ?)
+    `).bind(hoy, dept).run();
 
     return Response.json({ ok: true, enviados: jefeRow?.email ? vencidos.results.length : 0 });
   }

@@ -112,7 +112,6 @@ async function guardarReservaPractica(){
   const franja = document.getElementById('res_franja').value.trim();
   const profId = document.getElementById('res_prof').value;
   if(!fecha){ toast('Indica la fecha de la práctica','err'); return; }
-  if(!franja){ toast('Indica la franja horaria','err'); return; }
   if(!profId){ toast('Selecciona un/a profesor/a','err'); return; }
   if(!_reservaLineas.length){ toast('Añade al menos un ítem','err'); return; }
   const prof = profesores.find(p => String(p.id) === String(profId));
@@ -174,7 +173,7 @@ function _reservaCardHtml(r){
       <div class="pres-name">${escHtml(r.moduloNombre || 'Sin asignatura')}</div>
       <div class="pres-prof">${escHtml(r.profesorNombre)}</div>
       <div class="pres-meta">
-        <span>📅 ${escHtml(r.fecha)} · ${escHtml(r.franja)}</span>
+        <span>📅 ${escHtml(r.fecha)}${r.franja ? ' · ' + escHtml(r.franja) : ''}</span>
         <span>🏫 ${escHtml(aulaNombre)}</span>
       </div>
       <div style="margin-top:6px">${lineasHtml}</div>
