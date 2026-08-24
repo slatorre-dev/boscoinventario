@@ -475,8 +475,8 @@ Ver **API.md** para documentación completa.
 
 ```javascript
 const VERSION = 'v558';
-const CACHE_SHELL = 'inventario-fp-shell-v558';
-const CACHE_RUNTIME = 'inventario-fp-runtime-v558';
+const CACHE_SHELL = 'inventario-ies-juan-bosco-shell-v558';
+const CACHE_RUNTIME = 'inventario-ies-juan-bosco-runtime-v558';
 
 // Estrategia: Cache-first para assets, Network-first para API
 ```

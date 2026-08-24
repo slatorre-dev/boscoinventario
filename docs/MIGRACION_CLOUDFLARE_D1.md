@@ -1,5 +1,5 @@
 # Migración a Cloudflare D1 + Workers
-## Inventario Taller FP — IES El Bosco
+## Inventario IES Juan Bosco
 
 > **Este documento es una guía paso a paso para migrar el backend de Google Apps Script + Google Sheets a Cloudflare D1 (base de datos SQL) + Cloudflare Workers (backend JS).**
 > Se hará en un repo y página de Cloudflare nuevos, sin tocar el proyecto actual.

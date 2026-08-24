@@ -1,5 +1,5 @@
 // ═════════════════════════════════════════════════════════
-// SERVICE WORKER — Inventario FP
+// SERVICE WORKER — Inventario IES Juan Bosco
 // Estrategia:
 //   - SHELL (HTML/CSS/JS/iconos) -> cache-first con red de respaldo
 //   - API Apps Script y Google Fonts woff2 -> siempre red (no cachear)
@@ -8,8 +8,8 @@
 // ═════════════════════════════════════════════════════════
 
 const VERSION = 'v583';
-const CACHE_SHELL   = 'inventario-fp-shell-' + VERSION;
-const CACHE_RUNTIME = 'inventario-fp-runtime-' + VERSION;
+const CACHE_SHELL   = 'inventario-ies-juan-bosco-shell-' + VERSION;
+const CACHE_RUNTIME = 'inventario-ies-juan-bosco-runtime-' + VERSION;
 
 const SHELL = [
   './',

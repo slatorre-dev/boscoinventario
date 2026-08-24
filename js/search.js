@@ -256,7 +256,7 @@ function printGsResults(e, q){
     <p>IES El Bosco — Inventario Departamento<br>${total} tipos · ${uds} unidades · ${fecha}</p>
   </div>
   <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
-  <div class="footer">Inventario Taller FP · ${fecha}</div>
+  <div class="footer">Inventario IES Juan Bosco · ${fecha}</div>
   <script>window.onload=()=>setTimeout(()=>print(),150);<\/script>
   </body></html>`;
   const w=window.open('','_blank');

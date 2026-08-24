@@ -104,7 +104,7 @@ El servidor tenía Docker Desktop 4.29.0 instalado y funcionando correctamente c
 | `Mosquitto` | eclipse-mosquitto | 1883 | ✅ Up |
 | `portainer` | portainer/portainer-ce | 9000 | ✅ Up |
 
-La aplicación Inventario Taller FP era accesible en `http://85.51.100.241/` y cargaba correctamente.
+La aplicación Inventario IES Juan Bosco era accesible en `http://85.51.100.241/` y cargaba correctamente.
 
 **Arquitectura funcional:**
 - Apache servía el frontend estático

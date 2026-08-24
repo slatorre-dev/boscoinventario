@@ -47,7 +47,7 @@ async function sendGmail(env, to, subject, htmlBody) {
   const from = env.MAIL_FROM || 'inventarioelec@iesjuanbosco.es';
   const subjectEncoded = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
   const mime = [
-    `From: Inventario Taller FP <${from}>`,
+    `From: Inventario IES Juan Bosco <${from}>`,
     `To: ${to}`,
     `Subject: ${subjectEncoded}`,
     'MIME-Version: 1.0',
@@ -85,7 +85,7 @@ async function notifyResponsableModulo(env, moduloCod, moduloNombre, subject, ro
       <p>Se ha registrado un préstamo de material de tu módulo <strong>${escHtml(moduloNombre || moduloCod)}</strong>:</p>
       ${rowsHtml}
       ${extraInfoHtml || ''}
-      <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
+      <p style="font-size:12px;color:#6b7280">Inventario IES Juan Bosco</p>
     </div>`;
     await sendGmail(env, userRow.email, subject, html);
   } catch (e) {
@@ -237,7 +237,7 @@ export async function onRequestPost({ request, env, data }) {
         <h2>Préstamos vencidos</h2>
         <p>Hay ${vencidos.results.length} préstamo(s) de tu departamento con la devolución vencida:</p>
         ${rowsHtml}
-        <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
+        <p style="font-size:12px;color:#6b7280">Inventario IES Juan Bosco</p>
       </div>`;
       await sendGmail(env, jefeRow.email, `${vencidos.results.length} préstamo(s) vencido(s)`, html);
     }

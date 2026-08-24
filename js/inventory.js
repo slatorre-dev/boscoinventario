@@ -1291,7 +1291,7 @@ function exportFullBackup(){
   const now = new Date();
   const backup = {
     meta: {
-      app: 'Inventario Taller FP',
+      app: 'Inventario IES Juan Bosco',
       exportedAt: now.toISOString(),
       exportedBy: SESSION ? {usuario: SESSION.usuario, nombre: SESSION.nombre, rol: SESSION.rol, email: SESSION.email} : null,
       counts: {
@@ -1637,7 +1637,7 @@ function printInv(){
     <thead><tr>${thead}</tr></thead>
     <tbody>${tbody}</tbody>
   </table>
-  <div class="footer">Inventario Taller FP · ${fecha}</div>
+  <div class="footer">Inventario IES Juan Bosco · ${fecha}</div>
   <script>window.onload=()=>setTimeout(()=>print(),150);<\/script>
   </body></html>`;
 

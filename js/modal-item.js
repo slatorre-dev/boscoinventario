@@ -1402,7 +1402,7 @@ function printPedidos(){
     <thead><tr><th>Ref.</th><th>Ítem</th><th>Aula</th><th>Stock actual</th><th>Cantidad a pedir</th><th>Nota</th></tr></thead>
     <tbody>${filas}</tbody>
   </table>
-  <div class="footer">Inventario Taller FP</div>
+  <div class="footer">Inventario IES Juan Bosco</div>
   </body></html>`;
   const w = window.open('','_blank');
   w.document.write(html);

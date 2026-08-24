@@ -79,7 +79,7 @@
 
   // ── GitHub Models streaming (formato OpenAI) ──────────────────────────────
   function streamAI(messages, systemExtra, onChunk) {
-    var systemMsg = 'Eres VOLT, agente de inventario FP. Busca SIEMPRE en los resultados antes de responder. ' +
+    var systemMsg = 'Eres VOLT, agente de Inventario IES Juan Bosco. Busca SIEMPRE en los resultados antes de responder. ' +
       'Reporta stock EXACTO. Si no aparece, di "No en inventario". ' +
       'Cuando el usuario quiera un material, localízalo y confirma disponibilidad. ' +
       'ACCIONES DISPONIBLES (se activan automáticamente con frases naturales):\n' +
@@ -3961,7 +3961,7 @@
     result.style.display = 'block';
     result.innerHTML = '⏳ Analizando...';
     var muestra = conProb.slice(0, 12).map(function(i){ return { nombre: i.nombre, aula: i.aula, cat: i.cat, ref: i.ref, proveedor: i.proveedor, faltantes: getMissing(i) }; });
-    var prompt = 'Audita estos ' + conProb.length + ' items del inventario FP con campos incompletos (muestra los primeros ' + muestra.length + '):\n' + JSON.stringify(muestra) + '\nSugiere valores razonables basandote en el nombre. Tabla: Item | Campos faltantes | Sugerencia | Prioridad';
+    var prompt = 'Audita estos ' + conProb.length + ' items del Inventario IES Juan Bosco con campos incompletos (muestra los primeros ' + muestra.length + '):\n' + JSON.stringify(muestra) + '\nSugiere valores razonables basandote en el nombre. Tabla: Item | Campos faltantes | Sugerencia | Prioridad';
     var full = '';
     streamAI([{ role: 'user', content: prompt }], '', function(d){ full += d; result.innerHTML = md2html(full); })
       .catch(function(e){ result.innerHTML = '❌ ' + e.message; });
@@ -4002,7 +4002,7 @@
     var importBtn = el.panel.querySelector('#ag-csv-import');
     importBtn.disabled = state.csvParsed.length === 0;
 
-    var prompt = 'Analiza este CSV de inventario FP (' + state.csvParsed.length + ' filas). Columnas: ' +
+    var prompt = 'Analiza este CSV del Inventario IES Juan Bosco (' + state.csvParsed.length + ' filas). Columnas: ' +
       Object.keys(state.csvParsed[0] || {}).join(', ') + '.\nPrimeras 5 filas:\n' + JSON.stringify(state.csvParsed.slice(0,5)) +
       '\nDetecta: campos vacios criticos, valores incoherentes, columnas no reconocidas. Resume que se importara y que problemas hay.';
     var full = '';

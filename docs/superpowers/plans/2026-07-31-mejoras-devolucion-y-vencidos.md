@@ -480,7 +480,7 @@ justo antes:
         <h2>Préstamos vencidos</h2>
         <p>Hay ${vencidos.results.length} préstamo(s) de tu departamento con la devolución vencida:</p>
         ${rowsHtml}
-        <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
+        <p style="font-size:12px;color:#6b7280">Inventario IES Juan Bosco</p>
       </div>`;
       await sendGmail(env, jefeRow.email, `${vencidos.results.length} préstamo(s) vencido(s)`, html);
     }

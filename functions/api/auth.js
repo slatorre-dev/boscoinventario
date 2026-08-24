@@ -49,7 +49,7 @@ async function sendMail(env, to, subject, htmlBody) {
 
   const subjectEncoded = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
   const mime = [
-    `From: Inventario Taller FP <${from}>`,
+    `From: Inventario IES Juan Bosco <${from}>`,
     `To: ${to}`,
     `Subject: ${subjectEncoded}`,
     'MIME-Version: 1.0',
@@ -77,11 +77,11 @@ async function sendMail(env, to, subject, htmlBody) {
 }
 
 async function sendResetEmail(env, to, resetUrl, userName) {
-  const subject = 'Recuperación de contraseña - Inventario Taller FP';
+  const subject = 'Recuperación de contraseña - Inventario IES Juan Bosco';
   const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
       <h2>Recuperación de contraseña</h2>
       <p>Hola${userName ? ' ' + escHtml(userName) : ''},</p>
-      <p>Se ha solicitado cambiar la contraseña de tu cuenta en Inventario Taller FP.</p>
+      <p>Se ha solicitado cambiar la contraseña de tu cuenta en Inventario IES Juan Bosco.</p>
       <p><a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px">Cambiar contraseña</a></p>
       <p>Si no has solicitado este cambio, puedes ignorar este correo.</p>
       <p style="font-size:12px;color:#6b7280">El enlace caduca en 1 hora.</p>
@@ -90,7 +90,7 @@ async function sendResetEmail(env, to, resetUrl, userName) {
 }
 
 async function sendWelcomeEmail(env, to, resetUrl, userName) {
-  const subject = 'Bienvenido/a - Inventario Taller FP';
+  const subject = 'Bienvenido/a - Inventario IES Juan Bosco';
   const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
       <h2>Cuenta creada</h2>
       <p>Hola ${escHtml(userName)},</p>
@@ -102,7 +102,7 @@ async function sendWelcomeEmail(env, to, resetUrl, userName) {
 }
 
 async function sendNewUserNotification(env, adminEmail, nombre, email, departamentoNombre) {
-  const subject = 'Nueva cuenta creada - Inventario Taller FP';
+  const subject = 'Nueva cuenta creada - Inventario IES Juan Bosco';
   const htmlBody = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
       <h2>Nueva cuenta de profesor/a</h2>
       <p>Se ha dado de alta una cuenta nueva desde el formulario público de registro:</p>
@@ -111,7 +111,7 @@ async function sendNewUserNotification(env, adminEmail, nombre, email, departame
         <tr><td style="padding:6px;font-weight:bold">Email:</td><td style="padding:6px">${escHtml(email)}</td></tr>
         <tr><td style="padding:6px;font-weight:bold">Departamento:</td><td style="padding:6px">${escHtml(departamentoNombre)}</td></tr>
       </table>
-      <p style="font-size:12px;color:#6b7280">Inventario Taller FP</p>
+      <p style="font-size:12px;color:#6b7280">Inventario IES Juan Bosco</p>
     </div>`;
   await sendMail(env, adminEmail, subject, htmlBody);
 }

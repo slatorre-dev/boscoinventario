@@ -92,7 +92,7 @@ async function runBackup(db, token) {
   const stamp = now.toISOString().slice(0, 19).replace(/[:T]/g, '-');
   const backup = {
     meta: {
-      app: 'Inventario Taller FP',
+      app: 'Inventario IES Juan Bosco',
       exportedAt: now.toISOString(),
       counts: {
         items: inventario.results?.length ?? 0,
