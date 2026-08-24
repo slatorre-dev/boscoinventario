@@ -99,6 +99,10 @@ function computeItemDiff(oldRow, newItem) {
 const MANT_OPEN_STATES = ['Pendiente', 'En reparación', 'Enviado a reparar externo'];
 const MANT_CLOSE_STATES = ['Reparado', 'Resuelto'];
 
+function isValidMantEstado(estado) {
+  return !estado || MANT_OPEN_STATES.includes(estado) || MANT_CLOSE_STATES.includes(estado);
+}
+
 async function syncMantenimiento(db, itemId, oldRow, item, user) {
   const oldEstado = oldRow?.mantEstado || '';
   const newEstado = item.mantEstado || '';
@@ -220,6 +224,9 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   if (action === 'add') {
+    if (!isValidMantEstado(item.mantEstado)) {
+      return Response.json({ ok: false, error: 'Estado de mantenimiento no válido' });
+    }
     const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM inventario').first();
     const newId = (maxRow.m || 0) + 1;
     item.id = newId;
@@ -242,6 +249,9 @@ export async function onRequestPost({ request, env, data }) {
       if (currentDept !== dept && currentDept !== genericDept) {
         return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
       }
+    }
+    if (!isValidMantEstado(item.mantEstado)) {
+      return Response.json({ ok: false, error: 'Estado de mantenimiento no válido' });
     }
     const oldRow = await env.DB.prepare(
       `SELECT ${DIFF_FIELDS.join(',')}, mant, mantEstado, mantFecha, mantResp, mantNota, mantCoste FROM inventario WHERE id=?`
