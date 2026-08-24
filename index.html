@@ -327,7 +327,7 @@
             <span>Ayuda</span>
           </button>
         </div>
-        <div id="camaraHint" class="camara-hint" style="display:none">
+        <div id="camaraHint" class="camara-hint" style="display:none" role="status" aria-live="polite">
           <div><strong>Consejo rápido:</strong> con la cámara puedes <strong>buscar</strong> y también <strong>añadir ítems nuevos</strong> si no existen.</div>
           <button class="mini-btn" onclick="cerrarHintCamara()">Entendido</button>
         </div>
@@ -1500,7 +1500,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 </div>
 
 <!-- ══ TOUR GUIADO: FUNCIONES DE CÁMARA ══ -->
-<div class="mbg" id="mTourCamara" onclick="if(event.target===this)closeTourCamara()">
+<div class="mbg" id="mTourCamara" role="dialog" aria-modal="true" aria-labelledby="tourTitulo" onclick="if(event.target===this)closeTourCamara()">
   <div class="modal" style="max-width:480px">
     <div class="mh"><div class="mt" id="tourTitulo">📷 Novedades: búsqueda por cámara</div><button class="mx" onclick="closeTourCamara()">✕</button></div>
     <div id="tourContenido" style="min-height:120px;font-size:14px;line-height:1.5"></div>
@@ -1515,7 +1515,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 </div>
 
 <!-- ══ AYUDA: FUNCIONES DE CÁMARA (COMPLETA) ══ -->
-<div class="mbg" id="mAyudaCamara" onclick="if(event.target===this)closeAyudaCamara()">
+<div class="mbg" id="mAyudaCamara" role="dialog" aria-modal="true" aria-label="Funciones de cámara" onclick="if(event.target===this)closeAyudaCamara()">
   <div class="modal" style="max-width:560px">
     <div class="mh"><div class="mt">❓ Funciones de cámara</div><button class="mx" onclick="closeAyudaCamara()">✕</button></div>
     <div style="font-size:13px;line-height:1.6;max-height:60vh;overflow-y:auto">

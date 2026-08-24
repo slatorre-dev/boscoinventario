@@ -24,6 +24,7 @@ const TOUR_PANTALLAS = [
 
 let _tourPaso = 0;
 let _tourPantallas = TOUR_PANTALLAS;
+let _onboardingTrigger = null;
 
 function _tourVisto() {
   try { return !!localStorage.getItem(TOUR_CAMARA_KEY); } catch (e) { return false; }
@@ -59,17 +60,21 @@ function cerrarHintCamara() {
 }
 
 function openTourCamara(reabierta) {
+  _onboardingTrigger = document.activeElement;
   const puedeEscribir = typeof can === 'function' && can('items.write');
   _tourPantallas = TOUR_PANTALLAS.filter(p => !p.requiereEscritura || puedeEscribir);
   _tourPaso = 0;
   _renderTourPaso();
   document.getElementById('mTourCamara').classList.add('open');
+  document.getElementById('tourBtnSaltar')?.focus();
   if (reabierta) _marcarTourVisto();
 }
 
 function closeTourCamara() {
   _marcarTourVisto();
   document.getElementById('mTourCamara').classList.remove('open');
+  _onboardingTrigger?.focus();
+  _onboardingTrigger = null;
 }
 
 function _renderTourPaso() {
@@ -97,14 +102,18 @@ function tourAnterior() {
 }
 
 function openAyudaCamara() {
+  _onboardingTrigger = document.activeElement;
   const puedeEscribir = typeof can === 'function' && can('items.write');
   ['ayudaMultiEquipo', 'ayudaRevisionAula'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = puedeEscribir ? '' : 'none';
   });
   document.getElementById('mAyudaCamara').classList.add('open');
+  document.getElementById('ayudaBtnVerTour')?.focus();
 }
 
 function closeAyudaCamara() {
   document.getElementById('mAyudaCamara').classList.remove('open');
+  _onboardingTrigger?.focus();
+  _onboardingTrigger = null;
 }

@@ -457,10 +457,7 @@ async function loadData(){
     setTimeout(()=>{bar.className='';bar.style.width='0';}, 500);
     if(location.hash && location.hash.length > 1) navigateFromHash(location.hash);
     else if(cf) openSub(); else if(currentCiclo) openCiclo(currentCiclo.id); else goHome();
-    iniciarTourCamaraSiPrimeraVez();
-    setTimeout(() => {
-      if (typeof mostrarHintCamaraSiPrimeraVez === 'function') mostrarHintCamaraSiPrimeraVez();
-    }, 900);
+    if (typeof mostrarHintCamaraSiPrimeraVez === 'function') mostrarHintCamaraSiPrimeraVez();
   }catch(err){
     console.error(err);
     if(err.message && (err.message.includes('401') || err.message.includes('autorizado'))){
