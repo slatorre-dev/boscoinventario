@@ -87,6 +87,15 @@ function itemAuditSummary(prefix, item) {
   return `${prefix}: ${item.item || ''}${parts.length ? ' - ' + parts.join(' - ') : ''}`;
 }
 
+const DIFF_FIELDS = ['item', 'aula', 'cat', 'mod', 'qty', 'min', 'est', 'loc'];
+
+function computeItemDiff(oldRow, newItem) {
+  if (!oldRow) return [];
+  return DIFF_FIELDS
+    .filter(f => String(oldRow[f] ?? '') !== String(newItem[f] ?? ''))
+    .map(f => ({ campo: f, antes: oldRow[f] ?? '', despues: newItem[f] ?? '' }));
+}
+
 async function itemDept(db, id) {
   const row = await db.prepare('SELECT departamento FROM inventario WHERE id=?').bind(id).first();
   return row?.departamento || '';
@@ -173,13 +182,18 @@ export async function onRequestPost({ request, env, data }) {
         return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
       }
     }
+    const oldRow = await env.DB.prepare(
+      `SELECT ${DIFF_FIELDS.join(',')} FROM inventario WHERE id=?`
+    ).bind(item.id).first();
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
     item.tipo_material = item.es_contenedor ? 'inventariable' : (item.tipo_material || 'consumible');
     const sets = FIELDS_UPD.map(h => `${h}=?`).join(',');
     const vals = [...FIELDS_UPD.map(h => item[h] ?? null), item.id];
     await env.DB.prepare(`UPDATE inventario SET ${sets} WHERE id=?`).bind(...vals).run();
-    await auditLog(env.DB, user, 'update', item.id, itemAuditSummary('Actualizado', item));
+    const diffs = computeItemDiff(oldRow, item);
+    const resumenUpdate = diffs.length ? JSON.stringify(diffs) : itemAuditSummary('Actualizado', item);
+    await auditLog(env.DB, user, 'update', item.id, resumenUpdate);
     return Response.json({ ok: true, item });
   }
 
