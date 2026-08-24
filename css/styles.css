@@ -358,6 +358,8 @@ body{
 .home-quick-btn.amber-soft .home-quick-ico{background:linear-gradient(135deg,#fbbf24,#d97706);color:#fff}
 .home-quick-btn.violet{border-color:rgba(99,102,241,.22);background:linear-gradient(135deg,#eef2ff,#ffffff);color:#4338ca}
 .home-quick-btn.violet .home-quick-ico{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff}
+.home-quick-btn.green{border-color:rgba(5,150,105,.22);background:linear-gradient(135deg,#ecfdf5,#ffffff);color:#065f46}
+.home-quick-btn.green .home-quick-ico{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
 .home-quick-btn[style*="display:none"]{display:none!important}
 
 @media (max-width: 1024px){
