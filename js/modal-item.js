@@ -1115,12 +1115,21 @@ async function saveItem(){
   const name=document.getElementById('f_item').value.trim();
   let hasError = false;
   if(!name){ markFieldError('f_item', 'El nombre es obligatorio'); hasError = true; }
-  if(!document.getElementById('f_ciclo').value){ markFieldError('f_ciclo', 'Selecciona un ciclo/departamento'); hasError = true; }
-  if(!document.getElementById('f_mod').value){ markFieldError('f_mod', 'Selecciona una asignatura/módulo'); hasError = true; }
   if(MAINT_CLOSE_STATES.includes(document.getElementById('f_mantEstado').value) && !document.getElementById('f_mantNotaCierre').value.trim()){
     markFieldError('f_mantNotaCierre', 'Indica qué se hizo para cerrar la incidencia'); hasError = true;
   }
   if(hasError){ toast('Revisa los campos marcados','err'); focusFirstError(); return; }
+  let modVal = document.getElementById('f_mod').value;
+  if(!modVal){
+    const continuar = await confirmDialog({
+      icon: 'ℹ️',
+      title: 'Sin ciclo ni asignatura/módulo',
+      message: 'No se ha asignado un ciclo/departamento ni una asignatura/módulo a este ítem. Se asignará automáticamente a "IES Juan Bosco".',
+      confirmText: 'Entendido, guardar'
+    });
+    if(!continuar) return;
+    modVal = 'iesjuanbosco__M01';
+  }
   const refRaw = document.getElementById('f_ref').value.trim();
   const v={
     code: eid ? itemCode(items.find(x=>x.id===eid) || eid) : '',
@@ -1134,7 +1143,7 @@ async function saveItem(){
     min:parseInt(document.getElementById('f_min').value)||0,
     tipo_material: document.getElementById('f_tipo_material').value || 'inventariable',
     cat:document.getElementById('f_cat').value,
-    mod:document.getElementById('f_mod').value,
+    mod: modVal,
     loc:document.getElementById('f_loc').value.trim(),
     est:document.getElementById('f_est').value,
     util:document.getElementById('f_util').value.trim(),

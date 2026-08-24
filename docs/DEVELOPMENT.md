@@ -699,6 +699,25 @@ _Bloque trasladado íntegro desde CLAUDE.md el 25/08/2026 para reducir el tamañ
   del centro (`orden` 101+ para aulas propias, ver
   `migrations/0008_aulas_seed.sql`). `sw.js` → `v594`.
 
+  **Cierre de sesión (v595):** a petición explícita del usuario ("lo
+  reclasifico yo, no lo pongas más como error"), `saveItem()` deja de
+  exigir `f_ciclo`/`f_mod` — se quitan las 2 líneas de validación
+  obligatoria en `js/modal-item.js` (antes en 1118-1119). Ciclo y
+  Módulo/Asignatura pasan a ser opcionales para cualquier ítem de
+  cualquier departamento (ya existía la opción "Sin asignar" en ambos
+  desplegables, solo no se aceptaba al guardar). Segundo ajuste, también
+  pedido por el usuario en la misma sesión: en vez de dejar `mod` vacío
+  sin más, si al guardar no hay ni ciclo ni módulo seleccionados aparece
+  un diálogo (`confirmDialog()`, mismo patrón ya usado en el resto de la
+  app) avisando que el ítem se asignará a "IES Juan Bosco", y al aceptar
+  se guarda con `mod='iesjuanbosco__M01'` (el ciclo/módulo compartido ya
+  existente, migración `0011`) — así ningún ítem queda sin ciclo/módulo
+  en absoluto, solo sin uno específico. Cancelar el diálogo aborta el
+  guardado, dando ocasión de elegir un ciclo real en vez de aceptar el
+  genérico. El usuario reclasificará los 899 ítems de
+  `electricidadelectronica` (dejados en `mod=''` por la migración `0029`,
+  antes de este cambio) a su ritmo. `sw.js` → `v595`.
+
   **2. Idea #6 — Multi-equipo en una foto / alta masiva (v547).** Botón
   "📸 Añadir varios" nuevo, también solo en vista de aula. Backend nuevo
   `detectarMultiples` (`functions/api/item.js`): una sola llamada a

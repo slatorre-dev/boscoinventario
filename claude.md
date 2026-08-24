@@ -382,11 +382,14 @@ Workers AI, onboarding de cámara (v543-v557).
    anterior a la migración multi-departamento. Reclasificados a los 4
    ciclos reales (306 ítems) o dejados sin asignar por ser genuinamente
    genéricos (899: componentes sueltos, equipo compartido, mobiliario).
-   Pendiente real que queda: esos 899 ítems con `mod=''` siguen sin
-   poder guardarse desde el modal de edición porque `saveItem()` exige
-   `f_ciclo`+`f_mod` no vacíos ([modal-item.js:1118-1119](js/modal-item.js#L1118-L1119))
-   — decidir si se relaja esa validación (permitir "Sin asignar") o si
-   el departamento los reclasifica uno a uno.
+   `saveItem()` ya no exige `f_ciclo`/`f_mod` (25/08/2026, v595) — Ciclo y
+   Módulo pasan a ser opcionales para cualquier ítem, en cualquier
+   departamento. Si se guarda sin ninguno de los dos, un diálogo avisa y
+   asigna automáticamente el ciclo/módulo compartido `iesjuanbosco__M01`
+   ("IES Juan Bosco") en vez de dejar el campo vacío — decisión explícita
+   del usuario para que todo ítem quede clasificado en algo, aunque sea
+   genérico, en vez de quedar sin ningún ciclo asociado. El usuario
+   reclasificará los 899 ítems de `electricidadelectronica` a su ritmo.
 7. Rol `Consulta` (solo lectura) nunca ve la galería completa de fotos
    (solo la principal) porque `fotosGet` exige `items.write` — el
    proyecto no tiene hoy un permiso `items.read` más laxo.
