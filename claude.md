@@ -1949,23 +1949,25 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
     Nota: Playwright SÍ estuvo disponible en la sesión del 24/08/2026
     (v588), pero esa verificación se centró en la feature nueva de esa
     sesión (reservas), no se aprovechó para repetir esta pendiente de v578.
-23. 3 ideas del brainstorming de la sesión v588 (24/08/2026), investigadas
-    y diseñadas a alto nivel pero NO implementadas — el usuario eligió
-    centrar esa sesión solo en "planificación de prácticas" (ver entrada
-    de sesión más arriba):
-    - **Historial de ítems como timeline estructurado:** el log por ítem
-      ya existe (`functions/api/historial.js`, `?itemId=`) pero cada
-      entrada es un resumen de texto genérico ("Item actualizado: X") sin
-      decir qué campo cambió (aula antes/después, estado antes/después,
-      etc.) — las apps comerciales investigadas (Snipe-IT, itemit,
-      AssetControl Cloud) muestran una timeline con diff campo a campo.
+23. 3 ideas del brainstorming de la sesión v588 (24/08/2026) — el usuario
+    eligió centrar esa sesión solo en "planificación de prácticas" (ver
+    entrada de sesión más arriba), retomadas en la sesión del 24/08/2026
+    (v589-v591):
+    - ~~**Historial de ítems como timeline estructurado**~~ ✅ hecho
+      (v588→v590, ver entrada de sesión "Historial de ítems como timeline
+      estructurado" más abajo).
     - **Mantenimiento como flujo real:** hoy `item.mant` es solo un
       booleano que Volt puede listar (`lista_mantenimiento`) — sin fecha
-      de incidencia, coste, responsable, ni cierre con lo que se hizo.
-    - **Aprobación de préstamos + alertas de garantía/depreciación:** hoy
-      cualquier préstamo se concede al instante, sin paso de aprobación
-      previa por jefatura; `precio`/`fecha_adquisicion` existen pero nada
-      calcula fin de garantía o vida útil restante.
+      de incidencia, coste, responsable, ni cierre con lo que se hizo. En
+      curso.
+    - **Aprobación de préstamos + alertas de garantía/depreciación:**
+      descartada a petición explícita del usuario (25/08/2026) — cualquier
+      paso de aprobación previa por jefatura sobrecargaría al jefe de
+      departamento con una tarea más, y ese no es el problema que se
+      quería resolver. Si se retoma en el futuro, debe ser **opcional**
+      (activable por departamento), nunca obligatoria por defecto. La
+      mitad de alertas de garantía/depreciación (sin aprobación) sigue
+      siendo una idea válida e independiente, no descartada.
 24. Considerar si el patrón encontrado en la sesión v588 (una consulta D1
     que liga un parámetro por fila de un array sin límite de crecimiento,
     en vez de un JOIN con un parámetro fijo) existe en algún otro sitio
