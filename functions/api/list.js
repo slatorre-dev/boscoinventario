@@ -189,7 +189,7 @@ export async function onRequestGet({ request, env, data }) {
     ? 'SELECT * FROM inventario ORDER BY id'
     : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}') ORDER BY id`;
 
-  const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows] = await Promise.all([
+  const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows, reservasRows] = await Promise.all([
     superadmin ? env.DB.prepare(itemsQuery).all() : env.DB.prepare(itemsQuery).bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT * FROM profesores WHERE nombre != '' AND lower(nombre) != 'departamento' ORDER BY nombre").all()
@@ -209,6 +209,9 @@ export async function onRequestGet({ request, env, data }) {
     superadmin
       ? env.DB.prepare('SELECT * FROM ciclos ORDER BY cicloOrden, modOrden').all()
       : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${genericDept}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
+    superadmin
+      ? env.DB.prepare("SELECT * FROM reservas_practica WHERE estado != 'cancelada' ORDER BY fecha, id").all()
+      : env.DB.prepare(`SELECT * FROM reservas_practica WHERE (departamento=? OR departamento='${genericDept}') AND estado != 'cancelada' ORDER BY fecha, id`).bind(dept).all(),
   ]);
 
   const cicloMap = {}, cicloOrder = [];
@@ -224,12 +227,26 @@ export async function onRequestGet({ request, env, data }) {
   const itemRows = items.results || [];
   const itemsC = itemRows.map(it => HEADERS_INV.map(h => it[h] ?? ''));
 
+  // Reservas de práctica: cargar líneas de las reservas ya filtradas por departamento y anidarlas
+  const reservaIds = (reservasRows.results || []).map(r => r.id);
+  let reservaItemsRows = [];
+  if (reservaIds.length) {
+    const placeholders = reservaIds.map(() => '?').join(',');
+    const ri = await env.DB.prepare(`SELECT * FROM reserva_items WHERE reservaId IN (${placeholders})`).bind(...reservaIds).all();
+    reservaItemsRows = ri.results || [];
+  }
+  const reservas = (reservasRows.results || []).map(r => ({
+    ...r,
+    lineas: reservaItemsRows.filter(li => Number(li.reservaId) === Number(r.id)),
+  }));
+
   return Response.json({
     ok: true,
     itemsH: HEADERS_INV,
     itemsC,
     profesores: mergeProfesores(profesores.results, usuarios.results),
     prestamos: prestamos.results,
+    reservas,
     aulas: aulas.results,
     cats: mergeCats(cats.results, itemRows),
     ciclos: cicloOrder.map(id => cicloMap[id]),
