@@ -496,6 +496,7 @@ async function loadData(){
     }
     profesores = res.profesores || [];
     prestamos = res.prestamos || [];
+    reservas = res.reservas || [];
     itemsLoaded = true;
     if(typeof updatePresVencBadge === 'function') updatePresVencBadge();
     if(typeof getVencidosParaUsuario==='function'&&typeof toast==='function'){

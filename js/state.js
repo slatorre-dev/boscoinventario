@@ -6,6 +6,7 @@ let SESSION = JSON.parse(localStorage.getItem('inv_session') || 'null');
 let items = [];
 let profesores = [];
 let prestamos = [];
+let reservas = [];
 let UBICACIONES = [];
 let cf = null;
 let currentCiclo = null;
