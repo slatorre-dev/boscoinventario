@@ -16,6 +16,17 @@ function historialEsc(value) {
   }[ch]));
 }
 
+function _historialPlainSummary(resumenRaw){
+  try {
+    const parsed = JSON.parse(resumenRaw);
+    if(Array.isArray(parsed) && parsed.length && parsed.every(d => d && typeof d === 'object' && 'campo' in d && 'antes' in d && 'despues' in d)){
+      const labels = parsed.map(d => (typeof HISTORIAL_DIFF_FIELDS_LABELS !== 'undefined' && HISTORIAL_DIFF_FIELDS_LABELS[d.campo]) || d.campo);
+      return `${parsed.length} campo${parsed.length===1?'':'s'} modificado${parsed.length===1?'':'s'}: ${labels.join(', ')}`;
+    }
+  } catch(e) { /* no es JSON: se usa el texto tal cual */ }
+  return resumenRaw;
+}
+
 function historialBadgeClass(action) {
   return 'badge-' + String(action || 'accion').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
 }
@@ -94,7 +105,7 @@ function renderHistorial(data) {
       <td class="act"><span class="badge ${historialBadgeClass(h.accion)}">${historialEsc(h.accion)}</span></td>
       <td class="que">${historialEsc(h.que)}</td>
       <td class="nom">${historialEsc(h.nombre)}</td>
-      <td class="det" title="${historialEsc(h.detalles)}">${historialEsc(h.detalles)}</td>
+      <td class="det" title="${historialEsc(_historialPlainSummary(h.detalles))}">${historialEsc(_historialPlainSummary(h.detalles))}</td>
     </tr>
   `).join('');
 }
@@ -261,7 +272,7 @@ function hpRender(data) {
       const verb = _hpVerb(h.accion);
       const nombre = h.nombre || h.que || '';
       const quien = h.usuario || '';
-      const det = h.detalles || '';
+      const det = _historialPlainSummary(h.detalles || '');
       const itemId = h.que || '';
       const clickable = itemId && !['prestar','prestarcaja','devolver','bulkimport'].includes((h.accion||'').toLowerCase());
       const clickAttr = clickable ? `onclick="openItemRoute('${historialEsc(itemId)}')" style="cursor:pointer" title="Ir al ítem"` : '';
