@@ -219,6 +219,76 @@ export async function onRequestPost({ request, env, data }) {
     });
   }
 
+  if (action === 'reservaCrear') {
+    const { cicloId, moduloCod, moduloNombre, aulaDestino, profesorId, profesorNombre, fecha, franja, obs, lineas } = body;
+    if (!fecha || !String(franja || '').trim() || !Array.isArray(lineas) || !lineas.length) {
+      return Response.json({ ok: false, error: 'Faltan datos de la reserva (fecha, franja o ítems)' });
+    }
+
+    // Validar propiedad + calcular departamento único del kit
+    const deptsUsados = new Set();
+    for (const linea of lineas) {
+      const itemDeptValue = await itemDept(env.DB, linea.itemId);
+      if (!superadmin && !ownsItemDept(itemDeptValue, dept, genericDept)) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+      if (itemDeptValue !== GENERIC_DEPT) deptsUsados.add(itemDeptValue);
+    }
+    if (deptsUsados.size > 1) {
+      return Response.json({ ok: false, error: 'Todos los ítems de una misma reserva deben ser del mismo departamento' });
+    }
+    const departamentoReserva = deptsUsados.size === 1 ? [...deptsUsados][0] : (dept || GENERIC_DEPT);
+
+    // Comprobar disponibilidad (stock actual − lo ya reservado en el mismo hueco exacto)
+    for (const linea of lineas) {
+      const itemRow = await env.DB.prepare('SELECT item, qty FROM inventario WHERE id=?').bind(linea.itemId).first();
+      if (!itemRow) return Response.json({ ok: false, error: `Ítem ${linea.itemId} no encontrado` });
+      const reservadoRow = await env.DB.prepare(`
+        SELECT COALESCE(SUM(ri.cantidad),0) as total
+        FROM reserva_items ri
+        JOIN reservas_practica rp ON rp.id = ri.reservaId
+        WHERE ri.itemId = ? AND rp.fecha = ? AND rp.franja = ? AND rp.estado = 'pendiente'
+      `).bind(linea.itemId, fecha, franja).first();
+      const yaReservado = Number(reservadoRow?.total || 0);
+      const disponible = Number(itemRow.qty) - yaReservado;
+      if (Number(linea.cantidad) > disponible) {
+        return Response.json({ ok: false, error: `${itemRow.item}: solo quedan ${disponible} libre(s) para ${fecha} · ${franja}` });
+      }
+    }
+
+    // Todo validado antes de escribir nada — evita dejar filas parciales si una línea falla
+    const fechaCreacion = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const insertReserva = await env.DB.prepare(`
+      INSERT INTO reservas_practica (departamento, cicloId, moduloCod, moduloNombre, aulaDestino, profesorId, profesorNombre, fecha, franja, estado, obs, creadoPor, creadoEn)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)
+    `).bind(
+      departamentoReserva, cicloId || '', moduloCod || '', moduloNombre || '', aulaDestino || '',
+      profesorId || 0, profesorNombre || '', fecha, String(franja).trim(), obs || '',
+      user?.usuario || '', fechaCreacion
+    ).run();
+    const reservaId = insertReserva.meta?.last_row_id;
+
+    const lineasGuardadas = [];
+    for (const linea of lineas) {
+      await env.DB.prepare('INSERT INTO reserva_items (reservaId, itemId, itemNombre, cantidad) VALUES (?,?,?,?)')
+        .bind(reservaId, linea.itemId, linea.itemNombre, linea.cantidad).run();
+      lineasGuardadas.push({ reservaId, itemId: linea.itemId, itemNombre: linea.itemNombre, cantidad: linea.cantidad });
+    }
+
+    await auditLog(env.DB, user, 'reservaCrear', reservaId, `Reserva ${reservaId} creada: ${lineas.length} ítem(s) para ${fecha} · ${franja}`);
+
+    return Response.json({
+      ok: true,
+      reserva: {
+        id: reservaId, departamento: departamentoReserva, cicloId: cicloId || '', moduloCod: moduloCod || '',
+        moduloNombre: moduloNombre || '', aulaDestino: aulaDestino || '', profesorId: profesorId || 0,
+        profesorNombre: profesorNombre || '', fecha, franja: String(franja).trim(), estado: 'pendiente',
+        obs: obs || '', creadoPor: user?.usuario || '', creadoEn: fechaCreacion,
+      },
+      lineas: lineasGuardadas,
+    });
+  }
+
   if (action === 'notificarVencidos') {
     const hoy = new Date().toISOString().split('T')[0];
     const vencidos = await env.DB.prepare(`
