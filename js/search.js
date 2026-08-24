@@ -57,6 +57,12 @@ function wordMatch(textWords, pattern){
   return textWords.some(tw=>tw.includes(pattern));
 }
 
+function itemSearchText(x){
+  const code = typeof itemCode === 'function' ? itemCode(x) : x.code;
+  const aula = typeof AULAS !== 'undefined' ? (AULAS.find(a=>a.id===x.aula)?.name || x.aula) : x.aula;
+  return [code, x.ref, x.item, aula, x.loc, x.proveedor, x.tags, x.serie].join(' ');
+}
+
 function fuzzyMatch(query, text){
   const q=normalizeStr(query);
   const textWords=normalizeStr(text).split(/\s+/).filter(w=>w);
@@ -137,8 +143,7 @@ function globalSearch(q){
     return;
   }
   _gsMatches=items.filter(x=>{
-    const text=[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor,x.tags].join(' ');
-    return fuzzyMatch(q,text);
+    return fuzzyMatch(q,itemSearchText(x));
   }).sort((a,b)=>scoreMatch(b,q)-scoreMatch(a,q));
   gsIdx=-1;
   if(!_gsMatches.length){

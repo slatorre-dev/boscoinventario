@@ -61,7 +61,7 @@ function getFiltered(){
     if(fc&&x.cat!==fc)return false;
     if(fe&&x.est!==fe)return false;
     if(ft&&x.tipo_material!==ft)return false;
-    if(q&&!fuzzyMatch(q,[typeof itemCode === 'function' ? itemCode(x) : x.code,x.ref,x.item,x.loc,x.proveedor,x.tags].join(' ')))return false;
+    if(q&&!fuzzyMatch(q,itemSearchText(x)))return false;
     return true;
   }).sort((a,b)=>{
     let av=a[sk]??'',bv=b[sk]??'';
