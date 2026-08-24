@@ -33,6 +33,7 @@ const SHELL = [
   './js/modal-ciclos.js',
   './js/modal-config-backups.js',
   './js/prestamos.js',
+  './js/reservas-practica.js',
   './js/import.js',
   './js/docs.js',
   './js/docs-dpto.js',

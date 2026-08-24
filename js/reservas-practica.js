@@ -5,6 +5,7 @@ let _reservaProfOptions = [];
 let _reservaLineas = [];
 let _reservaLineaRowId = 0;
 let _reservaItemsDisponibles = [];
+let _reservaConfirmSubmitting = false;
 
 function openReservaPractica(){
   if(!requirePerm('loans.write')) return;
@@ -23,7 +24,9 @@ function openReservaPractica(){
   cicloSel.value = (ownCiclos.length === 1 && (ownCiclos[0].modulos || []).length === 1)
     ? `${ownCiclos[0].id}__${ownCiclos[0].modulos[0].cod}` : '';
 
-  document.getElementById('res_fecha').value = '';
+  const resFechaInput = document.getElementById('res_fecha');
+  resFechaInput.value = '';
+  resFechaInput.min = new Date().toISOString().slice(0,10);
   document.getElementById('res_franja').value = '';
   document.getElementById('res_obs').value = '';
 
@@ -160,6 +163,12 @@ function getReservasPendientes(){
 function _reservaCardHtml(r){
   const aulaNombre = AULAS.find(a=>a.id===r.aulaDestino)?.name || r.aulaDestino || '—';
   const lineasHtml = (r.lineas||[]).map(l => `<div style="font-size:12px;padding:2px 0">${escHtml(l.itemNombre)} · ${l.cantidad} ud.</div>`).join('');
+  const puedeGestionar = typeof can !== 'function' || can('loans.write');
+  const accionesHtml = puedeGestionar ? `
+    <div class="pres-actions" style="flex-direction:column;gap:6px">
+      <button class="btn btn-sm btn-return" onclick="confirmarRecogidaReserva(${r.id})">✅ Confirmar recogida</button>
+      <button class="btn btn-sm btn-d" onclick="cancelarReserva(${r.id})">✕ Cancelar</button>
+    </div>` : '';
   return `<div class="pres-card">
     <div class="pres-info">
       <div class="pres-name">${escHtml(r.moduloNombre || 'Sin asignatura')}</div>
@@ -171,10 +180,7 @@ function _reservaCardHtml(r){
       <div style="margin-top:6px">${lineasHtml}</div>
       ${r.obs?`<div style="font-size:11px;color:var(--muted);margin-top:4px">💬 ${escHtml(r.obs)}</div>`:''}
     </div>
-    <div class="pres-actions" style="flex-direction:column;gap:6px">
-      <button class="btn btn-sm btn-return" onclick="confirmarRecogidaReserva(${r.id})">✅ Confirmar recogida</button>
-      <button class="btn btn-sm btn-d" onclick="cancelarReserva(${r.id})">✕ Cancelar</button>
-    </div>
+    ${accionesHtml}
   </div>`;
 }
 
@@ -189,7 +195,9 @@ function renderReservasPendientes(){
 }
 
 async function confirmarRecogidaReserva(reservaId){
+  if(_reservaConfirmSubmitting) return;
   if(!await confirmDialog({message:'¿Confirmar la recogida? Se descontará el stock de todos los ítems de la reserva.', confirmText:'Confirmar'})) return;
+  _reservaConfirmSubmitting = true;
   try {
     const res = await apiPost({action:'reservaConfirmar', reservaId});
     if(!res.ok) throw new Error(res.error);
@@ -199,19 +207,27 @@ async function confirmarRecogidaReserva(reservaId){
       if(idx>=0) items[idx].qty = Number(items[idx].qty) - Number(p.cantidad);
     }
     const rIdx = reservas.findIndex(r=>Number(r.id)===Number(reservaId));
-    if(rIdx>=0) reservas[rIdx].estado = 'recogida';
+    if(rIdx>=0 && res.estado) reservas[rIdx].estado = res.estado;
     if(res.fallos && res.fallos.length){
-      toast(`Recogida parcial: ${res.fallos.length} línea(s) sin stock suficiente (${res.fallos.map(f=>f.itemNombre).join(', ')})`,'warn');
+      const nombres = res.fallos.map(f=>f.itemNombre||'?').join(', ');
+      if(!res.prestamos || !res.prestamos.length){
+        toast(`No se pudo recoger ningún ítem: sin stock suficiente (${nombres})`,'err');
+      } else {
+        toast(`Recogida parcial: ${res.fallos.length} línea(s) sin stock suficiente (${nombres})`,'warn');
+      }
     } else {
       toast('Recogida confirmada','ok');
     }
     renderReservasPendientes();
     goPrestamos();
   } catch(err){ toast('Error: '+err.message,'err'); }
+  finally { _reservaConfirmSubmitting = false; }
 }
 
 async function cancelarReserva(reservaId){
+  if(_reservaConfirmSubmitting) return;
   if(!await confirmDialog({message:'¿Cancelar esta reserva? Se liberará el material para otras reservas.', danger:true, confirmText:'Cancelar reserva'})) return;
+  _reservaConfirmSubmitting = true;
   try {
     const res = await apiPost({action:'reservaCancelar', reservaId});
     if(!res.ok) throw new Error(res.error);
@@ -220,4 +236,5 @@ async function cancelarReserva(reservaId){
     toast('Reserva cancelada','ok');
     renderReservasPendientes();
   } catch(err){ toast('Error: '+err.message,'err'); }
+  finally { _reservaConfirmSubmitting = false; }
 }

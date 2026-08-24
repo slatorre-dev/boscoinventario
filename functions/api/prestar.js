@@ -224,6 +224,7 @@ export async function onRequestPost({ request, env, data }) {
     if (!fecha || !String(franja || '').trim() || !Array.isArray(lineas) || !lineas.length) {
       return Response.json({ ok: false, error: 'Faltan datos de la reserva (fecha, franja o ítems)' });
     }
+    const franjaNorm = String(franja).trim();
 
     // Validar propiedad + calcular departamento único del kit
     const deptsUsados = new Set();
@@ -237,22 +238,32 @@ export async function onRequestPost({ request, env, data }) {
     if (deptsUsados.size > 1) {
       return Response.json({ ok: false, error: 'Todos los ítems de una misma reserva deben ser del mismo departamento' });
     }
+    // Si todas las líneas son del compartido iesjuanbosco, deptsUsados queda vacío —
+    // la reserva se archiva bajo el departamento de quien la crea (visible/gestionable
+    // por ella), no bajo iesjuanbosco, decisión deliberada para no crear una reserva
+    // invisible a todo el mundo salvo superadmin.
     const departamentoReserva = deptsUsados.size === 1 ? [...deptsUsados][0] : (dept || GENERIC_DEPT);
 
     // Comprobar disponibilidad (stock actual − lo ya reservado en el mismo hueco exacto)
+    // Agrega por itemId primero — una petición con dos líneas del mismo ítem no debe
+    // saltarse el chequeo comparando cada línea por separado contra el mismo stock.
+    const cantidadPorItem = new Map();
     for (const linea of lineas) {
-      const itemRow = await env.DB.prepare('SELECT item, qty FROM inventario WHERE id=?').bind(linea.itemId).first();
-      if (!itemRow) return Response.json({ ok: false, error: `Ítem ${linea.itemId} no encontrado` });
+      cantidadPorItem.set(linea.itemId, (cantidadPorItem.get(linea.itemId) || 0) + Number(linea.cantidad));
+    }
+    for (const [itemId, cantidadTotal] of cantidadPorItem) {
+      const itemRow = await env.DB.prepare('SELECT item, qty FROM inventario WHERE id=?').bind(itemId).first();
+      if (!itemRow) return Response.json({ ok: false, error: `Ítem ${itemId} no encontrado` });
       const reservadoRow = await env.DB.prepare(`
         SELECT COALESCE(SUM(ri.cantidad),0) as total
         FROM reserva_items ri
         JOIN reservas_practica rp ON rp.id = ri.reservaId
         WHERE ri.itemId = ? AND rp.fecha = ? AND rp.franja = ? AND rp.estado = 'pendiente'
-      `).bind(linea.itemId, fecha, franja).first();
+      `).bind(itemId, fecha, franjaNorm).first();
       const yaReservado = Number(reservadoRow?.total || 0);
       const disponible = Number(itemRow.qty) - yaReservado;
-      if (Number(linea.cantidad) > disponible) {
-        return Response.json({ ok: false, error: `${itemRow.item}: solo quedan ${disponible} libre(s) para ${fecha} · ${franja}` });
+      if (cantidadTotal > disponible) {
+        return Response.json({ ok: false, error: `${itemRow.item}: solo quedan ${disponible} libre(s) para ${fecha} · ${franjaNorm}` });
       }
     }
 
@@ -263,26 +274,26 @@ export async function onRequestPost({ request, env, data }) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, ?, ?)
     `).bind(
       departamentoReserva, cicloId || '', moduloCod || '', moduloNombre || '', aulaDestino || '',
-      profesorId || 0, profesorNombre || '', fecha, String(franja).trim(), obs || '',
+      profesorId || 0, profesorNombre || '', fecha, franjaNorm, obs || '',
       user?.usuario || '', fechaCreacion
     ).run();
     const reservaId = insertReserva.meta?.last_row_id;
 
     const lineasGuardadas = [];
     for (const linea of lineas) {
-      await env.DB.prepare('INSERT INTO reserva_items (reservaId, itemId, itemNombre, cantidad) VALUES (?,?,?,?)')
+      const insertLinea = await env.DB.prepare('INSERT INTO reserva_items (reservaId, itemId, itemNombre, cantidad) VALUES (?,?,?,?)')
         .bind(reservaId, linea.itemId, linea.itemNombre, linea.cantidad).run();
-      lineasGuardadas.push({ reservaId, itemId: linea.itemId, itemNombre: linea.itemNombre, cantidad: linea.cantidad });
+      lineasGuardadas.push({ id: insertLinea.meta?.last_row_id, reservaId, itemId: linea.itemId, itemNombre: linea.itemNombre, cantidad: linea.cantidad });
     }
 
-    await auditLog(env.DB, user, 'reservaCrear', reservaId, `Reserva ${reservaId} creada: ${lineas.length} ítem(s) para ${fecha} · ${franja}`);
+    await auditLog(env.DB, user, 'reservaCrear', '', `Reserva ${reservaId} creada: ${lineas.length} ítem(s) para ${fecha} · ${franjaNorm}`);
 
     return Response.json({
       ok: true,
       reserva: {
         id: reservaId, departamento: departamentoReserva, cicloId: cicloId || '', moduloCod: moduloCod || '',
         moduloNombre: moduloNombre || '', aulaDestino: aulaDestino || '', profesorId: profesorId || 0,
-        profesorNombre: profesorNombre || '', fecha, franja: String(franja).trim(), estado: 'pendiente',
+        profesorNombre: profesorNombre || '', fecha, franja: franjaNorm, estado: 'pendiente',
         obs: obs || '', creadoPor: user?.usuario || '', creadoEn: fechaCreacion,
       },
       lineas: lineasGuardadas,
@@ -318,10 +329,12 @@ export async function onRequestPost({ request, env, data }) {
       nuevos.push(nuevo);
     }
 
-    await env.DB.prepare("UPDATE reservas_practica SET estado='recogida' WHERE id=?").bind(reservaId).run();
-    await auditLog(env.DB, user, 'reservaConfirmar', reservaId, `Recogida de reserva ${reservaId}: ${nuevos.length}/${(lineas.results||[]).length} línea(s)`);
+    if (nuevos.length) {
+      await env.DB.prepare("UPDATE reservas_practica SET estado='recogida' WHERE id=?").bind(reservaId).run();
+    }
+    await auditLog(env.DB, user, 'reservaConfirmar', '', `Recogida de reserva ${reservaId}: ${nuevos.length}/${(lineas.results||[]).length} línea(s)`);
 
-    return Response.json({ ok: true, prestamos: nuevos, fallos });
+    return Response.json({ ok: true, prestamos: nuevos, fallos, estado: nuevos.length ? 'recogida' : 'pendiente' });
   }
 
   if (action === 'reservaCancelar') {
@@ -333,7 +346,7 @@ export async function onRequestPost({ request, env, data }) {
       return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     }
     await env.DB.prepare("UPDATE reservas_practica SET estado='cancelada' WHERE id=?").bind(reservaId).run();
-    await auditLog(env.DB, user, 'reservaCancelar', reservaId, `Reserva ${reservaId} cancelada`);
+    await auditLog(env.DB, user, 'reservaCancelar', '', `Reserva ${reservaId} cancelada`);
     return Response.json({ ok: true });
   }
 
