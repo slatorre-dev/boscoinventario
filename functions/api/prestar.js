@@ -104,6 +104,32 @@ async function auditLog(db, user, accion, itemId, resumen) {
   }
 }
 
+async function crearPrestamoDesdeLinea(db, datos) {
+  const maxRow = await db.prepare('SELECT MAX(id) as m FROM prestamos').first();
+  const pres = {
+    id: (maxRow.m || 0) + 1,
+    itemId: datos.itemId,
+    itemNombre: datos.itemNombre,
+    cantidad: datos.cantidad,
+    aulaOrigen: datos.aulaOrigen || '',
+    aulaDestino: datos.aulaDestino || '',
+    profesorId: datos.profesorId,
+    profesorNombre: datos.profesorNombre,
+    gestionadoPor: datos.gestionadoPor || '',
+    fechaPrestamo: datos.fechaPrestamo || '',
+    fechaPrevista: datos.fechaPrevista || '',
+    fechaDevolucion: '',
+    cantidadDevuelta: 0,
+    estado: 'Activo',
+    obs: datos.obs || '',
+  };
+  const vals = HEADERS_PRES.map(h => pres[h] ?? '');
+  await db.prepare(`INSERT INTO prestamos (${HEADERS_PRES.join(',')}) VALUES (${HEADERS_PRES.map(()=>'?').join(',')})`)
+    .bind(...vals).run();
+  await db.prepare('UPDATE inventario SET qty = qty - ? WHERE id=?').bind(pres.cantidad, pres.itemId).run();
+  return pres;
+}
+
 export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
@@ -121,23 +147,16 @@ export async function onRequestPost({ request, env, data }) {
     const caja = await env.DB.prepare('SELECT item, mod FROM inventario WHERE id=?').bind(cajaId).first();
     const hijos = await env.DB.prepare('SELECT * FROM inventario WHERE parent_id=?').bind(cajaId).all();
     if (!hijos.results?.length) return Response.json({ ok: false, error: 'La caja no tiene componentes' });
-    const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();
-    let nextId = (maxRow.m || 0) + 1;
     const nuevos = [];
     for (const hijo of hijos.results) {
       if (Number(hijo.qty) < 1) continue;
-      const pres = {
-        id: nextId++, itemId: hijo.id, itemNombre: hijo.item, cantidad: Number(hijo.qty),
+      const nuevo = await crearPrestamoDesdeLinea(env.DB, {
+        itemId: hijo.id, itemNombre: hijo.item, cantidad: Number(hijo.qty),
         aulaOrigen: hijo.aula, aulaDestino: aulaDestino || '', profesorId, profesorNombre,
         gestionadoPor: gestionadoPor || '', fechaPrestamo: fechaPrestamo || '',
-        fechaPrevista: fechaPrevista || '', fechaDevolucion: '', cantidadDevuelta: 0,
-        estado: 'Activo', obs: obs || '', moduloCod: '', moduloNombre: '',
-      };
-      const vals = HEADERS_PRES.map(h => pres[h] ?? '');
-      await env.DB.prepare(`INSERT INTO prestamos (${HEADERS_PRES.join(',')}) VALUES (${HEADERS_PRES.map(()=>'?').join(',')})`)
-        .bind(...vals).run();
-      await env.DB.prepare('UPDATE inventario SET qty = qty - ? WHERE id=?').bind(pres.cantidad, hijo.id).run();
-      nuevos.push(pres);
+        fechaPrevista: fechaPrevista || '', obs: obs || '',
+      });
+      nuevos.push(nuevo);
     }
     await auditLog(env.DB, user, 'prestarCaja', cajaId, `Préstamo de caja ${cajaId} completa a ${profesorNombre}: ${nuevos.length} componentes`);
 
@@ -162,27 +181,20 @@ export async function onRequestPost({ request, env, data }) {
     if (!superadmin && !ownsItemDept(await itemDept(env.DB, pres.itemId), dept, genericDept)) {
       return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     }
-    const maxRow = await env.DB.prepare('SELECT MAX(id) as m FROM prestamos').first();
-    pres.id = (maxRow.m || 0) + 1;
-    pres.estado = 'Activo';
-    // Descontar stock
-    await env.DB.prepare('UPDATE inventario SET qty = qty - ? WHERE id=?').bind(pres.cantidad, pres.itemId).run();
-    const vals = HEADERS_PRES.map(h => pres[h] ?? '');
-    await env.DB.prepare(`INSERT INTO prestamos (${HEADERS_PRES.join(',')}) VALUES (${HEADERS_PRES.map(()=>'?').join(',')})`)
-      .bind(...vals).run();
-    await auditLog(env.DB, user, 'prestar', pres.itemId, `Préstamo ${pres.id}: ${pres.cantidad}ud a ${pres.profesorNombre}`);
+    const nuevo = await crearPrestamoDesdeLinea(env.DB, pres);
+    await auditLog(env.DB, user, 'prestar', nuevo.itemId, `Préstamo ${nuevo.id}: ${nuevo.cantidad}ud a ${nuevo.profesorNombre}`);
 
     // Notificar al responsable del módulo si existe
     const rowsHtml = `<table style="border-collapse:collapse;width:100%;max-width:500px">
-        <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(pres.itemNombre)}</td></tr>
-        <tr><td style="padding:6px;font-weight:bold">Cantidad:</td><td style="padding:6px">${escHtml(pres.cantidad)}</td></tr>
-        <tr><td style="padding:6px;font-weight:bold">Profesor:</td><td style="padding:6px">${escHtml(pres.profesorNombre)}</td></tr>
-        <tr><td style="padding:6px;font-weight:bold">Aula destino:</td><td style="padding:6px">${escHtml(pres.aulaDestino || '-')}</td></tr>
-        <tr><td style="padding:6px;font-weight:bold">Fecha prevista devolución:</td><td style="padding:6px">${escHtml(pres.fechaPrevista || '-')}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(nuevo.itemNombre)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Cantidad:</td><td style="padding:6px">${escHtml(nuevo.cantidad)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Profesor:</td><td style="padding:6px">${escHtml(nuevo.profesorNombre)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Aula destino:</td><td style="padding:6px">${escHtml(nuevo.aulaDestino || '-')}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Fecha prevista devolución:</td><td style="padding:6px">${escHtml(nuevo.fechaPrevista || '-')}</td></tr>
       </table>`;
-    await notifyResponsableModulo(env, pres.moduloCod, pres.moduloNombre, `Préstamo de material: ${pres.itemNombre}`, rowsHtml);
+    await notifyResponsableModulo(env, pres.moduloCod, pres.moduloNombre, `Préstamo de material: ${nuevo.itemNombre}`, rowsHtml);
 
-    return Response.json({ ok: true, prestamo: pres });
+    return Response.json({ ok: true, prestamo: nuevo });
   }
 
   if (action === 'devolver') {
