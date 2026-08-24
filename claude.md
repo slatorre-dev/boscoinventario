@@ -1,15 +1,31 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v578 | 03/08/2026 | Sesión de diseño (brainstorming) del roadmap
-de mejora "detección de un solo aparato → captura de mesa → captura de
-aula", empezando por la primera pieza: al dar de alta un ítem nuevo desde
-un código de barras real (EAN/UPC) sin match en D1, la app ahora intenta un
-lookup gratuito a **UPCitemdb** (sin API key, ~100 consultas/día) para
-prellenar nombre/marca reales del producto en vez de dejarlos vacíos —
-implementado con subagent-driven-development en worktree aislado, verificado
-en producción con `curl` directo (no con Playwright, ver detalle de sesión
-más abajo). Las piezas #2 (captura de mesa) y #3 (captura de aula completa)
-del roadmap quedan pendientes para la próxima sesión. Multi-departamento
+**Estado:** v588 | 24/08/2026 | **Planificación de prácticas** (reservas de
+material) en producción: un profesor/jefe de departamento reserva con
+antelación un kit de varios ítems ligado a un Ciclo/Asignatura + fecha +
+franja horaria de texto libre, con bloqueo duro de conflictos por
+coincidencia exacta de ítem+fecha+franja — botón "📅 Planificar práctica" y
+vista "📅 Ver reservas" en Préstamos. Origen: investigación de apps
+comerciales de inventario/activos (Snipe-IT, EZOfficeInventory, Asset
+Panda, GLPI) a petición del usuario, que recordaba una sugerencia similar
+de una conversación anterior perdida. Implementado con
+subagent-driven-development en worktree aislado, verificado end-to-end en
+producción con Playwright (login real, creación, bloqueo de conflicto,
+confirmación de recogida con stock verificado en D1, cancelación). La
+revisión final de rama encontró y corrigió el hallazgo más serio
+documentado hasta ahora en este archivo: una consulta D1 que ligaba un
+parámetro por reserva habría reventado la carga de TODA la app (no solo
+reservas) al superar el límite de 100 parámetros de D1 — ver detalle de
+sesión más abajo. Quedan pendientes, sin implementar, otras 3 ideas del
+mismo brainstorming (historial de ítems como timeline, mantenimiento como
+flujo real, aprobación de préstamos + garantía/depreciación) — ver
+Pendiente. Sesión anterior (03/08/2026, v578): primera pieza del roadmap
+de revisión cámara+IA — al dar de alta un ítem nuevo desde un código de
+barras real (EAN/UPC) sin match en D1, la app intenta un lookup gratuito a
+**UPCitemdb** (sin API key, ~100 consultas/día) para prellenar
+nombre/marca reales del producto en vez de dejarlos vacíos. Las piezas #2
+(captura de mesa) y #3 (captura de aula completa) de ESE roadmap distinto
+siguen pendientes también. Multi-departamento
 (Fases 0, 1, 2 y 3 del
 plan) completamente implementado y desplegado. Repo
 `slatorre-dev/boscoinventario` en marcha, D1 propia (`boscoinventario`) con
@@ -1667,6 +1683,166 @@ Credenciales/tokens usados en esta sesión que hay que tener en cuenta:
   Pages, no un secret) es el que hay que verificar que sigue existiendo si
   algo deja de funcionar — nombre de variable exactamente `AI`.
 
+### 24/08/2026 (v577→v587): sesión hecha directamente por el usuario, sin Claude Code — FedCM en login Google + ajustes UI/UX
+
+12 commits (10:49-12:00) hechos directamente por el usuario fuera de esta
+herramienta, nunca documentados hasta ahora. Núcleo real: migración del
+login con Google a **FedCM** (Federated Credential Management, el
+reemplazo de Google para el login basado en cookies de terceros que los
+navegadores están retirando) — 4 commits iterativos en `js/auth.js`:
+activar `use_fedcm_for_button:true` → revertirlo ("restore GIS popup
+compatibility") → añadir `google.accounts.id.initialize()` explícito por
+JS con `ux_mode:'popup'` (quitando el bloque declarativo `#g_id_onload` de
+`index.html`) → volver a activar `use_fedcm_for_button:true`, ahora sí
+funcionando. Lección: FedCM y el modo popup declarativo no convivían bien
+— hacía falta inicializar GIS explícitamente por JS *antes* de activar
+FedCM. Resto de commits, sin relación entre sí: rebranding a "Inventario
+IES Juan Bosco" (título de página), topbar/toolbar compactos en tablet (4
+commits), Service Worker más seguro, unificación de campos de búsqueda de
+inventario, onboarding de cámara no bloqueante, 4 columnas de aula en
+tablet, accesibilidad por teclado en tarjetas de Home. Sin migración D1.
+
+### 24/08/2026 (v587→v588): Planificación de prácticas (reservas de material) — primera pieza nueva tras investigar apps comerciales de inventario
+
+Retomando el hilo de la sesión v578 (revisión cámara+IA), esta sesión
+cambió de tema a petición del usuario: investigar apps comerciales de
+gestión de inventario/activos (Snipe-IT, EZOfficeInventory, Asset Panda,
+GLPI, más herramientas de reserva de laboratorio tipo Skedda/BookitLab)
+para proponer mejoras nuevas — el usuario recordaba que en una
+conversación anterior (perdida, nunca llegó a un archivo del repo) se
+habían sugerido ideas como "planificación de prácticas" y "mejoras del
+historial de ítems". Investigación + brainstorming completos vía
+`superpowers:brainstorming` (clasificado como arquitectónico, con varias
+rondas de `AskUserQuestion` para acotar alcance): de 4 candidatas
+propuestas (planificación de prácticas, historial como timeline
+estructurado, mantenimiento como flujo real, aprobación de préstamos +
+garantía/depreciación), el usuario eligió centrar esta sesión solo en la
+primera. El resto queda en el backlog general (ver más abajo), sin
+implementar.
+
+**Diseño acordado (spec:
+[`docs/superpowers/specs/2026-08-24-planificacion-practicas-design.md`](docs/superpowers/specs/2026-08-24-planificacion-practicas-design.md)):**
+reserva de un "kit" de varios ítems a la vez (ligado a un Ciclo/Asignatura,
+una fecha y una franja horaria de **texto libre**) con bloqueo duro de
+conflictos por coincidencia **exacta** de ítem+fecha+franja — limitación
+explícitamente aceptada por el usuario a cambio de no modelar un horario
+rígido de campanadas por departamento. El día de la práctica, "Confirmar
+recogida" convierte el kit en préstamos reales de un clic. Sin edición de
+reservas ya creadas (solo cancelar y recrear), sin aprobación previa, sin
+notificación por email, sin comprobar contra préstamos activos actuales
+(solo contra otras reservas pendientes del mismo hueco).
+
+**Lo construido** (plan:
+[`docs/superpowers/plans/2026-08-24-planificacion-practicas.md`](docs/superpowers/plans/2026-08-24-planificacion-practicas.md),
+9 tareas + 1 ronda de correcciones, subagent-driven-development en
+worktree aislado `worktree-reservas-practica`, cada tarea con revisión
+individual limpia):
+1. Migración `migrations/0027_reservas_practica.sql` — tablas
+   `reservas_practica` (cabecera) + `reserva_items` (líneas), aplicada y
+   verificada en D1 remoto.
+2. Refactor `functions/api/prestar.js`: lógica de inserción en `prestamos`
+   + descuento de stock, antes duplicada entre `prestar`/`prestarCaja`,
+   extraída a `crearPrestamoDesdeLinea()` compartida — sin cambio de
+   comportamiento, verificado con revisión dedicada.
+3-4. Acciones nuevas `reservaCrear` (valida disponibilidad de TODAS las
+   líneas antes de escribir nada, bloquea kits multi-departamento incluso
+   para `superadmin`), `reservaConfirmar` (reusa el helper del punto 2),
+   `reservaCancelar` (soft-cancel, nunca borra, por trazabilidad).
+5. `functions/api/list.js` incluye `reservas` (con líneas anidadas) en la
+   carga general, mismo scoping por departamento que `prestamos`.
+6. Registro de las 3 acciones en `js/api.js`/`js/roles.js` (permiso
+   `loans.write`) + estado global `reservas` en `js/state.js`/`js/auth.js`.
+7. Frontend nuevo `js/reservas-practica.js` + modal `#mReservaPractica`:
+   botón "📅 Planificar práctica" en Préstamos, lista editable de ítems
+   (mismo patrón que `multi-equipo.js`).
+8. Vista "📅 Ver reservas" (toggle, mismo patrón que el de vencidos ya
+   existente) con "Confirmar recogida"/"Cancelar".
+9. Bump de versión (v588).
+
+**Revisión final de rama (modelo más capaz, diff completo de las 9 tareas
+juntas) — el hallazgo más serio de todas las sesiones documentadas en este
+archivo hasta la fecha:** `functions/api/list.js` cargaba las líneas de
+cada reserva con `WHERE reservaId IN (?,?,?...)`, **un parámetro ligado
+por cada reserva** — D1 tiene un límite duro documentado de **100
+parámetros ligados por consulta**. Como las reservas en estado `recogida`
+se retienen para siempre (nunca se filtran de esa carga, solo `cancelada`
+se excluye) mientras que el frontend solo pinta las `pendiente`, cada
+reserva confirmada queda como peso muerto que sigue consumiendo un hueco
+de parámetro — la combinación de esas dos decisiones (cada una razonable
+por separado, ninguna tarea individual lo vio) garantizaba que
+`functions/api/list.js` **reventara para todo el departamento** (y mucho
+antes para `superadmin`, sin filtro de departamento) en cuanto se
+acumularan ~100 reservas no canceladas — dejando `loadData()` con
+`items`/`prestamos`/`profesores` vacíos, "Error cargando inventario" para
+TODA la app, no solo para reservas. Corregido sustituyendo el `IN()` por
+un `JOIN` con un único parámetro ligado, movido dentro del `Promise.all`
+ya existente. **Lección reforzada para el futuro:** cualquier consulta que
+ligue un parámetro por fila de un array que puede crecer sin límite (no
+solo IDs de un lote conocido de antemano) es un riesgo de límite de
+plataforma, no solo de rendimiento — revisar esto explícitamente en
+futuras revisiones de código que toquen D1.
+
+Otros 5 hallazgos Important corregidos en el mismo pase (todos
+intersección de dos tareas que por separado parecían correctas, patrón ya
+documentado muchas veces en este archivo): franja horaria ligada sin
+recortar en la consulta de conflictos mientras el valor guardado sí se
+recortaba (bypasseaba en silencio el bloqueo — el propio objetivo de la
+feature); líneas duplicadas del mismo ítem en una reserva podían
+sobre-reservar sorteando el chequeo (arreglado agregando cantidad por
+ítem antes de comprobar disponibilidad); sin guardia anti-doble-envío en
+"Confirmar recogida"/"Cancelar" (doble clic descontaría stock dos veces —
+mismo patrón ya arreglado una vez en `multi-equipo.js`, v547); el archivo
+nuevo `js/reservas-practica.js` no estaba en la lista de precache del
+Service Worker, y `filterProfSelect()` (función YA compartida por los dos
+modales de préstamo preexistentes) pasó a depender de una variable de ese
+archivo sin comprobar que existiera — un fallo de red al cargar ese único
+archivo nuevo habría roto también los dos flujos de préstamo antiguos; los
+3 `auditLog()` nuevos escribían el ID de la reserva en la columna que
+`functions/api/historial.js` trata como ID real de ítem de inventario —
+las entradas de auditoría de una reserva aparecían en el historial de un
+ítem de inventario con el mismo número, autorizadas contra el
+departamento de ESE ítem (fuga de información entre departamentos).
+1 hallazgo Important resuelto como decisión de producto (ruling del
+controlador, no un bug de código: el plan mandaba literalmente este
+comportamiento): `reservaConfirmar` marcaba la reserva como `recogida`
+aunque fallaran TODAS las líneas, dejándola inrecuperable (no hay edición
+de reservas) — corregido para que solo pase a `recogida` si al menos una
+línea tuvo éxito, si no queda `pendiente` para reintentar.
+
+**Verificación end-to-end en producción con Playwright** (disponible en
+esta sesión): login real, creación de reserva de kit vía UI, bloqueo de
+conflicto confirmado con mensaje exacto de cuánto stock libre queda,
+confirmado que franja distinta NO bloquea (limitación documentada, no
+bug), "Confirmar recogida" verificado contra D1 real (stock descontado
+exactamente lo prestado), "Cancelar" verificado (estado `cancelada` en
+D1), regresión de préstamo normal (no vía reserva) confirmada sin cambios
+tras el refactor del punto 2. Datos de prueba limpiados de producción al
+terminar (préstamos de test devueltos, filas de reserva de test
+borradas, stock restaurado al valor original).
+
+**Incidente operativo — bloqueo de autenticación de wrangler:** el
+subagente de la Task 1 (migración D1) quedó `BLOCKED` porque su sandbox
+aislado no tenía sesión de `wrangler` ni `CLOUDFLARE_API_TOKEN` — y la
+propia sesión del controlador tampoco la tenía cacheada en este PC/perfil.
+El usuario ejecutó `npx wrangler login` en su propia terminal (necesario:
+el flujo OAuth con callback a `localhost` no se puede completar desde una
+herramienta de Bash no interactiva) y el controlador retomó desde ahí,
+aplicando y verificando la migración directamente. **Corrupción de
+`desktop.ini` de Google Drive dentro de `.git/`** reapareció también en
+esta sesión (287 archivos esta vez, bloqueando `git fetch`) — mismo
+remedio ya documentado (`find .git -iname desktop.ini -type f -delete`).
+
+**Decisión de proceso explícita del controlador (documentada como ruling
+en el ledger de la sesión, no en el código):** el paso final del plan
+("Task 9") incluía literalmente `git push origin main` y verificación en
+producción — el controlador partió esa tarea en dos: el bump de versión
+se ejecutó como una tarea normal dentro del worktree (revisada como
+cualquier otra), pero el push real a `origin/main` y la verificación en
+producción se hicieron aparte, DESPUÉS del merge a `main` local y CON
+confirmación explícita del usuario antes de tocar el remoto — coherente
+con que un push a una rama compartida nunca debe hacerlo un subagente sin
+supervisión.
+
 Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
 
 1. ~~Icono de fallback del botón de easter egg~~ ✅ hecho (v486):
@@ -1770,6 +1946,32 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
     en cuanto la skill esté disponible en el PC/cuenta que retome el
     trabajo — quedó pendiente el comportamiento real de UI (prellenado
     visual del formulario, que el botón truncado se vea bien en móvil).
+    Nota: Playwright SÍ estuvo disponible en la sesión del 24/08/2026
+    (v588), pero esa verificación se centró en la feature nueva de esa
+    sesión (reservas), no se aprovechó para repetir esta pendiente de v578.
+23. 3 ideas del brainstorming de la sesión v588 (24/08/2026), investigadas
+    y diseñadas a alto nivel pero NO implementadas — el usuario eligió
+    centrar esa sesión solo en "planificación de prácticas" (ver entrada
+    de sesión más arriba):
+    - **Historial de ítems como timeline estructurado:** el log por ítem
+      ya existe (`functions/api/historial.js`, `?itemId=`) pero cada
+      entrada es un resumen de texto genérico ("Item actualizado: X") sin
+      decir qué campo cambió (aula antes/después, estado antes/después,
+      etc.) — las apps comerciales investigadas (Snipe-IT, itemit,
+      AssetControl Cloud) muestran una timeline con diff campo a campo.
+    - **Mantenimiento como flujo real:** hoy `item.mant` es solo un
+      booleano que Volt puede listar (`lista_mantenimiento`) — sin fecha
+      de incidencia, coste, responsable, ni cierre con lo que se hizo.
+    - **Aprobación de préstamos + alertas de garantía/depreciación:** hoy
+      cualquier préstamo se concede al instante, sin paso de aprobación
+      previa por jefatura; `precio`/`fecha_adquisicion` existen pero nada
+      calcula fin de garantía o vida útil restante.
+24. Considerar si el patrón encontrado en la sesión v588 (una consulta D1
+    que liga un parámetro por fila de un array sin límite de crecimiento,
+    en vez de un JOIN con un parámetro fijo) existe en algún otro sitio
+    del backend además del ya corregido en `list.js` — no se auditó el
+    resto del proyecto en busca de la misma clase de bug, solo se corrigió
+    donde la revisión final de rama lo encontró.
 
 ---
 
