@@ -53,7 +53,7 @@ function _actualizarEnlacesManual(){
 }
 
 function captureModalOriginalValues(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
   modalOriginalValues = {};
   fields.forEach(field => {
     const el = document.getElementById(field);
@@ -80,7 +80,7 @@ function attachManualLinksListeners(){
 }
 
 function attachModalChangeListeners(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
   fields.forEach(field => {
     const el = document.getElementById(field);
     if(el){
@@ -93,7 +93,7 @@ function attachModalChangeListeners(){
 }
 
 function checkModalForChanges(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
   let hasChanges = false;
 
   for(let field of fields){
@@ -856,7 +856,7 @@ async function saveHijosCaja(){
 function setItemModalReadonly(readonly){
   const modal = document.querySelector('#mItem .modal');
   modal?.classList.toggle('item-readonly', !!readonly);
-  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_serie','f_tags','f_fecha','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
+  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_serie','f_tags','f_fecha','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_mantCoste','f_mantFechaCierre','f_mantNotaCierre','f_obs','f_es_contenedor','f_parent_id']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
