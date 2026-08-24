@@ -1,6 +1,11 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v592 | 25/08/2026 | **Mantenimiento como flujo real** en
+**Estado:** v593 | 25/08/2026 | Fix de UX más reciente: vista global
+agrupada de solo lectura para superadmin en ⚙️ Aulas/Categorías/Ciclos
+(sin departamento elegido, o eligiendo "IES Juan Bosco", se ven todos los
+departamentos agrupados en vez de dar 403 o mostrar solo uno) — ver
+sesión "vista global agrupada" más abajo. Pieza grande anterior, misma
+sesión: **Mantenimiento como flujo real** en
 producción: historial completo de incidencias por ítem (tabla nueva
 `mantenimientos`), 5 estados (3 abiertos + 2 que cierran con nota
 obligatoria), coste opcional, campos `mant*` de `inventario` como espejo
@@ -1974,6 +1979,38 @@ próxima sesión:** si vuelve a aparecer este límite, no reintentar el
 despacho de subagentes a ciegas (es un límite de cuenta, no un fallo de
 red) — confirmar con el usuario si prefiere esperar al reset o seguir con
 el controlador implementando directamente.
+
+### 25/08/2026 (v592→v593): vista global agrupada de aulas/categorías/ciclos para superadmin
+
+Fix de UX pedido directamente por el usuario tras la sesión anterior, sin
+brainstorming previo de una sesión distinta — mismo hilo de conversación.
+Queja real: sin elegir un departamento en `#deptActivoSelect`, los 3
+modales de gestión (⚙️ Aulas/Categorías/Ciclos) daban 403; eligiendo uno
+concreto, solo se veía/editaba ESE departamento, lo cual era limitante
+para tener una vista de conjunto del centro. Clasificado inicialmente como
+arquitectónico (tocaba directamente la zona de código que ya había
+causado el bug de duplicación de aulas, v499-501) hasta que el usuario, en
+la primera pregunta de brainstorming, eligió la opción más segura: **vista
+de solo lectura**, no edición multi-departamento real — lo que redujo el
+alcance a un cambio bounded, sin tocar el mecanismo de guardado
+(`aulasSync`/`catsSync`/`ciclosSync` siguen intactos, "reemplazo completo
+de un departamento a la vez").
+
+**Comportamiento nuevo:** `isSuperAdmin && (!deptActivo || deptActivo ===
+'iesjuanbosco')` → los 3 modales muestran las filas de TODOS los
+departamentos, agrupadas por nombre real (helper nuevo `deptNombre(slug)`
+en `js/config.js`), sin controles de edición/importar/guardar — "Exportar
+CSV" se mantiene activo y gana una columna Departamento para que el
+volcado completo tenga sentido. Elegir un departamento concreto sigue
+comportándose exactamente igual que antes (Fase 3, v532).
+
+Implementado directamente por el controlador (sin worktree, cambio
+acotado a `js/modal-aulas.js`/`js/modal-cats.js`/`js/modal-ciclos.js` +
+`index.html` + `css/styles.css` + `js/config.js`), verificado con
+`node --check` en los 4 archivos JS y lectura completa del diff — **sin
+Playwright disponible en esta sesión**, así que no se probó en un
+navegador real antes de desplegar; pendiente de verificación visual por
+el usuario.
 
 Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
 
