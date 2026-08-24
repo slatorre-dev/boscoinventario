@@ -289,6 +289,54 @@ export async function onRequestPost({ request, env, data }) {
     });
   }
 
+  if (action === 'reservaConfirmar') {
+    const { reservaId } = body;
+    const reserva = await env.DB.prepare('SELECT * FROM reservas_practica WHERE id=?').bind(reservaId).first();
+    if (!reserva) return Response.json({ ok: false, error: 'Reserva no encontrada' });
+    if (reserva.estado !== 'pendiente') return Response.json({ ok: false, error: 'La reserva ya no está pendiente' });
+    if (!superadmin && !ownsItemDept(reserva.departamento, dept, genericDept)) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
+
+    const lineas = await env.DB.prepare('SELECT * FROM reserva_items WHERE reservaId=?').bind(reservaId).all();
+    const hoy = new Date().toISOString().split('T')[0];
+    const nuevos = [];
+    const fallos = [];
+    for (const linea of lineas.results || []) {
+      const itemRow = await env.DB.prepare('SELECT item, aula, qty FROM inventario WHERE id=?').bind(linea.itemId).first();
+      if (!itemRow) { fallos.push({ itemNombre: linea.itemNombre, motivo: 'El ítem ya no existe' }); continue; }
+      if (Number(itemRow.qty) < Number(linea.cantidad)) {
+        fallos.push({ itemNombre: linea.itemNombre, motivo: `Solo quedan ${itemRow.qty} disponible(s), se reservaron ${linea.cantidad}` });
+        continue;
+      }
+      const nuevo = await crearPrestamoDesdeLinea(env.DB, {
+        itemId: linea.itemId, itemNombre: linea.itemNombre, cantidad: linea.cantidad,
+        aulaOrigen: itemRow.aula, aulaDestino: reserva.aulaDestino, profesorId: reserva.profesorId,
+        profesorNombre: reserva.profesorNombre, gestionadoPor: user?.nombre || '', fechaPrestamo: hoy,
+        fechaPrevista: '', obs: reserva.obs || '',
+      });
+      nuevos.push(nuevo);
+    }
+
+    await env.DB.prepare("UPDATE reservas_practica SET estado='recogida' WHERE id=?").bind(reservaId).run();
+    await auditLog(env.DB, user, 'reservaConfirmar', reservaId, `Recogida de reserva ${reservaId}: ${nuevos.length}/${(lineas.results||[]).length} línea(s)`);
+
+    return Response.json({ ok: true, prestamos: nuevos, fallos });
+  }
+
+  if (action === 'reservaCancelar') {
+    const { reservaId } = body;
+    const reserva = await env.DB.prepare('SELECT * FROM reservas_practica WHERE id=?').bind(reservaId).first();
+    if (!reserva) return Response.json({ ok: false, error: 'Reserva no encontrada' });
+    if (reserva.estado !== 'pendiente') return Response.json({ ok: false, error: 'Solo se pueden cancelar reservas pendientes' });
+    if (!superadmin && !ownsItemDept(reserva.departamento, dept, genericDept)) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
+    await env.DB.prepare("UPDATE reservas_practica SET estado='cancelada' WHERE id=?").bind(reservaId).run();
+    await auditLog(env.DB, user, 'reservaCancelar', reservaId, `Reserva ${reservaId} cancelada`);
+    return Response.json({ ok: true });
+  }
+
   if (action === 'notificarVencidos') {
     const hoy = new Date().toISOString().split('T')[0];
     const vencidos = await env.DB.prepare(`
