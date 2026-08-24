@@ -1410,6 +1410,43 @@ function printPedidos(){
   w.print();
 }
 
+const HISTORIAL_DIFF_FIELDS_LABELS = {
+  item: 'Nombre', aula: 'Aula', cat: 'Categoría', mod: 'Asignatura/Módulo',
+  qty: 'Cantidad', min: 'Mínimo', est: 'Estado', loc: 'Ubicación'
+};
+
+function _formatHistorialValor(campo, valor){
+  if(valor === '' || valor === null || valor === undefined) return '—';
+  if(campo === 'aula'){
+    const a = AULAS.find(x => x.id === valor);
+    return a ? a.name : String(valor);
+  }
+  if(campo === 'mod'){
+    const m = findModulo(valor);
+    return m ? `${m.cod} ${m.name}` : String(valor);
+  }
+  return String(valor);
+}
+
+function _formatHistorialDetalle(resumenRaw){
+  let diffs = null;
+  try {
+    const parsed = JSON.parse(resumenRaw);
+    if(Array.isArray(parsed) && parsed.length && parsed.every(d => d && typeof d === 'object' && 'campo' in d && 'antes' in d && 'despues' in d)){
+      diffs = parsed;
+    }
+  } catch(e) { /* no es JSON: cae al texto plano */ }
+
+  if(!diffs) return escHtml(resumenRaw);
+
+  return diffs.map(d => {
+    const label = HISTORIAL_DIFF_FIELDS_LABELS[d.campo] || d.campo;
+    const antes = _formatHistorialValor(d.campo, d.antes);
+    const despues = _formatHistorialValor(d.campo, d.despues);
+    return `<div><b>${escHtml(label)}:</b> ${escHtml(antes)} → ${escHtml(despues)}</div>`;
+  }).join('');
+}
+
 async function openHistorial(){
   if(!eid) return;
   const it = items.find(x=>Number(x.id)===Number(eid));
@@ -1431,7 +1468,7 @@ async function openHistorial(){
             <td style="white-space:nowrap;font-size:12px">${escHtml(l.fecha)}</td>
             <td style="font-size:13px">${escHtml(l.usuario)}</td>
             <td style="font-size:12px">${escHtml(l.accion)}</td>
-            <td style="font-size:12px;word-break:break-word">${escHtml(l.resumen)}</td>
+            <td style="font-size:12px;word-break:break-word">${_formatHistorialDetalle(l.resumen)}</td>
           </tr>`
         ).join('')}</tbody>
       </table>`;
