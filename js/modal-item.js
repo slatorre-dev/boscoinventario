@@ -53,7 +53,7 @@ function _actualizarEnlacesManual(){
 }
 
 function captureModalOriginalValues(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
   modalOriginalValues = {};
   fields.forEach(field => {
     const el = document.getElementById(field);
@@ -80,7 +80,7 @@ function attachManualLinksListeners(){
 }
 
 function attachModalChangeListeners(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
   fields.forEach(field => {
     const el = document.getElementById(field);
     if(el){
@@ -93,7 +93,7 @@ function attachModalChangeListeners(){
 }
 
 function checkModalForChanges(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mant', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
   let hasChanges = false;
 
   for(let field of fields){
@@ -711,15 +711,22 @@ function fillMaintenanceResponsibles(){
     .join('');
 }
 
+const MAINT_CLOSE_STATES = ['Reparado', 'Resuelto'];
+
 function toggleMaintFields(){
-  const checked = document.getElementById('f_mant')?.checked;
+  const estado = document.getElementById('f_mantEstado')?.value || '';
   const box = document.getElementById('maintFields');
-  if(box) box.classList.toggle('show', !!checked);
-  if(checked){
+  if(box) box.classList.toggle('show', !!estado);
+  if(estado){
     const fecha = document.getElementById('f_mantFecha');
-    const estado = document.getElementById('f_mantEstado');
     if(fecha && !fecha.value) fecha.value = new Date().toISOString().split('T')[0];
-    if(estado && !estado.value) estado.value = 'Pendiente';
+  }
+  const cierreBox = document.getElementById('maintCierreFields');
+  const isClosing = MAINT_CLOSE_STATES.includes(estado);
+  if(cierreBox) cierreBox.style.display = isClosing ? 'grid' : 'none';
+  if(isClosing){
+    const fechaCierre = document.getElementById('f_mantFechaCierre');
+    if(fechaCierre && !fechaCierre.value) fechaCierre.value = new Date().toISOString().split('T')[0];
   }
 }
 
@@ -849,7 +856,7 @@ async function saveHijosCaja(){
 function setItemModalReadonly(readonly){
   const modal = document.querySelector('#mItem .modal');
   modal?.classList.toggle('item-readonly', !!readonly);
-  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_serie','f_tags','f_fecha','f_mant','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
+  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_serie','f_tags','f_fecha','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_obs','f_es_contenedor','f_parent_id']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
@@ -919,12 +926,18 @@ function openModal(id=null, src=null){
   document.getElementById('f_precio').value = (m?.precio ?? '') === null ? '' : (m?.precio ?? '');
   document.getElementById('f_tags').value=m?.tags||'';
   document.getElementById('f_fecha').value=m?.fecha||new Date().toISOString().split('T')[0];
-  document.getElementById('f_mant').checked=isMaintenanceMarked(m);
   document.getElementById('f_mantFecha').value=m?.mantFecha||'';
-  document.getElementById('f_mantEstado').value=m?.mantEstado||'Pendiente';
+  document.getElementById('f_mantEstado').value=m?.mantEstado||'';
   document.getElementById('f_mantResp').value=m?.mantResp||'';
   document.getElementById('f_mantNota').value=m?.mantNota||'';
+  document.getElementById('f_mantCoste').value=m?.mantCoste ?? '';
+  document.getElementById('f_mantFechaCierre').value='';
+  document.getElementById('f_mantNotaCierre').value='';
+  const noneOption = document.querySelector('#f_mantEstado option[value=""]');
+  if(noneOption) noneOption.disabled = isMaintenanceMarked(m);
   toggleMaintFields();
+  const historialLink = document.getElementById('mantHistorialLinkWrap');
+  if(historialLink) historialLink.style.display = existing ? '' : 'none';
   document.getElementById('f_obs').value=m?.obs||'';
   const esContenedor = m?.es_contenedor == 1 || m?.es_contenedor === true;
   document.getElementById('f_es_contenedor').checked = esContenedor;
@@ -1101,6 +1114,9 @@ async function saveItem(){
   if(!name){ markFieldError('f_item', 'El nombre es obligatorio'); hasError = true; }
   if(!document.getElementById('f_ciclo').value){ markFieldError('f_ciclo', 'Selecciona un ciclo/departamento'); hasError = true; }
   if(!document.getElementById('f_mod').value){ markFieldError('f_mod', 'Selecciona una asignatura/módulo'); hasError = true; }
+  if(MAINT_CLOSE_STATES.includes(document.getElementById('f_mantEstado').value) && !document.getElementById('f_mantNotaCierre').value.trim()){
+    markFieldError('f_mantNotaCierre', 'Indica qué se hizo para cerrar la incidencia'); hasError = true;
+  }
   if(hasError){ toast('Revisa los campos marcados','err'); focusFirstError(); return; }
   const refRaw = document.getElementById('f_ref').value.trim();
   const v={
@@ -1123,11 +1139,13 @@ async function saveItem(){
     serie:document.getElementById('f_serie').value.trim(),
     tags:document.getElementById('f_tags').value.trim(),
     fecha:document.getElementById('f_fecha').value,
-    mant:document.getElementById('f_mant').checked ? '1' : '',
     mantFecha:document.getElementById('f_mantFecha').value,
     mantNota:document.getElementById('f_mantNota').value.trim(),
     mantResp:document.getElementById('f_mantResp').value.trim(),
     mantEstado:document.getElementById('f_mantEstado').value,
+    mantCoste: document.getElementById('f_mantCoste').value === '' ? null : parseFloat(document.getElementById('f_mantCoste').value),
+    mantFechaCierre: document.getElementById('f_mantFechaCierre').value,
+    mantNotaCierre: document.getElementById('f_mantNotaCierre').value.trim(),
     obs:document.getElementById('f_obs').value.trim(),
     es_contenedor: document.getElementById('f_es_contenedor').checked ? 1 : 0,
     parent_id: document.getElementById('f_parent_id').value ? Number(document.getElementById('f_parent_id').value) : null,
@@ -1145,11 +1163,12 @@ async function saveItem(){
       const item={...items.find(x=>x.id===eid),...v};
       const res = await apiPost({action:'update', item});
       if(!res.ok) throw new Error(res.error);
+      const itemFinal = res.item || item;
       const fotosRes = await apiPost({action:'fotosSync', itemId:eid, fotos:_fotosEditing});
-      if(fotosRes.ok){ item.foto = fotosRes.fotoPrincipal || ''; }
-      const i=items.findIndex(x=>x.id===eid); items[i]=item;
-      await uploadPendingDocs(eid, item.item, item.aula);
-      if(typeof logHistorial === 'function') logHistorial('itemUpdate', item.id, item.item, `Item actualizado: ${item.item} (${item.ref || item.code || item.id})`);
+      if(fotosRes.ok){ itemFinal.foto = fotosRes.fotoPrincipal || ''; }
+      const i=items.findIndex(x=>x.id===eid); items[i]=itemFinal;
+      await uploadPendingDocs(eid, itemFinal.item, itemFinal.aula);
+      if(typeof logHistorial === 'function') logHistorial('itemUpdate', itemFinal.id, itemFinal.item, `Item actualizado: ${itemFinal.item} (${itemFinal.ref || itemFinal.code || itemFinal.id})`);
       fillTagSuggestions();
       toast('Ítem actualizado','ok');
     } else {

@@ -661,7 +661,7 @@ function renderBulkActionControl(){
   } else if(action === 'ref'){
     box.innerHTML = '<input id="bulkRef" type="text" placeholder="Nueva referencia (vacío para borrar)">';
   } else if(action === 'mant'){
-    box.innerHTML = '<select id="bulkMant"><option value="1">Marcar mantenimiento</option><option value="">Quitar mantenimiento</option></select>';
+    box.innerHTML = '<div style="font-size:12px;color:var(--muted)">Marca los ítems seleccionados como pendientes de mantenimiento.</div>';
   } else if(action === 'foto'){
     box.innerHTML = `<div style="display:flex;gap:8px;align-items:center">
       <input id="bulkFotoUrl" type="url" placeholder="URL de la imagen (Drive, etc.)" style="flex:1">
@@ -773,7 +773,7 @@ async function applyBulkAction(){
   else if(action === 'mod') patch = { mod: document.getElementById('bulkMod').value };
   else if(action === 'tipo') patch = { tipo_material: document.getElementById('bulkTipo').value };
   else if(action === 'ref') patch = { ref: document.getElementById('bulkRef').value.trim() };
-  else if(action === 'mant') patch = { mant: document.getElementById('bulkMant').value, mantEstado: document.getElementById('bulkMant').value ? 'Pendiente' : '' };
+  else if(action === 'mant') patch = { mantEstado: 'Pendiente' };
   else if(action === 'foto') {
     const url = document.getElementById('bulkFotoUrl').value.trim();
     if(!url){ toast('Indica una URL o carga una imagen','err'); return; }

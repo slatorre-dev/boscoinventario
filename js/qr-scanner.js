@@ -159,8 +159,8 @@ function qrQuickAction(action) {
     closeQrScanner();
     openItemRoute(id);
     setTimeout(() => {
-      const chk = document.getElementById('f_mant');
-      if(chk && !chk.checked) chk.checked = true;
+      const sel = document.getElementById('f_mantEstado');
+      if(sel && !sel.value) sel.value = 'Pendiente';
       if(typeof toggleMaintFields === 'function') toggleMaintFields();
       document.getElementById('f_mantNota')?.focus();
     }, 50);
