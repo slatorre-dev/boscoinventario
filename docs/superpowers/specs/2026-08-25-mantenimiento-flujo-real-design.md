@@ -101,18 +101,31 @@ se resuelve siempre vía join a `inventario.departamento` (mismo patrón que
 `inventario.mant`/`mantFecha`/`mantEstado`/`mantResp`/`mantNota`/`mantCoste`
 pasan a ser un **espejo puro, calculado por el backend**: reflejan
 siempre la incidencia abierta más reciente, o quedan vacíos si no hay
-ninguna. El frontend deja de mandarlos como parte del `UPDATE` genérico
-del ítem — los envía como entrada a la lógica de sincronización (ver
-Backend), pero el backend decide qué queda realmente escrito ahí.
+ninguna. El frontend sigue enviando `mantFecha`/`mantEstado`/`mantResp`/
+`mantNota`/`mantCoste` como parte del payload del ítem (son la entrada que
+lee `syncMantenimiento`, ver Backend) — la única diferencia es que **ya no
+manda el booleano `mant`** en absoluto (el backend lo deriva siempre a
+partir de `mantEstado`); si el payload llega sin esa clave, `item.mant`
+es `undefined` y se guarda como `null`, tratado igual que `false` por
+`isMaintenanceMarked()`/`needsMaintenance()` (ambas comparan con `=== true`
+`=== 1`/`'1'`, nunca con truthiness genérica).
 
 ## Backend — `functions/api/item.js`
 
 **`HEADERS_INV`** gana `mantCoste` (recordar añadirlo también a la copia
 de `list.js` — lección ya documentada varias veces en este proyecto).
-**`FIELDS_UPD`** (usado en el `UPDATE ... SET` genérico del ítem) **excluye**
-`mant`, `mantFecha`, `mantEstado`, `mantResp`, `mantNota`, `mantCoste` —
-esos 6 campos ya no se escriben en el `UPDATE`/`INSERT` genérico, los
-escribe exclusivamente la función de sincronización de abajo.
+**`FIELDS_UPD`** no cambia — sigue incluyendo los 6 campos mant tal cual
+(no hace falta excluirlos): el `UPDATE`/`INSERT` genérico los escribe
+primero con lo que venga del formulario, y la función de sincronización
+de abajo corre **después**, en la misma petición, y es quien de verdad
+decide el valor final — su propio `UPDATE inventario SET mant=...` (rama
+`isClosingNow`) o `UPDATE inventario SET mant=1,...` (rama `isOpenNow`)
+sobrescribe lo que el paso genérico acabara de escribir. La única
+petición que no dispara ninguna de las dos ramas es aquella en la que
+`oldEstado` y `newEstado` son ambos `''` (nunca hubo ni hay incidencia),
+caso en el que el valor que dejó el `UPDATE`/`INSERT` genérico ya era
+vacío de todas formas — así que el resultado final es idéntico en
+cualquier caso, sin necesidad de tocar `FIELDS_UPD`.
 
 Función nueva `syncMantenimiento(db, itemId, oldRow, item, user)`,
 llamada después del `INSERT`/`UPDATE` principal en las acciones `add` y
@@ -255,17 +268,27 @@ mantenimiento).
 
 ## Otros puntos de contacto
 
-- **Bulk edit "Marcar mantenimiento"** (`js/inventory.js:776`,
-  `action==='mant'`): hoy construye
-  `patch = { mant: ..., mantEstado: value ? 'Pendiente' : '' }`. Pasa a
-  mandar solo `mantEstado` (`'Pendiente'` o `''`) — `mant` ya no se lee
-  del payload del frontend en absoluto (el backend lo deriva siempre en
-  `syncMantenimiento`), así que seguir mandándolo no hace daño pero es
-  ruido; se quita por claridad.
-- **`needsMaintenance(item)`** (`js/modal-item.js:703`) y su uso en
-  filtros/badges/CSV de `js/inventory.js` no cambian — siguen leyendo
-  `item.mant`/`item.est==='Avería'`, que se siguen comportando igual
-  (verdadero mientras haya una incidencia abierta).
+- **Bulk edit "mantenimiento"** (`js/inventory.js:663-664` construye el
+  `<select id="bulkMant">` con 2 opciones, `js/inventory.js:776` arma el
+  patch): hoy permite tanto "Marcar mantenimiento" (abre `Pendiente`) como
+  "Quitar mantenimiento" (limpia `mant`/`mantEstado` sin pasar por ningún
+  cierre formal). La opción de quitar se **elimina** — con coste/historial
+  de por medio, cerrar una incidencia sin nota de qué se hizo deja de
+  tener sentido, y la edición en lote no tiene sitio para pedir esa nota
+  por cada ítem. El bulk-edit se queda solo con "Marcar mantenimiento"
+  (`patch = { mantEstado: 'Pendiente' }`, ya no manda `mant` en absoluto —
+  el backend lo deriva siempre en `syncMantenimiento`). Cerrar una
+  incidencia real, con nota, sigue siendo posible desde el modal de cada
+  ítem, uno a uno.
+- **`needsMaintenance(item)`** (`js/state.js:72`, no confundir con
+  `isMaintenanceMarked()` en `js/modal-item.js:702`, una comprobación
+  local distinta y ya existente solo para el propio formulario) y su uso
+  en filtros/badges/CSV de `js/inventory.js` no cambian — de hecho ya
+  excluye explícitamente `mantEstado` en `'resuelto'`/`'reparado'` antes
+  de mirar `item.mant`, código defensivo que ya anticipaba exactamente
+  estos 2 estados terminales sin que nadie lo hubiera planeado así a
+  propósito — confirma que la elección de estados terminales encaja con
+  el código ya existente, sin tocar `js/state.js`.
 - **Volt** (`lista_mantenimiento`) no cambia — sigue leyendo los mismos
   campos espejo.
 - **`js/multi-equipo.js:198`**: sigue inicializando los 6 campos mant
