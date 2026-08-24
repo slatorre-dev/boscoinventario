@@ -1443,11 +1443,13 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Modifica el nombre, descripción o icono de las aulas. También puedes añadir o eliminar.</p>
     <div class="aulas-list" id="aulasList"></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
-      <button class="add-aula-btn" onclick="addAulaRow()">＋ Añadir aula</button>
-      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: nombre,descripcion,icono">
-        📥 Importar CSV
-        <input type="file" accept=".csv,.txt" style="display:none" onchange="importAulasCSV(this)">
-      </label>
+      <div id="aulasEditControls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="add-aula-btn" onclick="addAulaRow()">＋ Añadir aula</button>
+        <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: nombre,descripcion,icono">
+          📥 Importar CSV
+          <input type="file" accept=".csv,.txt" style="display:none" onchange="importAulasCSV(this)">
+        </label>
+      </div>
       <button class="btn" style="font-size:12px" onclick="exportAulasCSV()">📤 Exportar CSV</button>
       <span style="font-size:11px;color:var(--muted)">Columnas: <code>nombre,descripcion,icono</code></span>
     </div>
@@ -1455,7 +1457,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       <button class="btn" style="font-size:12px" onclick="openConfigBackups('aulas')">🕐 Versiones anteriores</button>
       <div class="mf-right">
         <button class="btn" onclick="closeAulasModal()">Cancelar</button>
-        <button class="btn btn-p" onclick="saveAulas()">💾 Guardar cambios</button>
+        <button class="btn btn-p" id="btnGuardarAulas" onclick="saveAulas()">💾 Guardar cambios</button>
       </div>
     </div>
   </div>
@@ -1492,9 +1494,11 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
     </div>
     <div id="catsAvisoGenerico" style="display:none"></div>
     <div class="cats-list" id="catsList"></div>
-    <button class="add-cat-btn" onclick="addCatRow()">＋ Añadir categoría</button>
-    <button class="add-cat-btn" onclick="normalizeCategoriesToTags()" style="margin-top:8px;border-color:#7c3aed;color:#7c3aed;background:#faf5ff">↔ Normalizar categorías a tags</button>
-    <button class="add-cat-btn" onclick="normalizeTagsCanonicalPersist()" style="margin-top:8px;border-color:#2563eb;color:#1d4ed8;background:#eff6ff">🧹 Normalizar tags guardados (D1)</button>
+    <div id="catsEditControls">
+      <button class="add-cat-btn" onclick="addCatRow()">＋ Añadir categoría</button>
+      <button class="add-cat-btn" onclick="normalizeCategoriesToTags()" style="margin-top:8px;border-color:#7c3aed;color:#7c3aed;background:#faf5ff">↔ Normalizar categorías a tags</button>
+      <button class="add-cat-btn" onclick="normalizeTagsCanonicalPersist()" style="margin-top:8px;border-color:#2563eb;color:#1d4ed8;background:#eff6ff">🧹 Normalizar tags guardados (D1)</button>
+    </div>
     <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
     <div style="margin-bottom:12px">
       <div style="font-size:14px;font-weight:600;margin-bottom:8px">🏷️ Tags disponibles</div>
@@ -1509,7 +1513,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       <button class="btn" style="font-size:12px" onclick="openConfigBackups('categorias')">🕐 Versiones anteriores</button>
       <div class="mf-right">
         <button class="btn" onclick="closeCatsModal()">Cancelar</button>
-        <button class="btn btn-p" onclick="saveCats()">💾 Guardar cambios</button>
+        <button class="btn btn-p" id="btnGuardarCats" onclick="saveCats()">💾 Guardar cambios</button>
       </div>
     </div>
   </div>
@@ -1522,11 +1526,13 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Añade, edita o elimina ciclos formativos (o cursos/departamentos) y sus módulos/asignaturas. El ciclo "Departamento" no se puede eliminar.</p>
     <div id="ciclosList"></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
-      <button class="add-aula-btn" onclick="showNewCicloForm()">＋ Nuevo ciclo/departamento</button>
-      <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: ciclo_id,ciclo_nombre,nivel,icono,mod_codigo,mod_nombre,mod_horas">
-        📥 Importar CSV
-        <input type="file" accept=".csv,.txt" style="display:none" onchange="importCiclosCSV(this)">
-      </label>
+      <div id="ciclosEditControls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="add-aula-btn" onclick="showNewCicloForm()">＋ Nuevo ciclo/departamento</button>
+        <label class="btn" style="cursor:pointer;font-size:12px" title="CSV: ciclo_id,ciclo_nombre,nivel,icono,mod_codigo,mod_nombre,mod_horas">
+          📥 Importar CSV
+          <input type="file" accept=".csv,.txt" style="display:none" onchange="importCiclosCSV(this)">
+        </label>
+      </div>
       <button class="btn" style="font-size:12px" onclick="exportCiclosCSV()">📤 Exportar CSV</button>
       <span style="font-size:11px;color:var(--muted)">Columnas: <code>ciclo_id,ciclo_nombre,nivel,icono,mod_codigo,mod_nombre,mod_horas</code> (una fila por asignatura/módulo)</span>
     </div>
@@ -1534,7 +1540,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
       <button class="btn" style="font-size:12px" onclick="openConfigBackups('ciclos')">🕐 Versiones anteriores</button>
       <div class="mf-right">
         <button class="btn" onclick="closeCiclosModal()">Cancelar</button>
-        <button class="btn btn-p" onclick="saveCiclos()">💾 Guardar cambios</button>
+        <button class="btn btn-p" id="btnGuardarCiclos" onclick="saveCiclos()">💾 Guardar cambios</button>
       </div>
     </div>
   </div>

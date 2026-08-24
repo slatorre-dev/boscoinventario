@@ -2,30 +2,57 @@
 // MODAL GESTIÓN DE AULAS
 // ═════════════════════════════════════════════════════════
 let aulasEditing = [];
+// true cuando el superadmin no ha elegido un departamento concreto (o ha
+// elegido el compartido "IES Juan Bosco") — muestra TODAS las aulas de
+// TODOS los departamentos, agrupadas, de solo lectura. Editar de verdad
+// sigue exigiendo elegir un departamento concreto en el selector.
+let aulasReadonlyGlobal = false;
 
 function openAulasModal(){
   if(!requirePerm('config.manage')) return;
   const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
-  if(isSuperAdmin && !deptActivo){
-    toast('Elige un departamento en el selector de la barra superior primero', 'err');
-    return;
-  }
+  aulasReadonlyGlobal = isSuperAdmin && (!deptActivo || deptActivo === 'iesjuanbosco');
   // Solo el aula propia del departamento se gestiona aquí — las aulas
   // globales del centro y la compartida "IES Juan Bosco" no son editables
   // desde cada departamento (evita duplicarlas al guardar). Para superadmin,
-  // "propia" significa el departamento elegido en deptActivo (Fase 3).
-  const filtroDept = isSuperAdmin ? deptActivo : null;
+  // "propia" significa el departamento elegido en deptActivo (Fase 3), salvo
+  // en vista global, donde se listan las de todos los departamentos.
+  const filtroDept = (isSuperAdmin && !aulasReadonlyGlobal) ? deptActivo : null;
   aulasEditing = JSON.parse(JSON.stringify(AULAS.filter(a =>
     a.departamento && a.departamento !== 'iesjuanbosco' &&
     (filtroDept ? a.departamento === filtroDept : true)
   ))); // copia profunda
+  if(aulasReadonlyGlobal){
+    aulasEditing.sort((a,b) => deptNombre(a.departamento).localeCompare(deptNombre(b.departamento), 'es') || a.name.localeCompare(b.name, 'es'));
+  }
   renderAulasList();
+  const editControls = document.getElementById('aulasEditControls');
+  if(editControls) editControls.style.display = aulasReadonlyGlobal ? 'none' : '';
+  const btnGuardar = document.getElementById('btnGuardarAulas');
+  if(btnGuardar) btnGuardar.style.display = aulasReadonlyGlobal ? 'none' : '';
   document.getElementById('mAulas').classList.add('open');
 }
 function closeAulasModal(){document.getElementById('mAulas').classList.remove('open')}
 
 function renderAulasList(){
-  document.getElementById('aulasList').innerHTML = aulasEditing.map((a,i)=>`
+  const box = document.getElementById('aulasList');
+  if(aulasReadonlyGlobal){
+    if(!aulasEditing.length){
+      box.innerHTML = '<p style="color:var(--muted);font-size:13px">Ningún departamento tiene aulas propias todavía.</p>';
+      return;
+    }
+    let lastDept = null, html = '';
+    aulasEditing.forEach(a => {
+      if(a.departamento !== lastDept){
+        html += `<div class="dept-group-header">${escHtml(deptNombre(a.departamento))}</div>`;
+        lastDept = a.departamento;
+      }
+      html += `<div class="aula-row aula-row-readonly"><span>${escHtml(a.icon)}</span><b>${escHtml(a.name)}</b>${a.desc ? ' — '+escHtml(a.desc) : ''}</div>`;
+    });
+    box.innerHTML = html;
+    return;
+  }
+  box.innerHTML = aulasEditing.map((a,i)=>`
     <div class="aula-row">
       <div style="display:flex;flex-direction:column;gap:1px">
         <button class="del-btn" onclick="moveAulaRow(${i},-1)" title="Subir" ${i===0?'disabled':''} style="font-size:10px;padding:1px 4px">▲</button>
@@ -146,6 +173,13 @@ function importAulasCSV(input) {
 }
 
 function exportAulasCSV(){
+  if(aulasReadonlyGlobal){
+    const h = 'Departamento,Nombre,Descripción,Icono';
+    const rows = aulasEditing.map(a => [deptNombre(a.departamento), a.name, a.desc, a.icon].map(csvCell).join(','));
+    downloadText('aulas.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));
+    toast('CSV exportado', 'ok');
+    return;
+  }
   const h = 'Nombre,Descripción,Icono';
   const rows = aulasEditing.map(a => [a.name, a.desc, a.icon].map(csvCell).join(','));
   downloadText('aulas.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));

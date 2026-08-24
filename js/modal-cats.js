@@ -2,6 +2,9 @@
 // MODAL GESTIÓN DE CATEGORÍAS
 // ═════════════════════════════════════════════════════════
 let catsEditing = [];
+// true cuando el superadmin no ha elegido un departamento concreto (o ha
+// elegido el compartido "IES Juan Bosco") — misma idea que aulasReadonlyGlobal.
+let catsReadonlyGlobal = false;
 
 function sortCatsEditing(){
   catsEditing.sort((a,b)=>catNameCompare(a.name, b.name));
@@ -24,24 +27,32 @@ function openCatsModal(){
   if(!requirePerm('categories.manage')) return;
   syncTagsFromItems();
   const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
-  if(isSuperAdmin && !deptActivo){
-    toast('Elige un departamento en el selector de la barra superior primero', 'err');
-    return;
-  }
-  if(isSuperAdmin){
+  catsReadonlyGlobal = isSuperAdmin && (!deptActivo || deptActivo === 'iesjuanbosco');
+  if(catsReadonlyGlobal){
+    // Vista global: todas las categorías de todos los departamentos,
+    // agrupadas — de solo lectura, no se guarda desde aquí.
+    catsEditing = catsCrudo
+      .map(c => ({name:c.name, c:c.c, bg:c.bg, i:c.i, departamento:c.departamento}))
+      .sort((a,b) => deptNombre(a.departamento).localeCompare(deptNombre(b.departamento), 'es') || catNameCompare(a.name, b.name));
+  } else if(isSuperAdmin){
     // CATS (objeto global fusionado) mezcla todos los departamentos sin
     // distinguir origen — para superadmin usamos catsCrudo (Task 3 de
     // meta.js), que sí trae `departamento` por fila, filtrado por deptActivo.
     catsEditing = catsCrudo
       .filter(c => c.departamento === deptActivo)
       .map(c => ({name:c.name, c:c.c, bg:c.bg, i:c.i}));
+    sortCatsEditing();
   } else {
     catsEditing = sortedCatEntries().map(([name,v])=>({name, c:v.c, bg:v.bg, i:v.i}));
+    sortCatsEditing();
   }
-  sortCatsEditing();
   renderCatsList();
   renderTagsList();
   _renderCatsAviso();
+  const editControls = document.getElementById('catsEditControls');
+  if(editControls) editControls.style.display = catsReadonlyGlobal ? 'none' : '';
+  const btnGuardar = document.getElementById('btnGuardarCats');
+  if(btnGuardar) btnGuardar.style.display = catsReadonlyGlobal ? 'none' : '';
   document.getElementById('mCats').classList.add('open');
 }
 
@@ -68,8 +79,25 @@ function _renderCatsAviso(){
 function closeCatsModal(){document.getElementById('mCats').classList.remove('open')}
 
 function renderCatsList(){
+  const box = document.getElementById('catsList');
+  if(catsReadonlyGlobal){
+    if(!catsEditing.length){
+      box.innerHTML = '<p style="color:var(--muted);font-size:13px">Ningún departamento tiene categorías propias todavía.</p>';
+      return;
+    }
+    let lastDept = null, html = '';
+    catsEditing.forEach(cat => {
+      if(cat.departamento !== lastDept){
+        html += `<div class="dept-group-header">${escHtml(deptNombre(cat.departamento))}</div>`;
+        lastDept = cat.departamento;
+      }
+      html += `<div class="cat-row cat-row-readonly"><span>${escHtml(cat.i)}</span><b style="color:${escHtml(cat.c)}">${escHtml(cat.name)}</b></div>`;
+    });
+    box.innerHTML = html;
+    return;
+  }
   sortCatsEditing();
-  document.getElementById('catsList').innerHTML = catsEditing.map((cat,i)=>`
+  box.innerHTML = catsEditing.map((cat,i)=>`
     <div class="cat-row">
       <input class="icon-pick" value="${cat.i}" onchange="catsEditing[${i}].i=this.value" maxlength="2" title="Icono emoji">
       <input class="fi-w name-input" value="${cat.name.replace(/"/g,'&quot;')}" onchange="onCatNameChange(${i},this.value)" placeholder="Nombre categoría">

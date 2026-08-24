@@ -17,6 +17,13 @@ let AULAS = AULAS_DEFAULT.slice(); // se reemplazará al cargar datos del backen
 // los departamentos), usada en el selector de "departamento de referencia" del perfil.
 let DEPARTAMENTOS = [];
 let deptActivo = localStorage.getItem('dept_activo_superadmin') || '';
+
+// Nombre legible de un departamento a partir de su slug — usado por los
+// modales de gestión (aulas/categorías/ciclos) en la vista global agrupada
+// de superadmin cuando no hay un departamento concreto elegido.
+function deptNombre(slug){
+  return DEPARTAMENTOS.find(d => d.slug === slug)?.nombre || slug;
+}
 // Filas crudas de `categorias` (con su `departamento`), solo pobladas para
 // superadmin (meta.js:catsCrudo, Task 3) — usadas por modal-cats.js para
 // filtrar/guardar por deptActivo sin tocar CATS (objeto global fusionado

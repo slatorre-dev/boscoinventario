@@ -8,25 +8,33 @@ const _CICLO_TH    = ['th-blue','th-amber','th-purple','th-teal','th-pink','th-g
 let ciclosEditing  = [];
 let cicloExpandIdx = null;
 let cicloAddingNew = false;
+// true cuando el superadmin no ha elegido un departamento concreto (o ha
+// elegido el compartido "IES Juan Bosco") — misma idea que aulasReadonlyGlobal.
+let ciclosReadonlyGlobal = false;
 
 function openCiclosModal(){
   if(!requirePerm('config.manage')) return;
   const isSuperAdmin = String(SESSION?.rol || '').trim().toLowerCase() === 'superadmin';
-  if(isSuperAdmin && !deptActivo){
-    toast('Elige un departamento en el selector de la barra superior primero', 'err');
-    return;
-  }
-  const filtroDept = isSuperAdmin ? deptActivo : null;
+  ciclosReadonlyGlobal = isSuperAdmin && (!deptActivo || deptActivo === 'iesjuanbosco');
+  const filtroDept = (isSuperAdmin && !ciclosReadonlyGlobal) ? deptActivo : null;
   // "IES Juan Bosco" es un ciclo compartido entre departamentos — no se
   // gestiona desde aquí (evita duplicarlo bajo el departamento propio al
   // guardar). Para superadmin, filtra además por el departamento activo
-  // (Fase 3) — cada ciclo agrupado ya trae su `departamento` (meta.js).
+  // (Fase 3) — cada ciclo agrupado ya trae su `departamento` (meta.js), salvo
+  // en vista global, donde se listan los de todos los departamentos.
   ciclosEditing  = JSON.parse(JSON.stringify(CICLOS.filter(c =>
     c.id !== 'iesjuanbosco' &&
     (filtroDept ? c.departamento === filtroDept : true)
   )));
+  if(ciclosReadonlyGlobal){
+    ciclosEditing.sort((a,b) => deptNombre(a.departamento).localeCompare(deptNombre(b.departamento), 'es') || a.name.localeCompare(b.name, 'es'));
+  }
   cicloExpandIdx = null;
   cicloAddingNew = false;
+  const editControls = document.getElementById('ciclosEditControls');
+  if(editControls) editControls.style.display = ciclosReadonlyGlobal ? 'none' : '';
+  const btnGuardar = document.getElementById('btnGuardarCiclos');
+  if(btnGuardar) btnGuardar.style.display = ciclosReadonlyGlobal ? 'none' : '';
   document.getElementById('mCiclos').classList.add('open');
   // Con listas largas (vista superadmin, 30+ ciclos), pintar decenas de
   // <input> de golpe mientras el modal todavía está en su transición de
@@ -39,6 +47,27 @@ function closeCiclosModal(){ document.getElementById('mCiclos').classList.remove
 
 function _renderCiclos(){
   const el = document.getElementById('ciclosList');
+  if(ciclosReadonlyGlobal){
+    if(!ciclosEditing.length){
+      el.innerHTML = '<p style="color:var(--muted);font-size:13px">Ningún departamento tiene ciclos/asignaturas propias todavía.</p>';
+      return;
+    }
+    let lastDept = null, html = '';
+    ciclosEditing.forEach(c => {
+      if(c.departamento !== lastDept){
+        html += `<div class="dept-group-header">${escHtml(deptNombre(c.departamento))}</div>`;
+        lastDept = c.departamento;
+      }
+      html += `<div class="ciclo-hdr-readonly">
+        <span>${escHtml(c.icon||'📚')}</span>
+        <span class="nivel-badge ${c.nivel==='CFGM'?'badge-gm':'badge-gs'}">${escHtml(c.nivel||'—')}</span>
+        <b>${escHtml(c.name)}</b>
+        <span class="ciclo-nmods">${c.modulos.length} asig./mód.</span>
+      </div>`;
+    });
+    el.innerHTML = html;
+    return;
+  }
   el.innerHTML = ciclosEditing.map((c, i) => {
     const isDpto   = c.id === 'departamento';
     const expanded = cicloExpandIdx === i;
@@ -249,6 +278,18 @@ async function saveCiclos(){
 // igual que el CSV de import, para poder editar en hoja de cálculo y
 // reimportar sin perder la agrupación.
 function exportCiclosCSV(){
+  if(ciclosReadonlyGlobal){
+    const h = 'Departamento,CicloId,CicloNombre,Nivel,Icono,ModCodigo,ModNombre,ModHoras';
+    const rows = [];
+    ciclosEditing.forEach(c => {
+      const dept = deptNombre(c.departamento);
+      if(!c.modulos.length){ rows.push([dept,c.id,c.name,c.nivel,c.icon,'','',''].map(csvCell).join(',')); return; }
+      c.modulos.forEach(m => rows.push([dept,c.id,c.name,c.nivel,c.icon,m.cod,m.name,m.horas].map(csvCell).join(',')));
+    });
+    downloadText('ciclos.csv', 'text/csv;charset=utf-8', '﻿' + [h, ...rows].join('\n'));
+    toast('CSV exportado', 'ok');
+    return;
+  }
   const h = 'CicloId,CicloNombre,Nivel,Icono,ModCodigo,ModNombre,ModHoras';
   const rows = [];
   ciclosEditing.forEach(c => {
