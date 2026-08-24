@@ -117,6 +117,12 @@ async function doForcePasswordChange(){
 // dejar elegir entre varias cuentas activas simultáneamente.
 function initGoogleButton() {
   if (typeof google === 'undefined' || !google.accounts?.id) return;
+  google.accounts.id.initialize({
+    client_id: '374986567801-lamnmhp3p3jtudo9f4db3s5kum7ef1v9.apps.googleusercontent.com',
+    callback: handleGoogleSignIn,
+    auto_select: false,
+    ux_mode: 'popup',
+  });
   google.accounts.id.disableAutoSelect();
   const container = document.getElementById('googleBtnContainer');
   if (container) {
