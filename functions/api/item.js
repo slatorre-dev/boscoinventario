@@ -1,5 +1,5 @@
 // Mantener sincronizado con el HEADERS_INV de list.js — ver CLAUDE.md, bug recurrente de columnas divergentes (mismo orden, mismas columnas, en ambos archivos)
-const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','fecha_adquisicion','precio','mant','mantFecha','mantNota','mantResp','mantEstado','mantSolicitante','mantSolicitanteEmail','foto','obs','code','serie','es_contenedor','parent_id','tipo_material','oculto'];
+const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','fecha_adquisicion','precio','mant','mantFecha','mantNota','mantResp','mantEstado','mantCoste','mantSolicitante','mantSolicitanteEmail','foto','obs','code','serie','es_contenedor','parent_id','tipo_material','oculto'];
 const FIELDS_UPD  = HEADERS_INV.filter(h => h !== 'id');
 
 const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
@@ -96,6 +96,66 @@ function computeItemDiff(oldRow, newItem) {
     .map(f => ({ campo: f, antes: oldRow[f] ?? '', despues: newItem[f] ?? '' }));
 }
 
+const MANT_OPEN_STATES = ['Pendiente', 'En reparación', 'Enviado a reparar externo'];
+const MANT_CLOSE_STATES = ['Reparado', 'Resuelto'];
+
+async function syncMantenimiento(db, itemId, oldRow, item, user) {
+  const oldEstado = oldRow?.mantEstado || '';
+  const newEstado = item.mantEstado || '';
+  const wasOpen = MANT_OPEN_STATES.includes(oldEstado);
+  const isOpenNow = MANT_OPEN_STATES.includes(newEstado);
+  const isClosingNow = MANT_CLOSE_STATES.includes(newEstado);
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  if (!oldEstado && !newEstado) return;
+
+  if (isClosingNow) {
+    const openRow = await db.prepare(
+      `SELECT id FROM mantenimientos WHERE item_id=? AND estado IN (${MANT_OPEN_STATES.map(() => '?').join(',')}) ORDER BY id DESC LIMIT 1`
+    ).bind(itemId, ...MANT_OPEN_STATES).first();
+    const fechaCierre = item.mantFechaCierre || hoy;
+    const notaCierre = item.mantNotaCierre || '';
+    if (openRow) {
+      await db.prepare(
+        `UPDATE mantenimientos SET estado=?, responsable=?, coste=?, fecha_cierre=?, nota_cierre=? WHERE id=?`
+      ).bind(newEstado, item.mantResp || '', item.mantCoste ?? null, fechaCierre, notaCierre, openRow.id).run();
+    } else {
+      await db.prepare(
+        `INSERT INTO mantenimientos (item_id, estado, fecha_apertura, nota_apertura, responsable, coste, fecha_cierre, nota_cierre, creado_por, creado_en)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`
+      ).bind(itemId, newEstado, item.mantFecha || hoy, item.mantNota || '', item.mantResp || '', item.mantCoste ?? null, fechaCierre, notaCierre, user?.usuario || '', new Date().toISOString()).run();
+    }
+    await db.prepare(
+      `UPDATE inventario SET mant=0, mantFecha='', mantEstado='', mantResp='', mantNota='', mantCoste=NULL WHERE id=?`
+    ).bind(itemId).run();
+    Object.assign(item, { mant: 0, mantFecha: '', mantEstado: '', mantResp: '', mantNota: '', mantCoste: null });
+    return;
+  }
+
+  if (isOpenNow && !wasOpen) {
+    await db.prepare(
+      `INSERT INTO mantenimientos (item_id, estado, fecha_apertura, nota_apertura, responsable, coste, creado_por, creado_en)
+       VALUES (?,?,?,?,?,?,?,?)`
+    ).bind(itemId, newEstado, item.mantFecha || hoy, item.mantNota || '', item.mantResp || '', item.mantCoste ?? null, user?.usuario || '', new Date().toISOString()).run();
+  } else if (isOpenNow && wasOpen) {
+    const openRow = await db.prepare(
+      `SELECT id FROM mantenimientos WHERE item_id=? AND estado IN (${MANT_OPEN_STATES.map(() => '?').join(',')}) ORDER BY id DESC LIMIT 1`
+    ).bind(itemId, ...MANT_OPEN_STATES).first();
+    if (openRow) {
+      await db.prepare(
+        `UPDATE mantenimientos SET estado=?, nota_apertura=?, responsable=?, coste=? WHERE id=?`
+      ).bind(newEstado, item.mantNota || '', item.mantResp || '', item.mantCoste ?? null, openRow.id).run();
+    }
+  }
+
+  if (isOpenNow) {
+    await db.prepare(
+      `UPDATE inventario SET mant=1, mantFecha=?, mantEstado=?, mantResp=?, mantNota=?, mantCoste=? WHERE id=?`
+    ).bind(item.mantFecha || hoy, newEstado, item.mantResp || '', item.mantNota || '', item.mantCoste ?? null, itemId).run();
+    Object.assign(item, { mant: 1, mantFecha: item.mantFecha || hoy, mantEstado: newEstado, mantResp: item.mantResp || '', mantNota: item.mantNota || '', mantCoste: item.mantCoste ?? null });
+  }
+}
+
 async function itemDept(db, id) {
   const row = await db.prepare('SELECT departamento FROM inventario WHERE id=?').bind(id).first();
   return row?.departamento || '';
@@ -171,6 +231,7 @@ export async function onRequestPost({ request, env, data }) {
     const vals = HEADERS_INV.map(h => item[h] ?? null);
     await env.DB.prepare(`INSERT INTO inventario (${HEADERS_INV.join(',')},departamento) VALUES (${HEADERS_INV.map(()=>'?').join(',')},?)`)
       .bind(...vals, item.departamento).run();
+    await syncMantenimiento(env.DB, newId, null, item, user);
     await auditLog(env.DB, user, 'add', newId, itemAuditSummary('Anadido', item));
     return Response.json({ ok: true, item });
   }
@@ -183,7 +244,7 @@ export async function onRequestPost({ request, env, data }) {
       }
     }
     const oldRow = await env.DB.prepare(
-      `SELECT ${DIFF_FIELDS.join(',')} FROM inventario WHERE id=?`
+      `SELECT ${DIFF_FIELDS.join(',')}, mant, mantEstado, mantFecha, mantResp, mantNota, mantCoste FROM inventario WHERE id=?`
     ).bind(item.id).first();
     item.es_contenedor = item.es_contenedor ? 1 : 0;
     item.parent_id = item.parent_id || null;
@@ -194,6 +255,7 @@ export async function onRequestPost({ request, env, data }) {
     const diffs = computeItemDiff(oldRow, item);
     const resumenUpdate = diffs.length ? JSON.stringify(diffs) : itemAuditSummary('Actualizado', item);
     await auditLog(env.DB, user, 'update', item.id, resumenUpdate);
+    await syncMantenimiento(env.DB, item.id, oldRow, item, user);
     return Response.json({ ok: true, item });
   }
 
@@ -210,6 +272,20 @@ export async function onRequestPost({ request, env, data }) {
     await env.DB.prepare('DELETE FROM inventario WHERE id=?').bind(id).run();
     await auditLog(env.DB, user, 'delete', id, `Eliminado: ${old?.item} (${old?.ref})`);
     return Response.json({ ok: true });
+  }
+
+  if (action === 'mantenimientosGet') {
+    const itemId = body.itemId;
+    if (!superadmin) {
+      const currentDept = await itemDept(env.DB, itemId);
+      if (currentDept !== dept && currentDept !== genericDept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
+    const rows = await env.DB.prepare(
+      'SELECT id, estado, fecha_apertura, nota_apertura, responsable, coste, fecha_cierre, nota_cierre FROM mantenimientos WHERE item_id=? ORDER BY id DESC'
+    ).bind(itemId).all();
+    return Response.json({ ok: true, mantenimientos: rows.results || [] });
   }
 
   if (action === 'fotosGet') {

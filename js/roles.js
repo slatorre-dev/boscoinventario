@@ -38,6 +38,7 @@ const ACTION_PERMISSIONS = {
   restoreBackup: 'import.write',
   fotosGet: 'items.write',
   fotosSync: 'items.write',
+  mantenimientosGet: 'items.write',
   buscarPorSerie: 'serie.read',
   detectarMultiples: 'serie.read',
   buscarSeriePorCodigo: 'serie.read',
