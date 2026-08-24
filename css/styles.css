@@ -1560,6 +1560,29 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .topbar-right{min-width:0;justify-content:flex-end}
 }
 
+@media (min-width:641px) and (max-width:1200px){
+  .topbar{min-height:52px;padding:6px 12px;flex-wrap:nowrap}
+  .brand-name{max-width:190px;font-size:13px}
+  .brand-dept{display:none}
+  .brand-dept-select{max-width:150px;font-size:11px}
+  .app-version{padding:3px 6px;margin-left:2px}
+  .topbar-right{flex:0 0 auto;flex-wrap:nowrap}
+  .breadcrumb{display:none}
+  .mob-menu-btn{display:flex}
+  .topbar-btns{
+    position:absolute;top:52px;right:0;
+    background:var(--white);border:1px solid var(--border);
+    border-radius:0 0 12px 12px;border-top:2px solid var(--accent);
+    padding:8px;flex-direction:column;gap:4px;min-width:220px;
+    box-shadow:var(--shh);z-index:200;display:none;overflow:visible;
+  }
+  .topbar-btns.open{display:flex}
+  .topbar-btns .tbtn{width:100%;justify-content:flex-start;font-size:13px;padding:10px 14px;min-height:44px}
+  .topbar-btns .tbtn svg,.topbar-btns .tbtn img{display:inline-block;margin-right:6px}
+  .dept-menu-wrap{position:static;display:flex!important;flex-direction:column;width:100%}
+  .dept-menu{position:relative;top:auto;right:auto;box-shadow:none;border:none;background:none;padding:0;margin-top:4px;min-width:auto;width:100%;display:flex!important;flex-direction:column}
+}
+
 @media (min-width:641px){
   #btnInstall{padding:7px 10px;min-width:38px;justify-content:center;gap:0}
   #btnInstall .btn-install-label{display:none}
