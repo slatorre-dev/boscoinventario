@@ -61,9 +61,9 @@ function showUpdateToast(){
   const el = document.createElement('div');
   el.className = 'toast ok';
   el.style.cursor = 'pointer';
-  el.innerHTML = `<span>🔄</span><span>Actualización en 5s o toca aquí</span>`;
+  el.innerHTML = `<span>🔄</span><span>Actualización disponible. Toca aquí cuando termines</span>`;
   el.onclick = () => {
-    if(_waitingSW){
+    if(_waitingSW && !hasPendingUserWork()){
       _waitingSW.postMessage('SKIP_WAITING');
       el.innerHTML = '<span>⏳</span><span>Actualizando…</span>';
     }
@@ -71,12 +71,17 @@ function showUpdateToast(){
   const cont = document.getElementById('toasts');
   if(cont) cont.appendChild(el);
 
-  // Auto-actualizar después de 10 segundos
+  // Actualizar automáticamente solo si no hay trabajo abierto del usuario.
   setTimeout(() => {
-    if(_waitingSW){
+    if(_waitingSW && !hasPendingUserWork()){
       _waitingSW.postMessage('SKIP_WAITING');
     }
   }, 5000);
+}
+
+function hasPendingUserWork(){
+  return !!document.querySelector('.mbg.open') ||
+    !!document.querySelector('input:focus, textarea:focus, select:focus');
 }
 
 // Capturar el evento de instalación para mostrarlo cuando queramos

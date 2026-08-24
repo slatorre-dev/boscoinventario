@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v583';
+const VERSION = 'v584';
 const CACHE_SHELL   = 'inventario-ies-juan-bosco-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-ies-juan-bosco-runtime-' + VERSION;
 
@@ -18,6 +18,7 @@ const SHELL = [
   './css/styles.css',
   './js/config.js',
   './js/state.js',
+  './js/ui-helpers.js',
   './js/roles.js',
   './js/api.js',
   './js/auth.js',
@@ -30,6 +31,7 @@ const SHELL = [
   './js/modal-ubicaciones.js',
   './js/modal-cats.js',
   './js/modal-ciclos.js',
+  './js/modal-config-backups.js',
   './js/prestamos.js',
   './js/import.js',
   './js/docs.js',
@@ -38,10 +40,17 @@ const SHELL = [
   './js/profile.js',
   './js/reset.js',
   './js/qr-scanner.js',
+  './js/camara-serie.js',
+  './js/camara-unificada.js',
+  './js/revision-aula.js',
+  './js/multi-equipo.js',
+  './js/onboarding-camara.js',
   './js/audit-log.js',
   './js/modal-historial.js',
+  './js/modal-auditoria.js',
   './js/dept-game.js',
   './js/agente-widget.js',
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
   './icons/qr-code.svg',
   './icons/imagenbosco.png',
   './icons/iconoaula.png',
