@@ -1,25 +1,31 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v588 | 24/08/2026 | **Planificación de prácticas** (reservas de
-material) en producción: un profesor/jefe de departamento reserva con
+**Estado:** v592 | 25/08/2026 | **Mantenimiento como flujo real** en
+producción: historial completo de incidencias por ítem (tabla nueva
+`mantenimientos`), 5 estados (3 abiertos + 2 que cierran con nota
+obligatoria), coste opcional, campos `mant*` de `inventario` como espejo
+puro calculado por el backend. Sesión inmediatamente anterior, misma
+conversación (v588→v590): **historial de ítems como timeline
+estructurado** — el log por ítem pasó de texto genérico a diff campo a
+campo. Ambas son la 2ª y 3ª idea del brainstorming de apps comerciales de
+inventario de la sesión v588 (planificación de prácticas); la 4ª
+(aprobación de préstamos + garantía/depreciación) fue descartada a
+petición del usuario — ver Pendiente. Incidente operativo notable de esta
+sesión: un límite de gasto mensual de cuenta bloqueó el despacho de
+subagentes a media sesión — el resto se completó con el controlador
+implementando y autorrevisando directamente en el worktree, con
+confirmación explícita del usuario antes de mergear sin la revisión
+independiente habitual — ver detalle de sesión más abajo. Sesión anterior
+a esas dos (24/08/2026, v587→v588): **Planificación de prácticas**
+(reservas de material) — un profesor/jefe de departamento reserva con
 antelación un kit de varios ítems ligado a un Ciclo/Asignatura + fecha +
-franja horaria de texto libre, con bloqueo duro de conflictos por
-coincidencia exacta de ítem+fecha+franja — botón "📅 Planificar práctica" y
-vista "📅 Ver reservas" en Préstamos. Origen: investigación de apps
-comerciales de inventario/activos (Snipe-IT, EZOfficeInventory, Asset
-Panda, GLPI) a petición del usuario, que recordaba una sugerencia similar
-de una conversación anterior perdida. Implementado con
-subagent-driven-development en worktree aislado, verificado end-to-end en
-producción con Playwright (login real, creación, bloqueo de conflicto,
-confirmación de recogida con stock verificado en D1, cancelación). La
-revisión final de rama encontró y corrigió el hallazgo más serio
-documentado hasta ahora en este archivo: una consulta D1 que ligaba un
-parámetro por reserva habría reventado la carga de TODA la app (no solo
-reservas) al superar el límite de 100 parámetros de D1 — ver detalle de
-sesión más abajo. Quedan pendientes, sin implementar, otras 3 ideas del
-mismo brainstorming (historial de ítems como timeline, mantenimiento como
-flujo real, aprobación de préstamos + garantía/depreciación) — ver
-Pendiente. Sesión anterior (03/08/2026, v578): primera pieza del roadmap
+franja horaria de texto libre (ahora opcional, ver sesión 24-25/08/2026
+más abajo), con bloqueo duro de conflictos por coincidencia exacta de
+ítem+fecha+franja.
+Origen de las 3 ideas: investigación de apps comerciales de
+inventario/activos (Snipe-IT, EZOfficeInventory, Asset Panda, GLPI) a
+petición del usuario. Sesión anterior a esas (03/08/2026, v578): primera
+pieza del roadmap
 de revisión cámara+IA — al dar de alta un ítem nuevo desde un código de
 barras real (EAN/UPC) sin match en D1, la app intenta un lookup gratuito a
 **UPCitemdb** (sin API key, ~100 consultas/día) para prellenar
@@ -1843,6 +1849,132 @@ confirmación explícita del usuario antes de tocar el remoto — coherente
 con que un push a una rama compartida nunca debe hacerlo un subagente sin
 supervisión.
 
+### 24-25/08/2026 (v588→v592): fix suelto de reservas + Historial de ítems como timeline estructurado + Mantenimiento como flujo real — 2ª y 3ª ideas del brainstorming de v588
+
+Continuación directa de la sesión anterior (v588), en la misma
+conversación.
+
+**Fix suelto, sin relación con las 2 piezas grandes de abajo (v589→v591).**
+Dos correcciones pequeñas hechas directamente por el controlador (sin
+worktree, cambio trivial): 1) franja horaria pasa de obligatoria a
+opcional al planificar una práctica (`functions/api/prestar.js`,
+`index.html`, `js/reservas-practica.js`) — a petición del usuario,
+sin cambiar el resto del diseño de reservas de v588. 2) Auditoría del
+patrón de bug encontrado en v588 (una consulta D1 que liga un parámetro
+por fila de un array sin límite de crecimiento): se encontró y corrigió
+un segundo caso real, `notificarVencidos` en `prestar.js`, que hacía
+`UPDATE ... WHERE id IN (?,?,?...)` con un parámetro por préstamo vencido
+sin notificar — mismo riesgo de reventar el límite de 100 parámetros de
+D1 si un departamento acumulaba muchos vencidos sin que nadie visitara
+Préstamos. Corregido con una subquery de parámetros fijos, mismo patrón
+que la corrección de v588 en `list.js`.
+
+**Las 2 piezas grandes de la sesión, cada una con su propio
+brainstorming → spec → plan → subagent-driven-development en worktree
+aislado → revisión final de rama → merge local a `main`:**
+
+**1. Historial de ítems como timeline estructurado (v588→v590).** El log
+por ítem (`functions/api/historial.js?itemId=`) pasa de un resumen de
+texto genérico ("Item actualizado: X") a mostrar diff campo a campo
+(`Aula: X → Y`) para los 8 campos clave (`item`, `aula`, `cat`, `mod`,
+`qty`, `min`, `est`, `loc`). Sin migración D1: el diff se guarda como JSON
+en la misma columna `resumen` de siempre (`functions/api/item.js`,
+`computeItemDiff()`, comparando la fila vieja — ya leída para este
+propósito — contra la nueva tras el `UPDATE`), y el frontend
+(`js/modal-item.js`, `openHistorial()`) detecta si `resumen` es ese JSON
+o texto plano, con fallback intacto para las miles de filas antiguas. La
+vista general de historial (`js/modal-historial.js`, todas las acciones
+del centro) queda deliberadamente fuera — solo la vista por ítem muestra
+el diff.
+
+Spec:
+[`docs/superpowers/specs/2026-08-24-historial-timeline-design.md`](docs/superpowers/specs/2026-08-24-historial-timeline-design.md),
+plan:
+[`docs/superpowers/plans/2026-08-24-historial-timeline.md`](docs/superpowers/plans/2026-08-24-historial-timeline.md)
+(2 tareas). Un implementador con modelo económico (haiku) sufrió un fallo
+de persistencia de escritura (Edit/Write reportaban éxito pero los
+cambios no llegaban al disco del worktree) — sin causa raíz confirmada,
+resuelto reintentando con un modelo más capaz (sonnet), que desde
+entonces se usó como modelo por defecto para implementadores en el resto
+de la sesión. La revisión final de rama (modelo más capaz) encontró 2
+hallazgos Important reales, ambos corregidos antes de mergear: 1) faltaba
+el bump de versión del Service Worker — con `js/modal-item.js` servido
+cache-first, usuarios ya instalados habrían seguido viendo el backend
+nuevo (que ya escribe JSON) con el frontend viejo (que no lo detecta),
+mostrando JSON crudo en vez de texto legible; 2) la vista general de
+historial, aunque explícitamente fuera de alcance para renderizar el
+diff, nunca se protegió contra recibirlo — mostraba JSON crudo para
+cualquier fila `update`, contradiciendo la propia justificación de la
+spec de mantener esa vista en texto plano. Corregido con un resumen corto
+tipo "N campos modificados: Aula, Cantidad" reutilizando las mismas
+etiquetas ya definidas para la vista por ítem.
+
+**2. Mantenimiento como flujo real (v591→v592).** `item.mant` (checkbox +
+4 campos planos, con `mantEstado` ya como `<select>` de 4 opciones fijas —
+más built-out de lo que el backlog original describía) pasa a un flujo
+con historial completo: tabla nueva `mantenimientos`
+(`migrations/0028_mantenimientos.sql`, una fila por incidencia:
+apertura/cierre/coste/responsable/notas), y los 6 campos `mant*` de
+`inventario` (incluye `mantCoste` nuevo) pasan a ser un espejo puro
+calculado siempre por el backend (`syncMantenimiento()` en
+`functions/api/item.js`, llamada tras el `INSERT`/`UPDATE` genérico de
+`add`/`update`, reutilizando la misma lectura de fila vieja ya añadida
+para el historial-timeline). 5 estados: `Pendiente`/`En reparación`/
+`Enviado a reparar externo` (abiertos) + `Reparado`/`Resuelto` (cierran,
+exigen fecha+nota de cierre obligatoria — validada tanto en frontend como
+rechazada en backend si el `mantEstado` no es uno de los 5 válidos).
+Frontend: un único desplegable de estado sustituye al checkbox+select
+antiguo, con campo Coste nuevo y campos de cierre condicionales; historial
+de incidencias de solo lectura cargado bajo demanda
+(`mantenimientosGet`, mismo patrón de `fotosGet`). Bulk-edit pierde la
+opción "Quitar mantenimiento" (cerrar sin nota ya no tiene sentido con
+coste/historial de por medio).
+
+Spec:
+[`docs/superpowers/specs/2026-08-25-mantenimiento-flujo-real-design.md`](docs/superpowers/specs/2026-08-25-mantenimiento-flujo-real-design.md),
+plan:
+[`docs/superpowers/plans/2026-08-25-mantenimiento-flujo-real.md`](docs/superpowers/plans/2026-08-25-mantenimiento-flujo-real.md)
+(4 tareas). La revisión de la Task 2 (backend) encontró 1 hallazgo
+Important real: `syncMantenimiento` no hacía nada si `mantEstado` llegaba
+con un valor fuera de los 5 válidos (typo, dato corrupto), dejando ese
+valor basura ya escrito en `inventario` por el `UPDATE` genérico sin
+corregir — el endpoint es una API JSON plana, alcanzable directamente sin
+pasar por el desplegable del frontend. Corregido rechazando la petición
+con un helper `isValidMantEstado()` antes de cualquier escritura. La
+revisión de la Task 3 (formulario) encontró otro hallazgo Important real:
+los 3 campos nuevos (`f_mantCoste`/`f_mantFechaCierre`/`f_mantNotaCierre`)
+no se habían añadido a las listas de seguimiento de cambios del modal
+(`captureModalOriginalValues`/`attachModalChangeListeners`/
+`checkModalForChanges`) ni a la de modo solo-lectura
+(`setItemModalReadonly`) — editar solo esos campos no disparaba el aviso
+de "cambios sin guardar", y quedaban editables para un rol sin
+`items.write`. La misma Task 3 también encontró y corrigió por su cuenta
+(autodisclosed, no pedido en el plan) una referencia colgante al checkbox
+`f_mant` ya eliminado en `js/qr-scanner.js` (acción rápida "Mantenimiento"
+del panel QR).
+
+**Incidente operativo — límite de gasto mensual de la cuenta.** A media
+Task 3, tras el primer fix, el implementador (subagente) chocó con
+`"You've hit your monthly spend limit ... resets 10pm (Europe/Madrid)"`
+— un límite duro de cuenta, no un error transitorio, que bloquea el
+despacho de subagentes (`Agent`/`Task`) hasta esa hora. A petición
+explícita del usuario de seguir en vez de esperar al reset, el resto de
+la sesión se hizo con el controlador implementando y autorrevisando
+directamente en el worktree (sin despachar subagentes): el fix de la
+Task 3, la Task 4 completa, y la revisión final de rama — encontrando en
+esa autorrevisión el mismo tipo de hallazgo que ya había aparecido en la
+sesión de historial-timeline (versión de Service Worker sin subir),
+corregido igual (v591→v592). Antes de mergear a `main`, el controlador
+preguntó explícitamente al usuario si prefería esperar al reset para una
+revisión final independiente con subagente — el usuario prefirió mergear
+ya, confiando en la autorrevisión dado que cubrió expresamente el mismo
+patrón de fallo (bugs en la intersección de tareas) que las revisiones de
+rama de este proyecto llevan meses documentando. **Lección para la
+próxima sesión:** si vuelve a aparecer este límite, no reintentar el
+despacho de subagentes a ciegas (es un límite de cuenta, no un fallo de
+red) — confirmar con el usuario si prefiere esperar al reset o seguir con
+el controlador implementando directamente.
+
 Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
 
 1. ~~Icono de fallback del botón de easter egg~~ ✅ hecho (v486):
@@ -1956,10 +2088,8 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
     - ~~**Historial de ítems como timeline estructurado**~~ ✅ hecho
       (v588→v590, ver entrada de sesión "Historial de ítems como timeline
       estructurado" más abajo).
-    - **Mantenimiento como flujo real:** hoy `item.mant` es solo un
-      booleano que Volt puede listar (`lista_mantenimiento`) — sin fecha
-      de incidencia, coste, responsable, ni cierre con lo que se hizo. En
-      curso.
+    - ~~**Mantenimiento como flujo real**~~ ✅ hecho (v591→v592, ver
+      entrada de sesión "Mantenimiento como flujo real" más abajo).
     - **Aprobación de préstamos + alertas de garantía/depreciación:**
       descartada a petición explícita del usuario (25/08/2026) — cualquier
       paso de aprobación previa por jefatura sobrecargaría al jefe de
