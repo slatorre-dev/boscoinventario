@@ -125,7 +125,6 @@ function initGoogleButton() {
       size: 'large',
       theme: 'outline',
       width: 300,
-      use_fedcm_for_button: true,
     });
     // El popup de Google (accounts.google.com/gsi/transform) a veces se
     // queda colgado en blanco sin completar el callback — problema
