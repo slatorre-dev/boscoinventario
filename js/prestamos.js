@@ -91,6 +91,17 @@ function goPrestamos(tab){
   const vencCheckbox = document.getElementById('presVencToggle');
   if(vencCheckbox) vencCheckbox.checked = currentPresOnlyVencidos;
 
+  // El toggle "ver reservas" también solo tiene sentido en Activos — se resetea al cambiar de tab
+  const reservasWrap = document.getElementById('presReservasToggleWrap');
+  if(reservasWrap) reservasWrap.style.display = currentPresTab==='activos' ? '' : 'none';
+  currentPresShowReservas = false;
+  const reservasCheckbox = document.getElementById('presReservasToggle');
+  if(reservasCheckbox) reservasCheckbox.checked = false;
+  const presContentEl = document.getElementById('presContent');
+  const presReservasContentEl = document.getElementById('presReservasContent');
+  if(presContentEl) presContentEl.style.display = '';
+  if(presReservasContentEl) presReservasContentEl.style.display = 'none';
+
   const groupSelect = document.getElementById('presGroupBy');
   if(groupSelect) groupSelect.value = currentPresGroupBy;
   const groupWrap = groupSelect ? groupSelect.closest('.pres-group-select') : null;

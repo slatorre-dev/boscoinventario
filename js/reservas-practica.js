@@ -143,3 +143,81 @@ async function guardarReservaPractica(){
   } catch(err){ toast('Error: '+err.message,'err'); }
   finally { btn.disabled=false; btn.textContent='📅 Guardar reserva'; }
 }
+
+// ─── VISTA DE RESERVAS PENDIENTES ────────────────────────
+
+function togglePresReservas(){
+  currentPresShowReservas = document.getElementById('presReservasToggle').checked;
+  document.getElementById('presContent').style.display = currentPresShowReservas ? 'none' : '';
+  document.getElementById('presReservasContent').style.display = currentPresShowReservas ? '' : 'none';
+  if(currentPresShowReservas) renderReservasPendientes();
+}
+
+function getReservasPendientes(){
+  return (typeof reservas !== 'undefined' ? reservas : []).filter(r => r.estado === 'pendiente');
+}
+
+function _reservaCardHtml(r){
+  const aulaNombre = AULAS.find(a=>a.id===r.aulaDestino)?.name || r.aulaDestino || '—';
+  const lineasHtml = (r.lineas||[]).map(l => `<div style="font-size:12px;padding:2px 0">${escHtml(l.itemNombre)} · ${l.cantidad} ud.</div>`).join('');
+  return `<div class="pres-card">
+    <div class="pres-info">
+      <div class="pres-name">${escHtml(r.moduloNombre || 'Sin asignatura')}</div>
+      <div class="pres-prof">${escHtml(r.profesorNombre)}</div>
+      <div class="pres-meta">
+        <span>📅 ${escHtml(r.fecha)} · ${escHtml(r.franja)}</span>
+        <span>🏫 ${escHtml(aulaNombre)}</span>
+      </div>
+      <div style="margin-top:6px">${lineasHtml}</div>
+      ${r.obs?`<div style="font-size:11px;color:var(--muted);margin-top:4px">💬 ${escHtml(r.obs)}</div>`:''}
+    </div>
+    <div class="pres-actions" style="flex-direction:column;gap:6px">
+      <button class="btn btn-sm btn-return" onclick="confirmarRecogidaReserva(${r.id})">✅ Confirmar recogida</button>
+      <button class="btn btn-sm btn-d" onclick="cancelarReserva(${r.id})">✕ Cancelar</button>
+    </div>
+  </div>`;
+}
+
+function renderReservasPendientes(){
+  const pendientes = getReservasPendientes().sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+  const el = document.getElementById('presReservasContent');
+  if(!pendientes.length){
+    el.innerHTML = `<div class="empty"><div class="ei">📅</div><div class="et">No hay prácticas planificadas</div></div>`;
+    return;
+  }
+  el.innerHTML = pendientes.map(_reservaCardHtml).join('');
+}
+
+async function confirmarRecogidaReserva(reservaId){
+  if(!await confirmDialog({message:'¿Confirmar la recogida? Se descontará el stock de todos los ítems de la reserva.', confirmText:'Confirmar'})) return;
+  try {
+    const res = await apiPost({action:'reservaConfirmar', reservaId});
+    if(!res.ok) throw new Error(res.error);
+    for(const p of (res.prestamos||[])){
+      prestamos.push(p);
+      const idx = items.findIndex(x=>Number(x.id)===Number(p.itemId));
+      if(idx>=0) items[idx].qty = Number(items[idx].qty) - Number(p.cantidad);
+    }
+    const rIdx = reservas.findIndex(r=>Number(r.id)===Number(reservaId));
+    if(rIdx>=0) reservas[rIdx].estado = 'recogida';
+    if(res.fallos && res.fallos.length){
+      toast(`Recogida parcial: ${res.fallos.length} línea(s) sin stock suficiente (${res.fallos.map(f=>f.itemNombre).join(', ')})`,'warn');
+    } else {
+      toast('Recogida confirmada','ok');
+    }
+    renderReservasPendientes();
+    goPrestamos();
+  } catch(err){ toast('Error: '+err.message,'err'); }
+}
+
+async function cancelarReserva(reservaId){
+  if(!await confirmDialog({message:'¿Cancelar esta reserva? Se liberará el material para otras reservas.', danger:true, confirmText:'Cancelar reserva'})) return;
+  try {
+    const res = await apiPost({action:'reservaCancelar', reservaId});
+    if(!res.ok) throw new Error(res.error);
+    const rIdx = reservas.findIndex(r=>Number(r.id)===Number(reservaId));
+    if(rIdx>=0) reservas[rIdx].estado = 'cancelada';
+    toast('Reserva cancelada','ok');
+    renderReservasPendientes();
+  } catch(err){ toast('Error: '+err.message,'err'); }
+}

@@ -440,6 +440,10 @@
         <input type="checkbox" id="presVencToggle" onchange="togglePresVencidos()">
         🔴 Solo vencidos
       </label>
+      <label class="pres-venc-toggle" id="presReservasToggleWrap">
+        <input type="checkbox" id="presReservasToggle" onchange="togglePresReservas()">
+        📅 Ver reservas
+      </label>
     </div>
     <div class="toolbar">
       <div class="sbox"><span class="si">🔍</span><input type="text" id="presSearch" placeholder="Buscar por ítem o profesor..." oninput="renderPrestamos()"></div>
@@ -458,6 +462,7 @@
       <button class="btn icon-btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 <span class="btn-text">Gestionar usuarios</span></button>
     </div>
     <div id="presContent"></div>
+    <div id="presReservasContent" style="display:none"></div>
   </div>
 </div>
 
