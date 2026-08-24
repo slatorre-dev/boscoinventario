@@ -29,7 +29,7 @@ function renderHome(){
     ? aulaEntries.map(a=>{
     const n=items.filter(x=>x.aula===a.id).length;
     const w=loading ? 0 : items.filter(x=>x.aula===a.id&&isLowStock(x)).length;
-    return`<div class="ccard ${a.th}" style="--ch:#2563eb" onclick="goAula('${a.id}')">
+    return`<div class="ccard ${a.th}" style="--ch:#2563eb" role="button" tabindex="0" aria-label="Abrir ${escHtml(a.name)}" onclick="goAula('${a.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goAula('${a.id}')}" >
       ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
       <button class="ccard-edit" onclick="event.stopPropagation();openAulasModal()" title="Editar aulas">✏️</button>
       <div class="ccard-icon">${a.departamento ? escHtml(a.icon) : '<img src="icons/iconoaula.png" alt="" loading="lazy">'}</div>
@@ -43,7 +43,7 @@ function renderHome(){
     ? catEntries.map(([name,c])=>{
         const n=items.filter(x=>x.cat===name).length;
         const w=loading ? 0 : items.filter(x=>x.cat===name&&isLowStock(x)).length;
-        return`<div class="ccard" style="--ch:${c.c};--cbg:${c.bg}" onclick="goCat('${name.replace(/'/g,"\\'")}')">
+        return`<div class="ccard" style="--ch:${c.c};--cbg:${c.bg}" role="button" tabindex="0" aria-label="Abrir categoría ${escHtml(name)}" onclick="goCat('${name.replace(/'/g,"\\'")}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goCat('${name.replace(/'/g,"\\'")}')}" >
           ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
           <div class="ccard-icon">${escHtml(c.i)}</div>
           <div class="ccard-title">${escHtml(name)}</div>
@@ -53,7 +53,7 @@ function renderHome(){
     : `<div class="empty" style="grid-column:1/-1;padding:32px;text-align:center;color:var(--muted);font-size:13px">No hay ítems clasificados por categoría aún.</div>`;
   document.getElementById('gCiclos').innerHTML=CICLOS.map(c=>{
     const n=items.filter(x=>x.mod && x.mod.startsWith(c.id+'__')).length;
-    return`<div class="ccard ${c.th}" onclick="openCiclo('${c.id}')">
+    return`<div class="ccard ${c.th}" role="button" tabindex="0" aria-label="Abrir ${escHtml(c.name)}" onclick="openCiclo('${c.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openCiclo('${c.id}')}" >
       ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
       <div class="ccard-icon">${escHtml(c.icon)}</div>
       <div class="ccard-title">${escHtml(c.name)}</div>
