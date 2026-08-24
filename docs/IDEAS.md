@@ -295,6 +295,16 @@ vez ya cubierto el caso de uso principal (auditar un aula) por la idea #5
 (inventario andando, foto a foto). Descartada, no se retoma salvo que
 surja una necesidad real que #5 no cubra.
 
+### Completar acciones del panel post-escaneo (revisión externa, 24/08/2026)
+El panel de acciones tras leer un QR (`js/qr-scanner.js`, `_showQrActions()`)
+ya ofrece abrir ficha, prestar/devolver, mantenimiento, documentos y
+borrar. Faltan dos acciones de un solo toque que hoy obligan a entrar en
+la ficha completa: **mover de aula** y **marcar como averiado** directo
+(sin pasar por el formulario de mantenimiento completo). Encaja como
+extensión de `qrQuickAction()`, reusando los modales ya existentes.
+
+**Prioridad:** Media
+
 ---
 
 ## UX y Usabilidad
@@ -413,6 +423,37 @@ Pasar de filtros exclusivos a lógica combinada: "Sin módulo Y sin aula".
 
 ### Exportar Reporte de Auditoría
 CSV o PDF con items problemáticos agrupados por aula/categoría.
+
+**Prioridad:** Baja
+
+---
+
+## Mantenimiento
+
+### Mantenimiento como orden de trabajo (revisión externa, 24/08/2026)
+La tabla `mantenimientos` (migración `0028`, v592) ya cubre estado,
+responsable, coste y fechas de apertura/cierre — es una base real, no
+hay que reconstruirla. Evolución razonable, sin necesidad de imitar
+GLPI/MaintainX enteros:
+- Prioridad (baja/media/alta).
+- Fecha prevista de resolución.
+- Fotos antes/después (reusando `item_fotos` o una tabla dedicada).
+- Próxima revisión (mantenimiento preventivo, no solo correctivo).
+
+**Prioridad:** Media
+
+---
+
+## Modelo de datos
+
+### Ubicaciones jerárquicas y movimientos de stock (revisión externa, 24/08/2026)
+Ideas sugeridas: ubicaciones con más niveles (centro/edificio/planta/aula/
+armario/balda), tabla `movimientos_stock` para trazar entradas/salidas de
+consumibles, y campos configurables por categoría. Son mejoras de fondo
+razonables, pero acercan el proyecto a un ERP — justo lo que el propio
+análisis que las propuso advertía evitar. Solo abordar si aparece una
+necesidad real (p. ej. un departamento con almacenes/armarios propios que
+hoy no se puede representar), no de forma especulativa.
 
 **Prioridad:** Baja
 

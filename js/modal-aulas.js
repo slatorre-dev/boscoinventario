@@ -101,8 +101,13 @@ async function saveAulas(){
   for(const a of aulasEditing){
     if(!a.name.trim()){toast('Hay aulas sin nombre','err');return}
   }
-  // Asegurar que cada aula tiene un th asignado
-  aulasEditing.forEach((a,i)=>{ if(!a.th) a.th = TH_OPTIONS[i%TH_OPTIONS.length]; a.orden = i; });
+  // Asegurar que cada aula tiene un th asignado.
+  // orden empieza en 101 (no en 0): las 70 aulas globales usan id "aulaN"
+  // con orden 1-70 (ver migrations/0008_aulas_seed.sql) y el ORDER BY de
+  // meta.js/list.js compara ese número directamente contra el `orden` de
+  // las aulas propias — con base 0 estas quedaban intercaladas al
+  // principio de la lista en vez de después de las 70 globales.
+  aulasEditing.forEach((a,i)=>{ if(!a.th) a.th = TH_OPTIONS[i%TH_OPTIONS.length]; a.orden = 101 + i; });
 
   // Convertir IDs de timestamp en slugs legibles para aulas recién creadas
   const existingIds = new Set(AULAS.map(a=>a.id));

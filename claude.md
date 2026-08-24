@@ -376,19 +376,20 @@ Workers AI, onboarding de cámara (v543-v557).
    seguridad, es una limitación funcional si hace falta cobertura
    completa sin depender de que alguien de cada departamento visite la
    página.
-6. Ítem `225` ("Estaciones Soldadura", y posiblemente otros) tiene un
-   campo `mod` que no corresponde a ningún ciclo/asignatura activo —
-   `saveItem()` bloquea el guardado sin un toast claro. Pendiente de
-   auditar cuántos ítems más están en esa situación y dar mejor mensaje.
+6. ~~Ítem `225` con `mod` huérfano~~ — auditado y corregido (25/08/2026,
+   migración `0029`): eran 1.205 de 1.206 ítems de
+   `electricidadelectronica` con códigos de un esquema de ciclo/módulo
+   anterior a la migración multi-departamento. Reclasificados a los 4
+   ciclos reales (306 ítems) o dejados sin asignar por ser genuinamente
+   genéricos (899: componentes sueltos, equipo compartido, mobiliario).
+   Pendiente real que queda: esos 899 ítems con `mod=''` siguen sin
+   poder guardarse desde el modal de edición porque `saveItem()` exige
+   `f_ciclo`+`f_mod` no vacíos ([modal-item.js:1118-1119](js/modal-item.js#L1118-L1119))
+   — decidir si se relaja esa validación (permitir "Sin asignar") o si
+   el departamento los reclasifica uno a uno.
 7. Rol `Consulta` (solo lectura) nunca ve la galería completa de fotos
    (solo la principal) porque `fotosGet` exige `items.write` — el
    proyecto no tiene hoy un permiso `items.read` más laxo.
-8. Bug de código real en `js/modal-aulas.js:78` (`saveAulas()`):
-   reasigna `orden = i` para TODAS las aulas del departamento al
-   guardar desde ⚙️ Gestionar aulas, no solo las nuevas — con pocas
-   aulas propias esto colapsa su orden y choca con las 70 aulas
-   globales. Dato ya corregido en producción, bug de código sigue sin
-   arreglar.
 9. Convertir la tabla `ia_deteccion_ejemplos` en migración SQL formal
    (`migrations/0027_...`) — hoy se autocrea en runtime en `item.js`.
 10. Endpoint interno de métricas de calidad de cámara por departamento

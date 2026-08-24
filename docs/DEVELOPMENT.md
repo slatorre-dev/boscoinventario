@@ -659,6 +659,46 @@ _Bloque trasladado íntegro desde CLAUDE.md el 25/08/2026 para reducir el tamañ
   del frontend (mismo fallo ya resuelto en v543 para el flujo general de
   cámara, no trasladado a esta feature nueva). Ambos corregidos.
 
+- **25/08/2026: auditoría y reclasificación de `mod` huérfano (migración
+  `0029`).** Lo que empezó como "revisar el ítem 225" (backlog desde
+  v535-536) resultó ser 1.205 de los 1.206 ítems del departamento
+  `electricidadelectronica` — prácticamente todo su inventario real.
+  Causa: `inventario.mod` guardaba códigos de un esquema de ciclo/módulo
+  anterior a la migración multi-departamento (`gs_mantelec__1058`,
+  `gm_telecom__0361`, `gs_sea__0518`...) que nunca se remapeó a los 4
+  ciclos reales actuales (`iea`/`it`/`mele`/`sea`, módulos `M01`-`M15`).
+  Como `f_ciclo` y `f_mod` son obligatorios en `saveItem()`
+  ([modal-item.js:1118-1119](../js/modal-item.js#L1118-L1119)), esto
+  bloqueaba silenciosamente el guardado de cualquier ítem del
+  departamento — no era un caso aislado. Los 1.205 valores se agrupaban
+  en solo 44 códigos distintos (no 1.205 decisiones individuales); el
+  grupo más grande (`gs_mantelec__1058`, 871 ítems) era un cajón genérico
+  de componentes electrónicos sueltos sin módulo específico real.
+  Mapeo hecho por Claude a partir del contenido de cada grupo (nombres de
+  ítems) y la convención `gs_`=Grado Superior / `gm_`=Grado Medio del
+  código viejo, sin intervención del profesorado — 306 ítems
+  reclasificados a un módulo real concreto, 899 dejados sin asignar
+  (`mod=''`) por ser genuinamente genéricos (el cajón de componentes,
+  equipo de oficina/AV compartido, mobiliario) en vez de forzarlos a un
+  módulo que no les correspondería. Backup de los valores previos
+  guardado antes de aplicar (fuera del repo, scratchpad de la sesión).
+  Detalle completo del mapeo grupo a grupo en
+  `migrations/0029_reclasificar_modulos_electricidad.sql` (comentado por
+  bloque). Verificado post-migración: 0 huérfanos restantes.
+  **Pendiente real, no cerrado con esto:** los 899 ítems con `mod=''`
+  siguen sin poder guardarse desde el modal individual mientras
+  `saveItem()` exija `f_ciclo`+`f_mod` no vacíos — o se relaja esa
+  validación para aceptar "Sin asignar", o el departamento los reclasifica
+  uno a uno (ahora sí visibles como "Módulo/Ciclo faltante" en ⚙️
+  Auditoría de datos, cosa que antes no pasaba porque el código viejo
+  contaba como "relleno" aunque fuera basura). En paralelo, mismo
+  hallazgo: la sesión también corrigió `saveAulas()`
+  (`js/modal-aulas.js`) reasignando `orden=i` desde 0 para todas las
+  aulas propias del departamento en cada guardado, en vez de solo las
+  nuevas — colisionaba con el rango 1-70 reservado a las aulas globales
+  del centro (`orden` 101+ para aulas propias, ver
+  `migrations/0008_aulas_seed.sql`). `sw.js` → `v594`.
+
   **2. Idea #6 — Multi-equipo en una foto / alta masiva (v547).** Botón
   "📸 Añadir varios" nuevo, también solo en vista de aula. Backend nuevo
   `detectarMultiples` (`functions/api/item.js`): una sola llamada a
@@ -1600,6 +1640,25 @@ Próximos pasos concretos (backlog general, no relacionado con lo de arriba):
     resto del proyecto en busca de la misma clase de bug, solo se corrigió
     donde la revisión final de rama lo encontró.
 
+### 25/08/2026 (v593→v594): fix de `saveAulas()` colapsando el orden de aulas propias
+
+Bug de código conocido desde v542 (documentado ahí, nunca corregido):
+`saveAulas()` en `js/modal-aulas.js` reasignaba `orden = i` (empezando en
+0) a **todas** las aulas propias del departamento en cada guardado desde
+⚙️ Gestionar aulas, no solo a las nuevas. Las 70 aulas globales usan id
+`aulaN` con `orden` 1-70 (`migrations/0008_aulas_seed.sql`), y las aulas
+propias se sembraron con `orden` 101+ precisamente para aparecer después
+de las globales — el `ORDER BY` de `meta.js`/`list.js` compara ambos
+valores en la misma escala numérica
+(`CASE WHEN id GLOB 'aula[0-9]*' THEN ... ELSE orden END`). Con la base 0,
+cualquier departamento que guardara desde ese modal veía sus aulas propias
+reordenadas al principio de la lista, intercaladas con `aula1`/`aula2`/
+`aula3`, en vez de al final. Corregido cambiando `a.orden = i` por
+`a.orden = 101 + i` — mismo offset que usa el seed original, preserva el
+reordenado manual (▲/▼) porque sigue derivándose del índice del array tras
+mover filas. Sin migración: los datos ya afectados en producción se habían
+corregido a mano en D1 en su momento (ver nota de v542), este cambio solo
+evita que el guardado vuelva a romperlo. `sw.js` → `v594`.
 
 ---
 
