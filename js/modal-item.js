@@ -938,6 +938,9 @@ function openModal(id=null, src=null){
   toggleMaintFields();
   const historialLink = document.getElementById('mantHistorialLinkWrap');
   if(historialLink) historialLink.style.display = existing ? '' : 'none';
+  _mantHistorial = null;
+  const historialBox = document.getElementById('mantHistorialBox');
+  if(historialBox) historialBox.style.display = 'none';
   document.getElementById('f_obs').value=m?.obs||'';
   const esContenedor = m?.es_contenedor == 1 || m?.es_contenedor === true;
   document.getElementById('f_es_contenedor').checked = esContenedor;
@@ -1464,6 +1467,39 @@ function _formatHistorialDetalle(resumenRaw){
     const despues = _formatHistorialValor(d.campo, d.despues);
     return `<div><b>${escHtml(label)}:</b> ${escHtml(antes)} → ${escHtml(despues)}</div>`;
   }).join('');
+}
+
+let _mantHistorial = null;
+
+function _formatMantRow(m){
+  const rango = m.fecha_cierre ? `${m.fecha_apertura} → ${m.fecha_cierre}` : `${m.fecha_apertura} (abierta)`;
+  const coste = (m.coste !== null && m.coste !== undefined && m.coste !== '') ? ` · ${Number(m.coste).toFixed(2)}€` : '';
+  const resp = m.responsable ? ` · ${escHtml(m.responsable)}` : '';
+  const notaCierre = m.nota_cierre ? `<div>✅ ${escHtml(m.nota_cierre)}</div>` : '';
+  return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
+    <div><b>${escHtml(m.estado)}</b> · ${escHtml(rango)}${coste}${resp}</div>
+    <div>${escHtml(m.nota_apertura || '')}</div>
+    ${notaCierre}
+  </div>`;
+}
+
+async function toggleMantHistorial(){
+  const box = document.getElementById('mantHistorialBox');
+  if(!box) return;
+  if(box.style.display !== 'none'){ box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  if(_mantHistorial !== null){
+    box.innerHTML = _mantHistorial.length ? _mantHistorial.map(_formatMantRow).join('') : 'Sin incidencias registradas todavía';
+    return;
+  }
+  box.innerHTML = 'Cargando…';
+  try {
+    const res = await apiPost({action:'mantenimientosGet', itemId:eid});
+    _mantHistorial = (res.ok && Array.isArray(res.mantenimientos)) ? res.mantenimientos : [];
+    box.innerHTML = _mantHistorial.length ? _mantHistorial.map(_formatMantRow).join('') : 'Sin incidencias registradas todavía';
+  } catch(e){
+    box.innerHTML = 'Error al cargar el historial.';
+  }
 }
 
 async function openHistorial(){
