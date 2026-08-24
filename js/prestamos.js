@@ -353,7 +353,8 @@ function _renderProfSelectOptions(selectId, list, selectedId){
 }
 
 function filterProfSelect(listVarName, inputId, selectId){
-  const full = listVarName === '_presProfOptions' ? _presProfOptions : _cajaProfOptions;
+  const optionsMap = { _presProfOptions, _cajaProfOptions, _reservaProfOptions };
+  const full = optionsMap[listVarName] || [];
   const q = normalize(document.getElementById(inputId).value);
   const filtered = q ? full.filter(p => normalize(p.nombre).includes(q)) : full;
   _renderProfSelectOptions(selectId, filtered);

@@ -453,6 +453,7 @@
         </select>
       </label>
       <button class="btn btn-loan icon-btn" data-perm="loans.write" onclick="openPrestarPicker()">⌛ <span class="btn-text">Nuevo préstamo</span></button>
+      <button class="btn icon-btn" data-perm="loans.write" style="border-color:var(--accent);color:var(--accent)" onclick="openReservaPractica()">📅 <span class="btn-text">Planificar práctica</span></button>
       <button class="btn icon-btn" data-perm="profesores.manage" onclick="openProfModal()">👥 <span class="btn-text">Gestionar prestatarios externos</span></button>
       <button class="btn icon-btn" data-perm="config.manage" onclick="openUsuariosModal()">🔐 <span class="btn-text">Gestionar usuarios</span></button>
     </div>
@@ -935,6 +936,53 @@
       <div class="mf-right">
         <button class="btn" onclick="closePrestarCaja()">Cancelar</button>
         <button class="btn btn-loan" id="btnPrestarCajaSave" onclick="confirmPrestarCaja()">📦 Registrar préstamo de caja</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PLANIFICAR PRÁCTICA (RESERVA DE MATERIAL) -->
+<div class="mbg" id="mReservaPractica" onclick="if(event.target===this)closeReservaPractica()">
+  <div class="modal">
+    <div class="mh"><span class="mti">📅 Planificar práctica</span><button class="mcl" onclick="closeReservaPractica()">✕</button></div>
+    <div class="fg">
+      <div><label class="fl">Ciclo/Asignatura</label><select class="fi-w" id="res_ciclo"></select></div>
+      <div><label class="fl">Aula destino</label><select class="fi-w" id="res_aula"></select></div>
+      <div><label class="fl">Fecha de la práctica *</label><input class="fi-w" id="res_fecha" type="date"></div>
+      <div><label class="fl">Franja horaria *</label><input class="fi-w" id="res_franja" type="text" placeholder='Ej. "10:00-11:00" o "3ª hora"'></div>
+      <div class="full"><label class="fl">Profesor/a *</label>
+        <input type="text" class="fi-w" id="res_profFiltQ" placeholder="Buscar por nombre…" autocomplete="off" oninput="filterProfSelect('_reservaProfOptions','res_profFiltQ','res_prof')" style="margin-bottom:6px">
+        <select class="fi-w" id="res_prof"></select>
+      </div>
+      <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="res_obs" placeholder="Para qué se necesita, etc."></textarea></div>
+    </div>
+
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+      <label class="fl">Añadir material *</label>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <select class="fi-w" id="res_itemFiltAula" onchange="filterReservaItems()" style="flex:1;min-width:0"></select>
+        <div class="sbox" style="flex:2;min-width:0"><span class="si">🔍</span><input type="text" id="res_itemFiltQ" placeholder="Buscar..." oninput="filterReservaItems()" autocomplete="off"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <select class="fi-w" id="res_itemSelect" style="flex:1"></select>
+        <button class="btn btn-p" onclick="anadirLineaReserva()">➕ Añadir</button>
+      </div>
+    </div>
+
+    <div id="resLineasWrap" style="display:none;margin-top:12px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="font-size:11px;color:var(--muted);text-align:left">
+          <th style="padding:4px">Ítem</th><th style="padding:4px">Cantidad</th><th></th>
+        </tr></thead>
+        <tbody id="resLineasBody"></tbody>
+      </table>
+    </div>
+
+    <div class="mf">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeReservaPractica()">Cancelar</button>
+        <button class="btn btn-loan" id="btnReservaGuardar" disabled onclick="guardarReservaPractica()">📅 Guardar reserva</button>
       </div>
     </div>
   </div>
@@ -1873,6 +1921,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/modal-ciclos.js"></script>
 <script defer src="js/modal-config-backups.js"></script>
 <script defer src="js/prestamos.js"></script>
+<script defer src="js/reservas-practica.js"></script>
 <script defer src="js/import.js"></script>
 <script defer src="js/nav.js"></script>
 <script defer src="js/docs-dpto.js"></script>
