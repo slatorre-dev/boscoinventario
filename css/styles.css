@@ -1574,9 +1574,9 @@ textarea.fi-w{resize:vertical;min-height:60px}
     background:var(--white);border:1px solid var(--border);
     border-radius:0 0 12px 12px;border-top:2px solid var(--accent);
     padding:8px;flex-direction:column;gap:4px;min-width:220px;
-    box-shadow:var(--shh);z-index:200;display:none;overflow:visible;
+    box-shadow:var(--shh);z-index:200;display:none!important;overflow:visible;
   }
-  .topbar-btns.open{display:flex}
+  .topbar-btns.open{display:flex!important}
   .topbar-btns .tbtn{width:100%;justify-content:flex-start;font-size:13px;padding:10px 14px;min-height:44px}
   .topbar-btns .tbtn svg,.topbar-btns .tbtn img{display:inline-block;margin-right:6px}
   .dept-menu-wrap{position:static;display:flex!important;flex-direction:column;width:100%}
