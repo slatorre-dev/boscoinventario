@@ -17,7 +17,6 @@ let eid = null;
 let currentPresTab = 'activos';
 let currentPresGroupBy = localStorage.getItem('pres_group_by') || '';
 let currentPresOnlyVencidos = false;
-let currentPresShowReservas = false;
 let prestarItemId = null;
 let devolverPresId = null;
 let itemsLoaded = false;

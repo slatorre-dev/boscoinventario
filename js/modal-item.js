@@ -973,6 +973,27 @@ async function usarCamaraParaAlta(){
   openCamaraUnificada();
 }
 
+// Rellena y abre la sección Mantenimiento del modal ya abierto — compartido
+// por el atajo del panel post-QR (qr-scanner.js) y por "🛠️ Marcar
+// mantenimiento" en el menú de acciones del inventario (inventory.js).
+function _enfocarMantenimientoEnModal(){
+  const sel = document.getElementById('f_mantEstado');
+  if(sel && !sel.value) sel.value = 'Pendiente';
+  if(typeof toggleMaintFields === 'function') toggleMaintFields();
+  const secMant = document.getElementById('mSecMantenimiento');
+  if(secMant) secMant.open = true; // si no, la sección colapsada impide enfocar lo de dentro
+  document.getElementById('f_mantNota')?.focus();
+}
+
+// Un toque desde la lista/ficha del inventario: abre el ítem directo en la
+// sección Mantenimiento, lista para escribir el motivo — sin tener que
+// bajar hasta esa sección a mano ni pasar por el escáner QR.
+function abrirMantenimientoRapido(id){
+  if(!requirePerm('items.write', 'No tienes permisos para editar mantenimiento')) return;
+  openModal(id);
+  setTimeout(_enfocarMantenimientoEnModal, 50);
+}
+
 function openModal(id=null, src=null){
   const existing = id !== null && id !== undefined;
   if(!existing && !requirePerm('items.write')) return;

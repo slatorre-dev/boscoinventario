@@ -1000,6 +1000,7 @@ function rTable(data,mc){
             <button class="btn btn-sm" onclick="toggleActionMenu(event,${x.id})" title="Más acciones">⋯</button>
             <div id="am-${x.id}" class="action-menu" style="display:none;position:absolute;right:0;top:100%;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:1000;min-width:180px">
               <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
+              <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
               <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
               <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
               ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}
@@ -1075,6 +1076,7 @@ function rCards(data,mc){
           <button class="btn btn-sm" onclick="toggleActionMenu(event,${x.id})" title="Más acciones">⋯</button>
           <div id="am-${x.id}" class="action-menu" style="display:none;position:absolute;right:0;top:100%;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:1000;min-width:180px">
             <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
+            <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
             <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
             <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
             ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}

@@ -81,7 +81,7 @@ function goPrestamos(tab){
   document.getElementById('presMeta').textContent = `${prestamos.length} préstamo${prestamos.length!==1?'s':''} registrado${prestamos.length!==1?'s':''} en total`;
 
   // Tabs
-  ['activos','historial'].forEach(t=>{
+  ['activos','historial','reservas'].forEach(t=>{
     document.getElementById('pt'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', currentPresTab===t);
   });
 
@@ -91,28 +91,26 @@ function goPrestamos(tab){
   const vencCheckbox = document.getElementById('presVencToggle');
   if(vencCheckbox) vencCheckbox.checked = currentPresOnlyVencidos;
 
-  // El toggle "ver reservas" también solo tiene sentido en Activos — se resetea al cambiar de tab
-  const reservasWrap = document.getElementById('presReservasToggleWrap');
-  if(reservasWrap) reservasWrap.style.display = currentPresTab==='activos' ? '' : 'none';
-  currentPresShowReservas = false;
-  const reservasCheckbox = document.getElementById('presReservasToggle');
-  if(reservasCheckbox) reservasCheckbox.checked = false;
   const presContentEl = document.getElementById('presContent');
   const presReservasContentEl = document.getElementById('presReservasContent');
-  if(presContentEl) presContentEl.style.display = '';
-  if(presReservasContentEl) presReservasContentEl.style.display = 'none';
+  if(presContentEl) presContentEl.style.display = currentPresTab==='reservas' ? 'none' : '';
+  if(presReservasContentEl) presReservasContentEl.style.display = currentPresTab==='reservas' ? '' : 'none';
 
   const groupSelect = document.getElementById('presGroupBy');
   if(groupSelect) groupSelect.value = currentPresGroupBy;
   const groupWrap = groupSelect ? groupSelect.closest('.pres-group-select') : null;
   if(groupWrap) groupWrap.style.display = currentPresTab==='activos' ? '' : 'none';
 
-  // El buscador solo tiene sentido en las vistas de lista, ocultarlo en las vistas agrupadas
+  // El buscador solo tiene sentido en las vistas de lista, ocultarlo en las vistas agrupadas o en Reservas
   const isGrouped = currentPresTab==='activos' && !!currentPresGroupBy;
-  document.querySelector('#pPres .sbox').style.display = isGrouped ? 'none' : '';
+  document.querySelector('#pPres .sbox').style.display = (isGrouped || currentPresTab==='reservas') ? 'none' : '';
 
   show('pPres');
-  renderPrestamos();
+  if(currentPresTab==='reservas'){
+    renderReservasPendientes();
+  } else {
+    renderPrestamos();
+  }
 
   // Notificar al backend sobre vencidos, una sola vez por sesión de página
   // (toda la lógica de decisión, incluido el marcado del flag, vive dentro
