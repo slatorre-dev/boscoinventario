@@ -582,10 +582,14 @@
   <div class="modal">
     <div class="mh">
       <div class="mh-title-wrap">
-        <div class="mt" id="mT">Nuevo ítem</div>
+        <div class="mh-title-row">
+          <div class="mt" id="mT">Nuevo ítem</div>
+          <button type="button" class="btn btn-sm modal-camera-shortcut" id="btnUsarCamaraAlta" onclick="usarCamaraParaAlta()" style="display:none" title="Añadir este ítem fotografiándolo en vez de rellenar el formulario">📷 Usar cámara</button>
+        </div>
         <div class="modal-completion" id="mCompletion" style="display:none">
           <div class="modal-completion-label" id="mCompletionLabel"></div>
           <div class="modal-completion-track"><div class="modal-completion-fill" id="mCompletionFill"></div></div>
+          <div class="modal-completion-hint" id="mCompletionHint"></div>
         </div>
       </div>
       <button class="mx" onclick="closeM()">✕</button>
@@ -747,7 +751,7 @@
             <label class="fl">Estado</label>
             <select class="fi-w" id="f_mantEstado" onchange="toggleMaintFields()">
               <option value="">— Ninguno —</option>
-              <option>Pendiente</option>
+              <option value="Pendiente">Solicitar mantenimiento</option>
               <option>En reparación</option>
               <option>Enviado a reparar externo</option>
               <option>Reparado</option>

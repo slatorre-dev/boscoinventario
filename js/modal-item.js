@@ -125,6 +125,7 @@ function checkModalForChanges(){
 function updateModalCompletion(){
   const label = document.getElementById('mCompletionLabel');
   const fill = document.getElementById('mCompletionFill');
+  const hint = document.getElementById('mCompletionHint');
   const wrap = document.getElementById('mCompletion');
   if(!label || !fill || !wrap) return;
   let filled = 0;
@@ -135,6 +136,16 @@ function updateModalCompletion(){
   const total = MODAL_COMPLETION_FIELDS.length;
   label.textContent = `${filled}/${total} campos completados`;
   fill.style.width = `${Math.round(filled / total * 100)}%`;
+  if(hint){
+    // El único campo realmente obligatorio para guardar es el nombre
+    // (ver saveItem) — se avisa de eso en vez de dejar que "X/18" sugiera
+    // que hace falta rellenarlo todo.
+    const faltaNombre = !document.getElementById('f_item')?.value.trim();
+    hint.textContent = faltaNombre
+      ? '⚠ Falta el nombre del ítem — es el único campo obligatorio'
+      : 'El resto es opcional, puedes completarlo más tarde';
+    hint.classList.toggle('warn', faltaNombre);
+  }
   wrap.style.display = '';
 }
 
@@ -201,7 +212,7 @@ function fillModalSelects(){
   document.getElementById('f_aula').innerHTML=renderAulaOptions();
   document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}" data-alias="${cicloAlias(c)}" data-full="${escHtml(c.icon+' '+c.name)}">${escHtml(c.icon+' '+c.name)}</option>`).join('');
   syncCicloLabels();
-  document.getElementById('f_cat').innerHTML=sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('') + '<option value="__new_category__">＋ Añadir categoría...</option>';
+  document.getElementById('f_cat').innerHTML='<option value="">Sin categoría</option>' + sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('') + '<option value="__new_category__">＋ Añadir categoría...</option>';
   fillLocationSuggestions();
   fillTagSuggestions();
 }
@@ -949,6 +960,19 @@ function capturarSerieEnFormulario(){
   toast('La cámara de serie no está disponible', 'err');
 }
 
+async function usarCamaraParaAlta(){
+  if(typeof openCamaraUnificada !== 'function'){
+    toast('La cámara no está disponible', 'err');
+    return;
+  }
+  if(modalHasChanges){
+    if(!await confirmDialog({message:'¿Descartar lo escrito y usar la cámara en su lugar?'})) return;
+    if(_isBlankNewItemSession) clearDraft();
+  }
+  closeM(true);
+  openCamaraUnificada();
+}
+
 function openModal(id=null, src=null){
   const existing = id !== null && id !== undefined;
   if(!existing && !requirePerm('items.write')) return;
@@ -957,6 +981,8 @@ function openModal(id=null, src=null){
   modalHasChanges = false;
   updateModalIndicator();
   _isBlankNewItemSession = !existing && !src;
+  const btnCamaraAlta = document.getElementById('btnUsarCamaraAlta');
+  if(btnCamaraAlta) btnCamaraAlta.style.display = _isBlankNewItemSession ? '' : 'none';
   const m = existing ? items.find(x=>Number(x.id)===Number(id)) : src;
   if(existing && !m) return;
   const readonly = existing && !can('items.write');
@@ -983,8 +1009,12 @@ function openModal(id=null, src=null){
   document.getElementById('f_min').value=m?.min??0;
   document.getElementById('f_tipo_material').value=materialType(m || src || {});
   const catSel = document.getElementById('f_cat');
-  const catReciente = localStorage.getItem('cam_last_cat') || '';
-  catSel.value = m?.cat || catReciente || sortedCatNames()[0] || 'Componentes electrónicos';
+  // Sin auto-asignar una categoría por defecto en alta nueva — se deja en
+  // blanco a propósito para que el usuario elija, en vez de precargar la
+  // primera categoría alfabética (podía dar una categoría equivocada
+  // desapercibida). El "recordar última" sigue vivo para aula/ubicación/
+  // proveedor (donde equivocarse pesa menos), no para categoría.
+  catSel.value = m?.cat || '';
   catSel.dataset.prev = catSel.value;
   const ownCiclos = CICLOS.filter(c=>c.id!=='iesjuanbosco');
   const itemCiclo = m?.mod ? m.mod.split('__')[0]
