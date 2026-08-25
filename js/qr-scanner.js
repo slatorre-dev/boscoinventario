@@ -162,6 +162,8 @@ function qrQuickAction(action) {
       const sel = document.getElementById('f_mantEstado');
       if(sel && !sel.value) sel.value = 'Pendiente';
       if(typeof toggleMaintFields === 'function') toggleMaintFields();
+      const secMant = document.getElementById('mSecMantenimiento');
+      if(secMant) secMant.open = true; // si no, la sección colapsada impide enfocar lo de dentro
       document.getElementById('f_mantNota')?.focus();
     }, 50);
   }
