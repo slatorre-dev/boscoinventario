@@ -275,8 +275,14 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('keydown',e=>{
-  if((e.key==='/' || (e.ctrlKey&&e.key==='k')) && document.getElementById('pH').classList.contains('active')){
-    const inp=document.getElementById('gsInput');
-    if(document.activeElement!==inp){e.preventDefault();inp.focus();inp.select();}
-  }
+  const isSlash=e.key==='/', isCtrlK=e.ctrlKey&&e.key==='k';
+  if(!isSlash && !isCtrlK) return;
+  if(document.querySelector('.mbg.open')) return;
+  const inp=document.getElementById('gsInput');
+  const active=document.activeElement;
+  const editing=active && active!==inp && (['INPUT','TEXTAREA','SELECT'].includes(active.tagName) || active.isContentEditable);
+  if(isSlash && editing) return;
+  e.preventDefault();
+  if(!document.getElementById('pH').classList.contains('active')) goHome();
+  requestAnimationFrame(()=>{inp.focus();inp.select();});
 });

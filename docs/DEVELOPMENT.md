@@ -2960,4 +2960,36 @@ bienvenida.
 
 ---
 
+### 25/08/2026 — Buscador global (Ctrl+K/"/") desde cualquier pantalla (v607)
+
+Segunda de las 4 mejoras de interfaz de la auditoría anterior. El listener
+de `js/search.js` (L277-282) solo actuaba si `#pH` (Home) estaba activa —
+en cualquier otra pantalla (aula, préstamos, modal de ítem abierto...) el
+atajo no hacía nada. En vez de construir un command palette nuevo, se
+reutiliza `goHome()` (misma función que ya usa el logo de la marca) para
+saltar a Home y enfocar `#gsInput`, sin tocar `globalSearch()` ni layout.
+
+- El listener quita la condición `pH active` y añade 2 guardas: si hay un
+  modal abierto (`.mbg.open`, mismo patrón que `mItem`/`mConf`/etc.) no
+  actúa — evita cerrar de golpe un modal con cambios sin guardar. La
+  tecla `/` solo se intercepta si el foco no está en un campo editable
+  (input/textarea/select/contenteditable) distinto del propio buscador,
+  para no robarle la `/` a quien esté escribiendo una referencia o nota;
+  `Ctrl+K` sí se intercepta siempre (combinación de modificador, no un
+  carácter que se escriba sin querer — mismo criterio que Linear/GitHub).
+  Si Home no está activa, llama a `goHome()` antes de enfocar (ya limpia
+  la búsqueda anterior vía `gsClear()`, como cualquier otra navegación a
+  Home).
+
+Verificado con Playwright vía `page.evaluate()` simulando estados de
+página/foco (sin backend real disponible en este sandbox): Ctrl+K desde
+Préstamos navega a Home y enfoca el buscador; con un modal `.mbg.open`
+simulado, el atajo no navega; `/` dentro de un `<textarea>` normal no se
+intercepta (el carácter se escribe). Sin errores de consola relacionados.
+
+Quedan 2 piezas de la misma auditoría: favoritos/ítems fijados, recorrido
+de bienvenida.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
