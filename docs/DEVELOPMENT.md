@@ -2477,6 +2477,53 @@ borrador: guardar al teclear → descartar con confirmación → sin diálogo de
 restauración si no hay borrador → diálogo de restauración con el borrador
 correcto → campos repoblados. `sw.js` → `v597`.
 
+### 25/08/2026 (v597→v598): feedback directo sobre la pieza anterior — 5 ajustes al modal de ítem
+
+Continuación en la misma sesión, tras probar la v597 el usuario pidió 5
+cambios concretos, todos en `js/modal-item.js`/`index.html`/`css/styles.css`:
+
+1. **Opción "Pendiente" → "Solicitar mantenimiento"** en el desplegable de
+   Estado de mantenimiento — solo cambia la etiqueta visible
+   (`<option value="Pendiente">Solicitar mantenimiento</option>`), el valor
+   guardado sigue siendo `"Pendiente"` a propósito (evita tocar los ~8
+   archivos que ya comparan/muestran ese valor literal: `inventory.js`,
+   `search.js`, `agente-widget.js`, `import.js`, `qr-scanner.js`).
+2. **"Reparado"/"Resuelto" sin sentido en alta nueva** — señalado por el
+   usuario, dejado tal cual a petición explícita ("déjalo de momento").
+3. **Botón "📷 Usar cámara" junto al título** del modal (`#btnUsarCamaraAlta`,
+   visible solo si `_isBlankNewItemSession`) — `usarCamaraParaAlta()` pide
+   confirmación si hay cambios sin guardar, limpia el borrador si aplica,
+   cierra el modal (`closeM(true)`) y abre `openCamaraUnificada()` (mismo
+   botón que ya existía en Home). Verificado con Playwright que la llamada
+   directa deja el modal de cámara con `open` — en el sandbox de esta
+   sesión se cierra solo ~150ms después porque no hay cámara real
+   disponible (comportamiento preexistente de `openCamaraUnificada()`
+   ante el fallo de `getUserMedia`, no un bug nuevo).
+4. **Indicador de completitud amplía con una pista de qué falta que sea
+   obligatorio** (`#mCompletionHint`) — como el nombre es el único campo
+   que `saveItem()` exige de verdad, el hint dice
+   "⚠ Falta el nombre del ítem — es el único campo obligatorio" mientras
+   está vacío, y cambia a "El resto es opcional, puedes completarlo más
+   tarde" en cuanto se rellena. Pensado explícitamente para que "8/18" no
+   dé la sensación de que hacen falta los 18.
+5. **Categoría ya no se autoasigna** — antes, sin categoría "recordada"
+   (`cam_last_cat`), caía en la primera categoría alfabética o en
+   "Componentes electrónicos" a pelo; ahora `fillModalSelects()` añade una
+   opción `<option value="">Sin categoría</option>` al principio del
+   desplegable y `openModal()` ya no rellena ningún valor por defecto en
+   alta nueva (`catSel.value = m?.cat || ''`). Los accesos a `CATS[x.cat]`
+   en el resto de la app ya tenían fallback a `CATS['Otros']`, así que un
+   ítem sin categoría no rompe nada al listarlo. El "recordar último" se
+   mantiene para aula/ubicación/proveedor (equivocarse ahí pesa menos que
+   guardar mal categorizado sin darse cuenta).
+
+Mismo método de verificación que la pieza anterior (Playwright headless,
+`openModal()`/`usarCamaraParaAlta()` reales con estado mínimo simulado):
+alta en blanco con categoría vacía y aviso de nombre obligatorio, hint que
+cambia al rellenar el nombre, botón de cámara oculto al editar un ítem
+existente y visible en alta nueva, categoría real respetada al editar.
+`sw.js` → `v598`.
+
 ---
 
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

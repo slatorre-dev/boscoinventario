@@ -1,16 +1,21 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v597 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v598 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
 de encuadre y aviso visual de filas de baja confianza (v596) — mismo gap
 sigue abierto en "Revisar aula" (ver Pendiente #14). Volt migrado a
-Cloudflare Workers AI. Modal Nuevo/Editar ítem mejorado (v597, a petición
-explícita del usuario, sin quitar campos): sección Mantenimiento colapsable
-con auto-apertura si hay incidencia activa, indicador "X/18 campos
-completados", memoria de último Ubicación/Proveedor usado, y borrador de
-alta nueva en `localStorage` con oferta de restaurar. Otras piezas
+Cloudflare Workers AI. Modal Nuevo/Editar ítem mejorado (v597-v598, a
+petición explícita del usuario, sin quitar campos): sección Mantenimiento
+colapsable con auto-apertura si hay incidencia activa (opción "Pendiente"
+renombrada a "Solicitar mantenimiento" en la etiqueta visible, mismo valor
+guardado), indicador "X/18 campos completados" que además avisa cuál es
+el único campo realmente obligatorio (nombre), memoria de último
+Ubicación/Proveedor usado, categoría ya no se autoasigna (empieza vacía),
+borrador de alta nueva en `localStorage` con oferta de restaurar, y botón
+"📷 Usar cámara" junto al título para saltar del formulario manual al alta
+por cámara sin perder el hueco de permisos ya validado. Otras piezas
 recientes: vista global agrupada de solo lectura para superadmin en
 ⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
 `mantenimientos`, historial por ítem), Historial de ítems como timeline
