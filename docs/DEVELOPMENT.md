@@ -2862,4 +2862,62 @@ queda para una sesión dedicada.
 
 ---
 
+### 25/08/2026 13:45 — Sugerencias de interfaz (comparativa, sin implementar)
+
+Novena pieza de la sesión, a petición del usuario ("en cuanto a la
+interfaz? sugerencias? puedes comparar con otras aplicaciones o
+interfaces?"). Auditoría rápida del estado actual de la UI —
+`css/styles.css`, `index.html`, `js/home.js`, `js/inventory.js`,
+`js/search.js` — comparada con Snipe-IT (gestión de activos, el más
+cercano en propósito), Notion, Linear y Airtable (referencia en fluidez
+de interfaz). Solo diagnóstico y propuestas — **nada de esto está
+implementado todavía**.
+
+**Veredicto general:** la interfaz ya está por delante de la mayoría de
+herramientas internas de instituto gracias al trabajo de sesiones
+anteriores: tarjetas de stat con estados de carga tipo *skeleton*
+(`js/home.js`), accesibilidad por teclado en tarjetas (`tabindex`,
+`Enter`/`Espacio` ya manejados), filtros con chips activos
+(`renderActiveFilters`), acciones en bloque (`renderBulkBar`), ordenación
+de columnas (`sort()`/`th2()` en `js/inventory.js`), presets de filtro
+guardados (`renderPresetList`), y más de 25 breakpoints responsive en
+`css/styles.css`.
+
+**4 huecos concretos identificados, por prioridad:**
+
+1. **Sin modo oscuro real.** Existe una clase `.dark` en
+   `css/styles.css` pero solo se usa en los chips de filtro (línea
+   ~2448) — resto incompleto de algún intento anterior, nunca se activó
+   en el resto de la app ni hay botón para encenderlo. Como el proyecto
+   ya centraliza colores en variables CSS (`--bg`, `--text`, `--accent`,
+   etc. en `:root`), el coste de implementarlo es bajo: definir el juego
+   de valores oscuros de cada variable, un botón de toggle, y recordar
+   la preferencia en `localStorage`. Estándar en cualquier app moderna
+   (GitHub, Notion, Linear, el propio Snipe-IT).
+2. **El buscador rápido (`/` o Ctrl+K) solo funciona en Home.** En
+   `js/search.js` línea 278, el atajo comprueba
+   `document.getElementById('pH').classList.contains('active')` — si el
+   usuario está dentro de un aula o con el modal de un ítem abierto, no
+   hace nada. En Linear/Notion, Cmd+K funciona desde cualquier pantalla.
+   Ampliar el atajo a toda la app es un cambio pequeño de alto impacto en
+   velocidad para quien ya conoce el programa.
+3. **Sin favoritos/ítems fijados.** Ya existe el historial de búsquedas
+   recientes, pero no una forma de fijar los 5-10 ítems que un profesor
+   pide constantemente (tornillos M4, cable...) para acceder en un clic
+   desde Home — patrón habitual en Airtable/Notion (⭐ pin). Encaja con
+   el perfil "profesor con prisa" ya trabajado en piezas anteriores de
+   esta sesión.
+4. **Sin recorrido de bienvenida para gente nueva.** Con 48+ cuentas y
+   bastantes funciones (mantenimiento, pedidos, reservas, cámara IA...),
+   un profesor nuevo puede no descubrir la mitad de lo que hay. Más
+   barato que un tour interactivo: un banner/tooltip descartable la
+   primera vez que se visita cada sección nueva.
+
+**Recomendación dada al usuario:** empezar por el modo oscuro (#1) —
+el más visible, el más pedido hoy en día, y el más barato dado que el
+sistema de variables ya está listo. Pendiente de que el usuario decida
+por cuál empezar.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
