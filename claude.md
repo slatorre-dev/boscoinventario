@@ -1,69 +1,13 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v605 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
-desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
-pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
-de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
-de encuadre y aviso visual de filas de baja confianza (v596) — mismo gap
-sigue abierto en "Revisar aula" (ver Pendiente #14). Volt migrado a
-Cloudflare Workers AI. Modal Nuevo/Editar ítem mejorado (v597-v598, a
-petición explícita del usuario, sin quitar campos): sección Mantenimiento
-colapsable con auto-apertura si hay incidencia activa (opción "Pendiente"
-renombrada a "Solicitar mantenimiento" en la etiqueta visible, mismo valor
-guardado), indicador "X/18 campos completados" que además avisa cuál es
-el único campo realmente obligatorio (nombre), memoria de último
-Ubicación/Proveedor usado, categoría ya no se autoasigna (empieza vacía),
-borrador de alta nueva en `localStorage` con oferta de restaurar, y botón
-"📷 Usar cámara" junto al título para saltar del formulario manual al alta
-por cámara sin perder el hueco de permisos ya validado. "Añadir varios"/
-"Revisar aula" (v599) ya no exigen navegar antes a la vista de un aula
-concreta — accesibles directo desde Inicio (⚡ Acciones rápidas), piden
-la aula como primer paso si hace falta; "Añadir varios" además guarda
-sesión en `localStorage` (sobrevive a cierres accidentales), ofrece
-imprimir QR de lo recién creado y vuelve a la cámara sin cerrarse (modo
-continuo, como ya tenía "Revisar aula"), y ambos muestran un contador de
-progreso en vivo. Fix suelto de la misma sesión: `#mConf` (confirmDialog)
-gana `z-index` propio — sin él, quedaba tapado e inaccesible si se abría
-con otro modal `.mbg` posterior en el HTML ya abierto detrás (bug
-preexistente, no visible hasta que el borrador de "Añadir varios" lo
-disparó en pruebas). Modal manual de ítem gana botón "💾➕ Guardar y añadir
-otro" (v600, solo en alta nueva) — guarda y reabre el modal en blanco sin
-cerrarlo, para dar de alta varios a mano seguidos sin repetir el ciclo
-completo cada vez (`saveItem(cerrarTrasGuardar)`). Ronda "profesor/a usando
-toda la app" (v602): botón "🛠️ Marcar mantenimiento" de un toque en el menú
-⋯ del inventario (tabla y tarjetas), reusa la misma lógica que el atajo del
-panel post-QR (`abrirMantenimientoRapido()`/`_enfocarMantenimientoEnModal()`
-en `modal-item.js`); "Reservas" pasa de checkbox escondido a pestaña propia
-en Préstamos (`setPresTab('reservas')`); "⧉ Duplicar" en cada reserva
-pendiente reutiliza ciclo/aula/profesor/material con la fecha en blanco,
-descartando líneas cuyo ítem ya no tenga stock. **Pedidos arreglado de raíz
-(v603)**: el endpoint `/api/pedidos` no existía — cada 🛒 disparaba un 404
-silencioso, `notificarPedido` nunca notificó a nadie desde que se escribió.
-Ahora `functions/api/pedidos.js` (nuevo) hace `pedidoAdd`/`pedidoUpdate`/
-`pedidoRemove`/`pedidoClear` sobre tabla `pedidos` en D1 (migración `0030`,
-autocreada también en runtime igual que `ia_deteccion_ejemplos`), con email
-real al jefe/a de departamento al añadir (mismo patrón `sendGmail()` que
-`notificarVencidos`). La lista deja de vivir solo en `localStorage`:
-`list.js` la carga en el bulk de login, compartida por todo el
-departamento en vez de por navegador. Migración `0030` aplicada en remoto
-por el usuario desde su VS Code (25/08/2026, `wrangler` ya autenticado
-ahí) tras un `git pull` bloqueado por el `desktop.ini` de siempre
-(reproducido y resuelto igual que otras veces, ver Entorno). **Contraseñas
-sin hash arreglado (v604)**: `usuarios.password` ya no guarda texto plano
-— PBKDF2 (100.000 iteraciones, salt de 16 bytes) vía Web Crypto
-(`crypto.subtle`, nativo en Workers, sin dependencias), migración
-perezosa (cada login con contraseña aún en texto plano se rehashea al
-vuelo, sin script masivo ni afectar a nadie). El superadmin sigue
-pudiendo resetear/asignar la contraseña de cualquiera exactamente igual
-que antes; lo que ya no es posible para nadie, ni siquiera el
-superadmin, es **ver** la contraseña actual de otra persona — es
-inherente a un hash de un solo sentido, elegido explícitamente por el
-usuario frente a cifrado reversible. Cero impacto en el flujo de login
-visible. Otras piezas recientes: vista global agrupada de solo lectura para superadmin en
-⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
-`mantenimientos`, historial por ítem), Historial de ítems como timeline
-estructurado, y Planificación de prácticas (reservas de material). Historial
-completo sesión a sesión, con todo el
+**Estado:** v606 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+desplegado. Seguridad: contraseñas ya hasheadas con PBKDF2 (migración
+perezosa), `backup.js` auditado sin fugas. Pedidos (`🛒`) funciona de
+verdad con email real y sincronización D1. Sesión actual: auditoría de UI
+(comparativa Snipe-IT/Notion/Linear) identificó 4 mejoras — modo oscuro
+ya implementado y desplegado (toggle manual, persistente, sin parpadeo);
+quedan buscador global (Ctrl+K) fuera de Home, favoritos/ítems fijados y
+recorrido de bienvenida. Historial completo sesión a sesión, con todo el
 detalle técnico y las lecciones de cada bug: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 (léelo si necesitas contexto de por qué algo se hizo así, o de un bug ya
 resuelto). Este archivo es solo el estado operativo actual — no lo

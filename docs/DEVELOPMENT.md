@@ -2920,4 +2920,44 @@ por cuál empezar.
 
 ---
 
+### 25/08/2026 — Modo oscuro real (v606)
+
+Primera de las 4 mejoras de interfaz sugeridas en la auditoría anterior,
+a petición del usuario ("usando superpowers analiza la forma de
+implementar esas 4 mejoras", brainstorming en modo *bounded*, aprobado
+antes de tocar código). Sustituye el intento incompleto que ya existía
+(`.dark .filter-chip`/`.dark .preset-panel` en `css/styles.css`, nunca
+activado desde ningún botón) — y de paso corrige un bug independiente:
+`.preset-panel` usaba `background: var(--surface)`, variable que no
+existe en `:root` (fondo transparente de facto en cualquier modo).
+
+- `css/styles.css`: bloque `body.dark{...}` redefine todas las
+  variables de color de `:root` (`--bg`, `--white`, `--text`,
+  `--accent`, los pares `-l` de estado, sombras `--sh`/`--shh`) con su
+  equivalente oscuro — reutiliza el sistema de tokens que ya existía en
+  vez de tocar cada regla suelta del CSS. `.preset-panel` pasa a
+  `var(--white)` (con esto los 2 overrides `.dark` que quedaban se
+  vuelven redundantes y se eliminan). Botón toggle `.theme-toggle-btn`
+  con icono 🌙/☀️ intercambiado por CSS puro (`body.dark
+  .theme-icon-dark{display:inline}`), sin JS de por medio.
+- `index.html`: botón en `.topbar-right` junto a `#connStatus`, y script
+  inline al inicio de `<body>` (antes de `#loadOverlay`) que aplica la
+  clase `dark` según `localStorage('theme')` o, si no hay preferencia
+  guardada, `prefers-color-scheme` — evita el parpadeo de tema al
+  cargar.
+- `js/ui-helpers.js`: `toggleTheme()` alterna la clase en `<body>` y
+  persiste en `localStorage`, mismo patrón que `dept_activo_superadmin`
+  en `js/config.js` — global por navegador, no por usuario/departamento.
+
+Verificado con Playwright contra un servidor estático local (sin
+backend, solo pantalla de login): toggle visible y funcional, contraste
+legible en ambos modos, persistencia tras recargar sin parpadeo, sin
+errores de consola relacionados con el tema.
+
+Quedan 3 piezas de la misma auditoría sin implementar: buscador global
+(Ctrl+K) fuera de Home, favoritos/ítems fijados, recorrido de
+bienvenida.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
