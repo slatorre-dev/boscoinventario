@@ -4,11 +4,52 @@ let _revisionAulaId = '';
 let _revisionConfirmados = [];
 
 function openRevisionAula() {
-  if (!cf || cf.type !== 'aula') {
-    toast('Abre primero la vista de un aula para revisarla', 'err');
+  const targetAulaId = (cf && cf.type === 'aula') ? cf.id : '';
+  if (!targetAulaId) {
+    _abrirRevisionAulaConPicker();
     return;
   }
-  _revisionAulaId = cf.id;
+  _iniciarRevisionAula(targetAulaId);
+}
+
+// Sin aula ya elegida (entrada directa desde Home) — pide primero cuál,
+// sin pedir permiso de cámara todavía.
+function _abrirRevisionAulaConPicker() {
+  const modal = document.getElementById('mRevisionAula');
+  const picker = document.getElementById('revisionAulaPicker');
+  const sel = document.getElementById('revisionAulaPickerSel');
+  const titulo = document.getElementById('revisionTitulo');
+  const contador = document.getElementById('revisionSesionContador');
+
+  titulo.textContent = '📷 Revisar aula';
+  contador.style.display = 'none';
+  sel.innerHTML = typeof renderAulaOptions === 'function' ? renderAulaOptions() : '';
+  picker.style.display = 'block';
+  document.getElementById('revisionVideo').style.display = 'none';
+  document.getElementById('revisionEstado').style.display = 'none';
+  document.getElementById('revisionResultado').style.display = 'none';
+  document.getElementById('revisionCapturarBtn').style.display = 'none';
+  document.getElementById('revisionResumenBtn').style.display = 'none';
+  modal.classList.add('open');
+}
+
+function _confirmarAulaRevision() {
+  const sel = document.getElementById('revisionAulaPickerSel');
+  if (!sel.value) return;
+  document.getElementById('revisionAulaPicker').style.display = 'none';
+  _iniciarRevisionAula(sel.value);
+}
+
+function _actualizarContadorRevision() {
+  const contador = document.getElementById('revisionSesionContador');
+  if (!contador) return;
+  if (!_revisionConfirmados.length) { contador.style.display = 'none'; return; }
+  contador.textContent = `Confirmados hasta ahora: ${_revisionConfirmados.length}`;
+  contador.style.display = 'block';
+}
+
+function _iniciarRevisionAula(aulaId) {
+  _revisionAulaId = aulaId;
   _revisionConfirmados = [];
 
   const modal = document.getElementById('mRevisionAula');
@@ -21,8 +62,10 @@ function openRevisionAula() {
 
   const aulaNombre = (AULAS.find(a => a.id === _revisionAulaId) || {}).name || _revisionAulaId;
   titulo.textContent = `📷 Revisando: ${aulaNombre}`;
+  _actualizarContadorRevision();
 
   modal.classList.add('open');
+  document.getElementById('revisionAulaPicker').style.display = 'none';
   estado.style.display = 'none';
   resultado.style.display = 'none';
   resultado.innerHTML = '';
@@ -60,6 +103,8 @@ function closeRevisionAula() {
   }
   const video = document.getElementById('revisionVideo');
   if (video) video.srcObject = null;
+  const picker = document.getElementById('revisionAulaPicker');
+  if (picker) picker.style.display = 'none';
   document.getElementById('mRevisionAula').classList.remove('open');
 }
 
@@ -118,6 +163,7 @@ function _mostrarRevisionResultado(item) {
   if (String(item.aula) === String(_revisionAulaId)) {
     if (!_revisionConfirmados.some(x => String(x.id) === String(item.id))) {
       _revisionConfirmados.push(item);
+      _actualizarContadorRevision();
     }
     resultado.innerHTML = `
       <div style="padding:12px;border:1px solid var(--green);background:var(--green-l);border-radius:8px;margin-bottom:12px">
@@ -179,6 +225,7 @@ async function _corregirAulaRevision(itemId) {
     if (idx >= 0) items[idx] = updated;
     if (!_revisionConfirmados.some(x => String(x.id) === String(updated.id))) {
       _revisionConfirmados.push(updated);
+      _actualizarContadorRevision();
     }
     toast('Aula actualizada', 'ok');
     revisionSiguiente();

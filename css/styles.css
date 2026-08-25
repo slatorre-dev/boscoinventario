@@ -360,6 +360,10 @@ body{
 .home-quick-btn.violet .home-quick-ico{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff}
 .home-quick-btn.green{border-color:rgba(5,150,105,.22);background:linear-gradient(135deg,#ecfdf5,#ffffff);color:#065f46}
 .home-quick-btn.green .home-quick-ico{background:linear-gradient(135deg,#10b981,#059669);color:#fff}
+.home-quick-btn.teal{border-color:rgba(13,148,136,.22);background:linear-gradient(135deg,#f0fdfa,#ffffff);color:#115e59}
+.home-quick-btn.teal .home-quick-ico{background:linear-gradient(135deg,#14b8a6,#0d9488);color:#fff}
+.home-quick-btn.rose{border-color:rgba(225,29,72,.22);background:linear-gradient(135deg,#fff1f2,#ffffff);color:#9f1239}
+.home-quick-btn.rose .home-quick-ico{background:linear-gradient(135deg,#fb7185,#e11d48);color:#fff}
 .home-quick-btn[style*="display:none"]{display:none!important}
 
 @media (max-width: 1024px){
@@ -1049,6 +1053,11 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 @keyframes lo-pulse-lite{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 
 .mbg{position:fixed;inset:0;background:rgba(15,20,40,.5);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+/* #mConf (confirmDialog) puede abrirse con otro .mbg ya abierto detrás (p. ej.
+   "¿Continuar?" mientras el modal de cámara sigue abierto) — sin esto, el que
+   esté más abajo en el HTML gana el pintado por orden de documento y tapa el
+   diálogo de confirmación, dejándolo inaccesible aunque esté "abierto". */
+#mConf{z-index:600}
 .mbg.open{opacity:1;pointer-events:all}
 .modal{background:var(--white);border-radius:18px;border:1px solid var(--border);padding:30px;width:min(580px,100%);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.18);transform:translateY(16px) scale(.98);transition:transform .25s cubic-bezier(.34,1.4,.64,1)}
 .mbg.open .modal{transform:none}

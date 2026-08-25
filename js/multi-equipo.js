@@ -3,14 +3,61 @@ let _multiCapturing = false;
 let _multiSubmitting = false;
 let _multiAulaId = '';
 let _multiObjetos = [];
+let _multiTotalSesion = 0;
+
+// Sesión pendiente de confirmar en localStorage — un único slot ("la última
+// sesión sin terminar"), no una por aula. Si se abre otra aula distinta con
+// un borrador pendiente de una tercera, ese borrador antiguo queda huérfano
+// y se sobreescribe sin avisar (caso raro, no justifica más complejidad).
+const MULTI_DRAFT_KEY = 'multi_equipo_draft_v1';
 
 function openMultiEquipo() {
-  if (!cf || cf.type !== 'aula') {
-    toast('Abre primero la vista de un aula para añadir varios equipos', 'err');
+  const targetAulaId = (cf && cf.type === 'aula') ? cf.id : '';
+  if (!targetAulaId) {
+    _abrirMultiEquipoConPicker();
     return;
   }
-  _multiAulaId = cf.id;
+  _iniciarMultiEquipo(targetAulaId);
+}
+
+// Sin aula ya elegida (entrada directa desde Home) — pide primero cuál,
+// sin pedir permiso de cámara todavía.
+function _abrirMultiEquipoConPicker() {
+  const modal = document.getElementById('mMultiEquipo');
+  const picker = document.getElementById('multiAulaPicker');
+  const sel = document.getElementById('multiAulaPickerSel');
+  const contador = document.getElementById('multiSesionContador');
+
+  contador.style.display = 'none';
+  sel.innerHTML = typeof renderAulaOptions === 'function' ? renderAulaOptions() : '';
+  picker.style.display = 'block';
+  document.getElementById('multiVideo').style.display = 'none';
+  document.getElementById('multiEstado').style.display = 'none';
+  document.getElementById('multiListaWrap').style.display = 'none';
+  document.getElementById('multiCapturarBtn').style.display = 'none';
+  document.getElementById('multiCrearBtn').style.display = 'none';
+  modal.classList.add('open');
+}
+
+function _confirmarAulaMulti() {
+  const sel = document.getElementById('multiAulaPickerSel');
+  if (!sel.value) return;
+  document.getElementById('multiAulaPicker').style.display = 'none';
+  _iniciarMultiEquipo(sel.value);
+}
+
+function _actualizarContadorMulti() {
+  const contador = document.getElementById('multiSesionContador');
+  if (!contador) return;
+  if (!_multiTotalSesion) { contador.style.display = 'none'; return; }
+  contador.textContent = `Añadidos en esta sesión: ${_multiTotalSesion}`;
+  contador.style.display = 'block';
+}
+
+async function _iniciarMultiEquipo(aulaId) {
+  _multiAulaId = aulaId;
   _multiObjetos = [];
+  _multiTotalSesion = 0;
 
   const modal = document.getElementById('mMultiEquipo');
   const video = document.getElementById('multiVideo');
@@ -20,7 +67,20 @@ function openMultiEquipo() {
   const crearBtn = document.getElementById('multiCrearBtn');
   const cicloSel = document.getElementById('multiCicloSel');
 
+  // Corta cualquier cámara de una sesión anterior (p. ej. reabrir para otra
+  // aula sin cerrar antes) y oculta el vídeo — si no, un <video> visible de
+  // la sesión previa puede quedar tapando el diálogo de restaurar borrador
+  // de más abajo, aunque el modal de confirmación tenga más z-index.
+  if (_multiStream) {
+    _multiStream.getTracks().forEach(t => t.stop());
+    _multiStream = null;
+  }
+  video.srcObject = null;
+  video.style.display = 'none';
+
   modal.classList.add('open');
+  document.getElementById('multiAulaPicker').style.display = 'none';
+  _actualizarContadorMulti();
   estado.style.display = 'none';
   listaWrap.style.display = 'none';
   document.getElementById('multiListaBody').innerHTML = '';
@@ -29,6 +89,31 @@ function openMultiEquipo() {
   crearBtn.style.display = 'none';
   _multiCapturing = false;
   _multiSubmitting = false;
+
+  const draft = _leerBorradorMulti();
+  if (draft && String(draft.aulaId) === String(aulaId) && draft.objetos?.length) {
+    const continuar = await confirmDialog({
+      icon: '📝',
+      title: 'Alta masiva sin terminar',
+      message: `Tenías ${draft.objetos.length} ítem${draft.objetos.length !== 1 ? 's' : ''} detectado${draft.objetos.length !== 1 ? 's' : ''} sin confirmar en esta aula. ¿Continuar revisándolos?`,
+      confirmText: 'Continuar'
+    }).catch(() => false);
+    if (continuar) {
+      _multiObjetos = draft.objetos;
+      _poblarSelectorCicloMulti();
+      if (draft.mod && cicloSel) cicloSel.value = draft.mod;
+      _renderMultiLista();
+      return; // ya hay objetos que revisar, no hace falta abrir la cámara todavía
+    }
+    _borrarBorradorMulti();
+  }
+
+  _abrirCamaraMulti();
+}
+
+function _abrirCamaraMulti() {
+  const video = document.getElementById('multiVideo');
+  const capturarBtn = document.getElementById('multiCapturarBtn');
 
   if (!navigator.mediaDevices?.getUserMedia) {
     toast('Este navegador no permite acceder a la cámara', 'err');
@@ -60,7 +145,13 @@ function closeMultiEquipo() {
   }
   const video = document.getElementById('multiVideo');
   if (video) video.srcObject = null;
+  const picker = document.getElementById('multiAulaPicker');
+  if (picker) picker.style.display = 'none';
   document.getElementById('mMultiEquipo').classList.remove('open');
+  // El borrador NO se borra al cerrar — si hay objetos sin confirmar,
+  // deben seguir ahí para ofrecer continuar en la próxima sesión (ver
+  // _iniciarMultiEquipo). Solo se borra al crear con éxito o al declinar
+  // explícitamente la restauración.
 }
 
 async function capturarMulti() {
@@ -165,17 +256,59 @@ function _renderMultiLista() {
   capturarBtn.style.display = 'none';
   crearBtn.style.display = _multiObjetos.length ? 'inline-flex' : 'none';
   crearBtn.textContent = `Crear ${_multiObjetos.length} ítem${_multiObjetos.length !== 1 ? 's' : ''}`;
+  _guardarBorradorMulti();
 }
 
 function _multiActualizarFila(rowId, campo, valor) {
   const row = _multiObjetos.find(o => o._rowId === rowId);
   if (!row) return;
   row[campo] = campo === 'cantidad' ? (parseInt(valor, 10) || 1) : valor;
+  _guardarBorradorMulti();
 }
 
 function _multiEliminarFila(rowId) {
   _multiObjetos = _multiObjetos.filter(o => o._rowId !== rowId);
   _renderMultiLista();
+}
+
+function _leerBorradorMulti() {
+  try {
+    const raw = localStorage.getItem(MULTI_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function _guardarBorradorMulti() {
+  try {
+    if (!_multiObjetos.length) { localStorage.removeItem(MULTI_DRAFT_KEY); return; }
+    const mod = document.getElementById('multiCicloSel')?.value || '';
+    localStorage.setItem(MULTI_DRAFT_KEY, JSON.stringify({ aulaId: _multiAulaId, objetos: _multiObjetos, mod, ts: Date.now() }));
+  } catch (e) {
+    // localStorage no disponible: no bloquea la sesión
+  }
+}
+
+function _borrarBorradorMulti() {
+  try { localStorage.removeItem(MULTI_DRAFT_KEY); } catch (e) { /* ignore */ }
+}
+
+// Tras crear con éxito: limpia la lista y vuelve directo a capturar la
+// siguiente mesa sin cerrar el modal ni tener que volver a pulsar
+// "Añadir varios" desde cero (modo continuo, igual que "Revisar aula").
+function _volverACapturarMultiTrasCrear() {
+  document.getElementById('multiListaWrap').style.display = 'none';
+  document.getElementById('multiListaBody').innerHTML = '';
+  document.getElementById('multiCrearBtn').style.display = 'none';
+  _multiObjetos = [];
+  _borrarBorradorMulti();
+  if (_multiStream) {
+    document.getElementById('multiVideo').style.display = 'block';
+    document.getElementById('multiCapturarBtn').style.display = 'inline-flex';
+  } else {
+    _abrirCamaraMulti();
+  }
 }
 
 async function confirmarCrearMulti() {
@@ -215,9 +348,23 @@ async function confirmarCrearMulti() {
         confianza: o.confianza || 0
       }).catch(() => {});
     });
+    _multiTotalSesion += (res.imported || _multiObjetos.length);
+    _actualizarContadorMulti();
     toast(`${res.imported} ítem${res.imported !== 1 ? 's' : ''} creado${res.imported !== 1 ? 's' : ''}`, 'ok');
-    closeMultiEquipo();
     if (typeof renderInv === 'function') renderInv();
+
+    const nuevos = res.items || [];
+    if (nuevos.length && typeof printBulkItemQrs === 'function') {
+      const imprimir = await confirmDialog({
+        icon: '🖨️',
+        title: 'Imprimir etiquetas QR',
+        message: `¿Imprimir ahora las etiquetas QR de est${nuevos.length !== 1 ? 'os' : 'e'} ${nuevos.length} ítem${nuevos.length !== 1 ? 's' : ''} recién creado${nuevos.length !== 1 ? 's' : ''}?`,
+        confirmText: 'Imprimir'
+      }).catch(() => false);
+      if (imprimir) printBulkItemQrs(nuevos);
+    }
+
+    _volverACapturarMultiTrasCrear();
   } catch (e) {
     toast('No se pudieron crear los ítems: ' + (e.message || ''), 'err');
   } finally {

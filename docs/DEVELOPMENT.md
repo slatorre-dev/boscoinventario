@@ -2524,6 +2524,66 @@ cambia al rellenar el nombre, botón de cámara oculto al editar un ítem
 existente y visible en alta nueva, categoría real respetada al editar.
 `sw.js` → `v598`.
 
+### 25/08/2026 (v598→v599): "profesor con prisa" — acceso directo, borrador y modo continuo en Añadir varios/Revisar aula
+
+Tercera pieza de la misma sesión. Pedido explícito: pensar en un profesor
+con prisa haciendo el inventario de una clase y quitar fricción real de
+`js/multi-equipo.js` (Añadir varios) y `js/revision-aula.js` (Revisar
+aula), sin tocar qué detecta la IA. Cinco cambios:
+
+1. **Acceso directo sin navegar antes a la vista de aula.**
+   `openMultiEquipo()`/`openRevisionAula()` exigían `cf.type==='aula'`
+   (bloqueaban con un toast si no). Ahora, si no hay aula en contexto,
+   muestran un selector de aula propio dentro del modal (`#multiAulaPicker`/
+   `#revisionAulaPicker`, reusan `renderAulaOptions()` de `modal-item.js`)
+   **antes** de pedir permiso de cámara — evita disparar el permiso si
+   luego cancelan. Dos botones nuevos en Inicio → Acciones rápidas
+   ("📸 Inventariar aula", "📷 Revisar aula", clases CSS `.home-quick-btn.teal`/
+   `.rose` nuevas) los hacen alcanzables en un toque, sin abrir antes el
+   aula. El flujo desde dentro de una vista de aula no cambia (mismo
+   camino rápido de siempre).
+2. **Sesión de "Añadir varios" persistente en `localStorage`**
+   (`multi_equipo_draft_v1`, un único slot — "la última sesión sin
+   terminar", no una por aula). Se guarda en cada cambio de la lista
+   editable (tras cada captura, tras editar/borrar una fila). Si se cierra
+   el modal sin confirmar, el borrador **no se borra** — solo se limpia al
+   crear con éxito o al declinar explícitamente la oferta de continuarlo.
+   Al reabrir la misma aula con un borrador pendiente, un `confirmDialog`
+   ofrece continuar donde se dejó.
+3. **Ofrece imprimir QR justo después de crear.** `confirmarCrearMulti()`
+   ahora pregunta "¿Imprimir ahora las etiquetas QR de estos N ítems?" tras
+   el alta — reusa `printBulkItemQrs()` (`modal-item.js`), que ganó un
+   parámetro opcional `itemsOverride` (antes solo imprimía la vista
+   filtrada actual; con la lista explícita de recién creados sigue
+   funcionando igual para sus llamadas existentes).
+4. **Modo continuo en "Añadir varios"** (paridad con "Revisar aula", que ya
+   lo tenía vía `revisionSiguiente()`): tras crear (y responder lo del QR),
+   `_volverACapturarMultiTrasCrear()` limpia la lista y vuelve directo a
+   la cámara para la siguiente mesa, sin cerrar el modal ni tener que
+   volver a pulsar "Añadir varios" desde el aula.
+5. **Contador de progreso en vivo** en la cabecera de ambos modales:
+   "Añadidos en esta sesión: N" (multi-equipo, tras cada lote creado) y
+   "Confirmados hasta ahora: N" (revisión, tras cada foto confirmada).
+
+**Bug preexistente encontrado y corregido en el camino:** `#mConf`
+(`confirmDialog`) no tenía `z-index` propio — con la misma clase `.mbg`
+que cualquier otro modal (z-index:500 para todos), el que estuviera más
+abajo en el HTML ganaba el pintado y tapaba el diálogo de confirmación,
+dejándolo con `class="open"` pero inaccesible al clic. No se había notado
+porque nada disparaba un `confirmDialog` con el modal de cámara ya abierto
+detrás hasta el borrador de esta pieza — pero afectaba igual al
+"¿Continuar?" ya existente de `confirmarCrearMulti()`, sin relación con mi
+cambio. Fix: `#mConf{z-index:600}` en `css/styles.css`.
+
+Verificado con Playwright headless + flags de dispositivo de cámara falso
+de Chromium (`--use-fake-device-for-media-stream --use-fake-ui-for-media-stream`,
+concede permiso sin diálogo real): picker de aula sin contexto previo en
+ambos modales, cámara no solicitada hasta elegir aula, borrador guardado/
+sobrevive al cierre/ofrecido y restaurado correctamente, contador de sesión
+actualizado tras crear/confirmar, diálogo de imprimir QR con el conteo
+correcto y `printBulkItemQrs` recibiendo la lista exacta de recién creados,
+modal quedando abierto en modo continuo tras confirmar. `sw.js` → `v599`.
+
 ---
 
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
