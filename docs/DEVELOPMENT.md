@@ -2736,9 +2736,20 @@ disponible en este sandbox): carga inicial desde datos simulados de
 simulado → revierte correctamente restaurando el valor original completo
 (no un valor por defecto), editar cantidad desde la lista → sincroniza con
 `pedidoUpdate`, vaciar → `pedidoClear`. Sin errores de consola. Revisión
-manual del SQL (sin poder ejecutarlo contra D1 real): `.bind()` en todas
-las queries, mismo patrón de scoping por departamento que el resto de
-endpoints. `sw.js` → `v603`.
+manual del SQL (sin poder ejecutarlo contra D1 real desde este sandbox):
+`.bind()` en todas las queries, mismo patrón de scoping por departamento
+que el resto de endpoints. `sw.js` → `v603`.
+
+**Actualización (25/08/2026, mismo día):** el usuario ejecutó
+`migrations/0030_pedidos.sql` en remoto desde su VS Code local
+(`npx wrangler d1 execute boscoinventario --remote --file=...`) —
+2 queries ejecutadas (tabla + índice), 4 filas escritas. Migración
+formalmente aplicada, ya no depende solo del autocreate en runtime. Antes
+de eso, `git pull` falló con `fatal: bad object refs/desktop.ini` — el
+mismo problema de siempre por vivir el repo dentro de Google Drive
+(`H:\Mi unidad\...`, ver sección Entorno de este archivo); se resolvió
+borrando los `desktop.ini` reinyectados dentro de `.git` y repitiendo el
+pull.
 
 ---
 

@@ -45,12 +45,10 @@ autocreada también en runtime igual que `ia_deteccion_ejemplos`), con email
 real al jefe/a de departamento al añadir (mismo patrón `sendGmail()` que
 `notificarVencidos`). La lista deja de vivir solo en `localStorage`:
 `list.js` la carga en el bulk de login, compartida por todo el
-departamento en vez de por navegador. **Migración `0030` no aplicada en
-remoto por mí** — no tengo acceso a wrangler/D1 en este sandbox; funciona
-igual gracias al autocreate en runtime, pero conviene ejecutarla a mano
-cuando se pueda (`npx wrangler d1 execute boscoinventario --remote
---file=migrations/0030_pedidos.sql`) para que quede como migración
-formal aplicada. Otras piezas
+departamento en vez de por navegador. Migración `0030` aplicada en remoto
+por el usuario desde su VS Code (25/08/2026, `wrangler` ya autenticado
+ahí) tras un `git pull` bloqueado por el `desktop.ini` de siempre
+(reproducido y resuelto igual que otras veces, ver Entorno). Otras piezas
 recientes: vista global agrupada de solo lectura para superadmin en
 ⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
 `mantenimientos`, historial por ítem), Historial de ítems como timeline
