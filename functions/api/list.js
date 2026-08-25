@@ -147,6 +147,11 @@ export async function onRequestGet({ request, env, data }) {
   await env.DB.prepare("UPDATE inventario SET tipo_material='inventariable' WHERE es_contenedor=1 AND (tipo_material IS NULL OR trim(tipo_material)='')").run().catch(() => {});
   await env.DB.prepare("UPDATE inventario SET tipo_material='consumible' WHERE tipo_material IS NULL OR trim(tipo_material)=''").run().catch(() => {});
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT DEFAULT '')").run().catch(() => {});
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS pedidos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, itemId INTEGER NOT NULL, departamento TEXT NOT NULL DEFAULT '',
+    qty INTEGER NOT NULL DEFAULT 1, nota TEXT DEFAULT '', creadoPor TEXT DEFAULT '',
+    fecha TEXT DEFAULT (datetime('now')), UNIQUE(itemId, departamento)
+  )`).run().catch(() => {});
 
   const catRenameMigrated = await env.DB.prepare("SELECT value FROM app_meta WHERE key='rename_consumibles_to_material_taller_v1'").first().catch(() => null);
   if (!catRenameMigrated) {
@@ -189,7 +194,7 @@ export async function onRequestGet({ request, env, data }) {
     ? 'SELECT * FROM inventario ORDER BY id'
     : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}') ORDER BY id`;
 
-  const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows, reservasRows, reservaItemsRows] = await Promise.all([
+  const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows, reservasRows, reservaItemsRows, pedidosRows] = await Promise.all([
     superadmin ? env.DB.prepare(itemsQuery).all() : env.DB.prepare(itemsQuery).bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT * FROM profesores WHERE nombre != '' AND lower(nombre) != 'departamento' ORDER BY nombre").all()
@@ -215,6 +220,9 @@ export async function onRequestGet({ request, env, data }) {
     superadmin
       ? env.DB.prepare("SELECT ri.* FROM reserva_items ri JOIN reservas_practica rp ON rp.id=ri.reservaId WHERE rp.estado != 'cancelada'").all()
       : env.DB.prepare(`SELECT ri.* FROM reserva_items ri JOIN reservas_practica rp ON rp.id=ri.reservaId WHERE (rp.departamento=? OR rp.departamento='${genericDept}') AND rp.estado != 'cancelada'`).bind(dept).all(),
+    superadmin
+      ? env.DB.prepare('SELECT * FROM pedidos ORDER BY id').all()
+      : env.DB.prepare('SELECT * FROM pedidos WHERE departamento=? ORDER BY id').bind(dept).all(),
   ]);
 
   const cicloMap = {}, cicloOrder = [];
@@ -246,6 +254,7 @@ export async function onRequestGet({ request, env, data }) {
     aulas: aulas.results,
     cats: mergeCats(cats.results, itemRows),
     ciclos: cicloOrder.map(id => cicloMap[id]),
+    pedidos: pedidosRows.results,
     user
   });
 }

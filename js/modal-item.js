@@ -1466,11 +1466,13 @@ async function saveBaja(){
 }
 
 // ═════════════════════════════════════════════════════════
-// SOLICITUD DE COMPRA (PEDIDOS)
+// SOLICITUD DE COMPRA (PEDIDOS) — sincronizada con D1, compartida por
+// todo el departamento (antes solo en localStorage del navegador, sin
+// compartir entre dispositivos ni notificar de verdad a nadie — el
+// endpoint /api/pedidos no existía). `pedidos` se rellena en loadData()
+// (js/auth.js) a partir de res.pedidos.
 // ═════════════════════════════════════════════════════════
-let pedidos = JSON.parse(localStorage.getItem('inv_pedidos')||'{}');
-
-function savePedidosLocal(){ localStorage.setItem('inv_pedidos', JSON.stringify(pedidos)); }
+let pedidos = {};
 
 function isPedido(id){ return !!pedidos[id]; }
 
@@ -1482,17 +1484,30 @@ function updatePedBadge(){
   badge.style.display = n > 0 ? 'inline' : 'none';
 }
 
-function togglePedido(id){
-  if(pedidos[id]){
+async function togglePedido(id){
+  const previo = pedidos[id]; // valor anterior, para poder revertir si falla el guardado
+  const yaEstaba = !!previo;
+  if(yaEstaba){
     delete pedidos[id];
   } else {
     const it = items.find(x=>x.id===id);
     pedidos[id] = { qty: Math.max(1, (Number(it?.min)||1) - (Number(it?.qty)||0)), nota:'' };
-    if(it) apiPost({action:'notificarPedido', item:{id:it.id, item:it.item, ref:it.ref, aula:AULAS.find(a=>a.id===it.aula)?.name||it.aula, qty:it.qty, min:it.min}}).catch(()=>{});
   }
-  savePedidosLocal();
   updatePedBadge();
   if(cf) openSub(); else renderHome();
+  try{
+    const res = yaEstaba
+      ? await apiPost({action:'pedidoRemove', itemId:id})
+      : await apiPost({action:'pedidoAdd', itemId:id, qty:pedidos[id].qty, nota:''});
+    if(!res.ok) throw new Error(res.error);
+  }catch(e){
+    // Revertir el cambio optimista si el servidor no lo confirma, para no
+    // mentir sobre qué hay realmente en la lista compartida
+    if(yaEstaba){ pedidos[id] = previo; } else { delete pedidos[id]; }
+    updatePedBadge();
+    if(cf) openSub(); else renderHome();
+    toast('No se pudo actualizar la lista de pedido: '+(e.message||''), 'err');
+  }
 }
 
 function openPedidos(){
@@ -1517,32 +1532,53 @@ function renderPedidosList(){
       <div style="flex:1">
         <div class="ped-name">${it.item}</div>
         <div class="ped-meta">${it.ref?it.ref+' · ':''}${aula} · Stock actual: ${it.qty}</div>
-        <input style="margin-top:6px;width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--white)" placeholder="Nota (opcional)" value="${pedidos[id].nota||''}" oninput="pedidos['${id}'].nota=this.value;savePedidosLocal()">
+        <input style="margin-top:6px;width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--white)" placeholder="Nota (opcional)" value="${pedidos[id].nota||''}" oninput="pedidos['${id}'].nota=this.value" onchange="_syncPedido('${id}')">
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
         <span style="font-size:10px;color:var(--muted)">Cantidad</span>
-        <input class="ped-qty" type="number" min="1" value="${pedidos[id].qty||1}" oninput="pedidos['${id}'].qty=Number(this.value)||1;savePedidosLocal()">
+        <input class="ped-qty" type="number" min="1" value="${pedidos[id].qty||1}" oninput="pedidos['${id}'].qty=Number(this.value)||1" onchange="_syncPedido('${id}')">
         <button class="ped-del" onclick="removePedido('${id}')">🗑</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function removePedido(id){
+async function _syncPedido(id){
+  const p = pedidos[id];
+  if(!p) return;
+  try{
+    const res = await apiPost({action:'pedidoUpdate', itemId:id, qty:p.qty, nota:p.nota});
+    if(!res.ok) throw new Error(res.error);
+  }catch(e){
+    toast('No se pudo guardar el cambio: '+(e.message||''), 'err');
+  }
+}
+
+async function removePedido(id){
   delete pedidos[id];
-  savePedidosLocal();
   updatePedBadge();
   renderPedidosList();
   if(cf) openSub(); else renderHome();
+  try{
+    const res = await apiPost({action:'pedidoRemove', itemId:id});
+    if(!res.ok) throw new Error(res.error);
+  }catch(e){
+    toast('No se pudo quitar de la lista de pedido: '+(e.message||''), 'err');
+  }
 }
 
 async function clearPedidos(){
   if(!await confirmDialog({message:'¿Vaciar toda la lista de pedido?'})) return;
   pedidos = {};
-  savePedidosLocal();
   updatePedBadge();
   renderPedidosList();
   if(cf) openSub(); else renderHome();
+  try{
+    const res = await apiPost({action:'pedidoClear'});
+    if(!res.ok) throw new Error(res.error);
+  }catch(e){
+    toast('No se pudo vaciar en el servidor: '+(e.message||''), 'err');
+  }
 }
 
 function printPedidos(){

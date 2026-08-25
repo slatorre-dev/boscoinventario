@@ -2678,6 +2678,68 @@ normal y el buscador, muestra la reserva de prueba; duplicar copia ciclo/
 aula/profesor/obs y descarta correctamente la línea de un ítem sin stock
 (qty=0) manteniendo la que sí tenía. Sin errores de consola. `sw.js` → `v602`.
 
+### 25/08/2026 (v602→v603): Pedidos — de roto y solo local a real, compartido y con email
+
+Sexta pieza de la sesión. Auditando el resto de la app apareció algo serio:
+**"🛒 Pedidos" nunca ha notificado a nadie.** `togglePedido()` llamaba a
+`apiPost({action:'notificarPedido', ...})`, que `js/api.js` enruta al
+endpoint `/api/pedidos` — pero `functions/api/pedidos.js` **no existía**.
+Cada clic en 🛒 disparaba un 404 silencioso (`.catch(()=>{})` se lo tragaba
+sin avisar). Además, la lista entera vivía solo en `localStorage`
+(`inv_pedidos`) — sin compartir entre dispositivos ni entre el profesor/a
+que pide y el jefe/a de departamento que compra.
+
+Arreglado de raíz, no parcheado:
+
+1. **`migrations/0030_pedidos.sql`** — tabla `pedidos` nueva (`itemId`,
+   `departamento`, `qty`, `nota`, `creadoPor`, `fecha`,
+   `UNIQUE(itemId, departamento)`). **No la he podido aplicar en remoto**
+   — sin acceso a wrangler/D1 en este sandbox (sin red hacia Cloudflare).
+   Mismo patrón que `ia_deteccion_ejemplos` (`item.js`, ya señalado como
+   pendiente de migración formal en `claude.md`): la tabla también se
+   autocrea en runtime (`CREATE TABLE IF NOT EXISTS`) tanto en
+   `pedidos.js` como en `list.js`, así que funciona igual sin esperar a
+   que alguien ejecute la migración a mano.
+2. **`functions/api/pedidos.js` (nuevo)** — acciones `pedidoAdd` (inserta
+   o actualiza si ya existía, sin duplicar; en un alta real nueva manda
+   email al jefe/a de departamento con `sendGmail()`, mismo helper que ya
+   usa `notificarVencidos` en `prestar.js` — copiado, no importado, sigue
+   el patrón de duplicación entre archivos ya documentado en el
+   proyecto), `pedidoUpdate` (edición de cantidad/nota, sin re-notificar),
+   `pedidoRemove`, `pedidoClear`. Todas registradas en `ENDPOINT_MAP`
+   (`js/api.js`) y en `ACTION_PERMISSIONS` (`js/roles.js`, todas bajo
+   `orders.write`) — sustituyen a la `notificarPedido` que nunca llegó a
+   funcionar.
+3. **`functions/api/list.js`** — añade `pedidos` al `Promise.all()` del
+   bulk de login (mismo patrón que `prestamos`/`reservas`: scoped por
+   `departamento`, superadmin ve todos), así la lista llega ya cargada
+   sin una petición aparte.
+4. **`js/modal-item.js`** — `pedidos` deja de leerse de `localStorage` al
+   arrancar el script (`js/auth.js` la rellena en `loadData()` desde
+   `res.pedidos`). `togglePedido()`/`removePedido()`/`clearPedidos()`
+   pasan a ser `async`, con actualización optimista (UI al instante) y
+   *rollback* si el servidor no confirma — capturando el valor anterior
+   antes de mutar, no un `{qty:1,nota:''}` a ciegas (fallo que pillé y
+   corregí en la propia sesión antes de subirlo). Los inputs de
+   cantidad/nota de la lista pasan de `oninput` (guardaba solo en
+   localStorage en cada tecla) a `oninput` (refleja local al instante) +
+   `onchange` (`_syncPedido()`, sincroniza al salir del campo — evita
+   spamear la red tecla a tecla).
+
+Todos los sitios que ya leían `pedidos[id]`/`isPedido(id)` (menús ⋯ de
+`inventory.js`, badge de Home) siguen funcionando sin tocarlos — la forma
+del objeto en memoria no cambió, solo de dónde viene y adónde va.
+
+Verificado con Playwright headless (`apiPost` interceptado, sin D1 real
+disponible en este sandbox): carga inicial desde datos simulados de
+`list`, añadir con confirmación optimista, quitar con fallo de red
+simulado → revierte correctamente restaurando el valor original completo
+(no un valor por defecto), editar cantidad desde la lista → sincroniza con
+`pedidoUpdate`, vaciar → `pedidoClear`. Sin errores de consola. Revisión
+manual del SQL (sin poder ejecutarlo contra D1 real): `.bind()` en todas
+las queries, mismo patrón de scoping por departamento que el resto de
+endpoints. `sw.js` → `v603`.
+
 ---
 
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
