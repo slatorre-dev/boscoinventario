@@ -1083,7 +1083,11 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
 #mItem .maint-fields.m-section:not(.show){display:none}
 #mItem .mf{border-top:1px solid var(--border);padding:16px 26px;background:var(--bg);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.mh-title-wrap{display:flex;flex-direction:column;gap:5px;min-width:0}
 .mt{font-size:19px;font-weight:800}
+.modal-completion-label{font-size:11px;font-weight:600;color:var(--muted)}
+.modal-completion-track{width:130px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px}
+.modal-completion-fill{height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .25s ease}
 .mx{background:var(--surface2);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s}
 .mx:hover{background:var(--border);color:var(--text)}
 .dept-game-modal{width:min(640px,100%);padding:22px;overflow:hidden}

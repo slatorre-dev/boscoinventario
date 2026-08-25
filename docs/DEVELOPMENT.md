@@ -2422,4 +2422,61 @@ const VERSION = 'v166';
 
 ---
 
+### 25/08/2026 (v596→v597): modal "Nuevo/Editar ítem" — completitud, mantenimiento colapsable, memoria de ubicación/proveedor y borrador de alta
+
+Sesión pedida explícitamente por el usuario tras una revisión de código/UX
+general del proyecto (sin cambios en esa parte, solo conversación) — el
+foco se centró en el modal de alta/edición de ítem, con la premisa
+explícita del usuario de **no quitar ni ocultar campos** ("todos los
+campos son necesarios"). Cuatro piezas, todas en `js/modal-item.js` +
+`index.html` + `css/styles.css`, sin cambios de esquema D1:
+
+1. **Sección MANTENIMIENTO ahora colapsable** (`<details>`, mismo patrón ya
+   existente en `mSecDetalles`/`mSecDocumentacion`/`mSecContenedor`) — se
+   abre sola solo si el ítem editado ya tiene mantenimiento activo
+   (`isMaintenanceMarked(m) || m?.mantEstado`), igual que las otras
+   secciones. En una alta nueva queda plegada, reduciendo la pantalla
+   inicial sin eliminar el campo.
+2. **Indicador "X/18 campos completados"** en la cabecera del modal
+   (`#mCompletion`, HTML nuevo en `.mh`), con barra de progreso fina.
+   `updateModalCompletion()` cuenta 18 campos "core" de la ficha (no
+   incluye mantenimiento/contenedor, condicionales por naturaleza) y se
+   recalcula en cada tecleo reutilizando el listener que ya existía para
+   detectar cambios sin guardar (`checkModalForChanges()`).
+3. **"Recordar el último valor" ampliado a Ubicación y Proveedor**
+   (`localStorage` `cam_last_loc`/`cam_last_proveedor`), mismo patrón ya
+   usado para aula/categoría (`cam_last_aula`/`cam_last_cat`) — solo aplica
+   a altas nuevas en blanco, nunca sobrescribe un valor real al editar o
+   duplicar.
+4. **Borrador de alta nueva en `localStorage`** (`item_draft_new_v1`) — solo
+   para "Nuevo ítem" en blanco (`_isBlankNewItemSession`, no aplica a
+   duplicar/prefill desde cámara o búsqueda sin resultados). Se guarda en
+   cada tecleo, se ofrece restaurar (`confirmDialog`) al reabrir "Nuevo
+   ítem" si hay uno pendiente, y se borra al guardar con éxito o al
+   confirmar el descarte de cambios desde `closeM()`.
+
+Refactor de acompañamiento: las 3 copias literales del array de 26 campos
+del modal (`captureModalOriginalValues`, `attachModalChangeListeners`,
+`checkModalForChanges`) se unificaron en una sola constante
+`MODAL_TRACKED_FIELDS` — mismo patrón de duplicación ya señalado como
+problema en `docs/ROADMAP.md` (ahí a nivel de modales completos, aquí solo
+este array concreto).
+
+**Verificación:** sin entorno D1/wrangler disponible en esta sesión (sandbox
+sin red), así que se sirvió el frontend con `python3 -m http.server` y se
+condujo con Playwright/Chromium headless, invocando `openModal()` real con
+estado global mínimo simulado (`SESSION`/`AULAS`/`CICLOS`/`CATS`/`items`
+asignados por variable suelta, no `window.X=`, porque son `let` de scope de
+script — asignar a `window.X` no los toca). Casos probados end-to-end sin
+errores de consola: alta nueva con secciones plegadas correctamente,
+edición de un ítem con avería activa (Mantenimiento se autoexpande),
+edición de un ítem sin incidencias (permanece plegada), guardado real
+(`apiPost` interceptado) confirmando que ubicación/proveedor quedan en
+`localStorage` y se precargan en la siguiente alta, y el ciclo completo de
+borrador: guardar al teclear → descartar con confirmación → sin diálogo de
+restauración si no hay borrador → diálogo de restauración con el borrador
+correcto → campos repoblados. `sw.js` → `v597`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

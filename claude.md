@@ -1,16 +1,21 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v596 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v597 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
 de encuadre y aviso visual de filas de baja confianza (v596) — mismo gap
 sigue abierto en "Revisar aula" (ver Pendiente #14). Volt migrado a
-Cloudflare Workers AI. Piezas recientes: vista global agrupada de
-solo lectura para superadmin en ⚙️ Aulas/Categorías/Ciclos, Mantenimiento
-como flujo real (tabla `mantenimientos`, historial por ítem), Historial
-de ítems como timeline estructurado, y Planificación de prácticas
-(reservas de material). Historial completo sesión a sesión, con todo el
+Cloudflare Workers AI. Modal Nuevo/Editar ítem mejorado (v597, a petición
+explícita del usuario, sin quitar campos): sección Mantenimiento colapsable
+con auto-apertura si hay incidencia activa, indicador "X/18 campos
+completados", memoria de último Ubicación/Proveedor usado, y borrador de
+alta nueva en `localStorage` con oferta de restaurar. Otras piezas
+recientes: vista global agrupada de solo lectura para superadmin en
+⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
+`mantenimientos`, historial por ítem), Historial de ítems como timeline
+estructurado, y Planificación de prácticas (reservas de material). Historial
+completo sesión a sesión, con todo el
 detalle técnico y las lecciones de cada bug: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 (léelo si necesitas contexto de por qué algo se hizo así, o de un bug ya
 resuelto). Este archivo es solo el estado operativo actual — no lo
