@@ -32,7 +32,11 @@
   try{
     var t=localStorage.getItem('theme');
     var dark = t ? t==='dark' : matchMedia('(prefers-color-scheme:dark)').matches;
-    if(dark) document.body.classList.add('dark');
+    if(dark){
+      document.body.classList.add('dark');
+      var tc=document.querySelector('meta[name="theme-color"]');
+      if(tc) tc.setAttribute('content','#3b82f6');
+    }
   }catch(e){}
 })();
 </script>

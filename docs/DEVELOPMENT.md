@@ -3075,4 +3075,36 @@ Las 4 piezas de la auditoría de UI quedan cerradas.
 
 ---
 
+### 25/08/2026 — Revisión de las 4 piezas de UI: 2 detalles menores corregidos (v610)
+
+El usuario pidió revisar y comparar de nuevo con las apps comerciales
+las 4 piezas de UI (v606-v609) que había implementado él mismo desde su
+sesión local. Revisión del diff completo (`1a1754f`→`d0e566a`): las 4
+siguen fielmente lo recomendado en la auditoría anterior, reutilizan
+patrones ya existentes en el proyecto en vez de mecanismos nuevos, y
+vienen probadas con Playwright y bien documentadas. Sin bugs de
+correctitud. 2 detalles menores encontrados y corregidos en esta pieza:
+
+1. **`--surface` no existe como variable CSS** — nunca se definió en
+   `:root` ni en el nuevo `body.dark` (v606). Se usaba en
+   `.mod-ciclo-group` (línea 297) y `.gsr-print-btn` (línea 1372) de
+   `css/styles.css`; el propio trabajo de v606 ya había corregido un
+   caso igual en `.preset-panel` (cambiado a `var(--white)`) pero dejó
+   estos dos sin tocar — fondo transparente de facto en cualquier modo,
+   no solo el oscuro. Sustituidos por `var(--surface2)` (coherente con
+   las reglas vecinas de ambos selectores, que ya usan `--surface2`).
+   Bug preexistente a v606, no introducido por esa pieza.
+2. **`<meta name="theme-color">` fijo en `#2563eb`** (azul claro) —
+   no seguía al modo oscuro. En móvil (Android/Chrome, splash de PWA)
+   la barra de estado del navegador se quedaba azul clara con el resto
+   de la app ya en oscuro. Corregido en los 2 sitios que tocan el tema:
+   el script anti-parpadeo al inicio de `<body>` en `index.html`
+   (aplica `#3b82f6` si detecta modo oscuro guardado o por
+   `prefers-color-scheme`) y `toggleTheme()` en `js/ui-helpers.js`
+   (alterna entre `#2563eb`/`#3b82f6` al hacer clic en el botón).
+
+`sw.js` → `v610`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

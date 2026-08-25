@@ -294,7 +294,7 @@ body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 .usr-mods-btn{padding:6px 10px;font-size:12px;white-space:nowrap}
 
 /* Modal de módulos por usuario */
-.mod-ciclo-group{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.mod-ciclo-group{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
 .mod-ciclo-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
 .mod-check-row{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)}
 .mod-check-row:last-child{border-bottom:none}
@@ -1369,7 +1369,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
 .gsr-header{padding:6px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);background:var(--surface2)}
 .gsr-header:first-child{border-radius:14px 14px 0 0}
 .gsr-print-row{padding:8px 12px;background:var(--surface2);border-top:1px solid var(--border);border-radius:0 0 14px 14px;display:flex;justify-content:flex-end}
-.gsr-print-btn{font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+.gsr-print-btn{font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
 .gsr-print-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 
 /* DOCS DPTO PAGE — hub de accesos directos */
