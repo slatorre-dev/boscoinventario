@@ -983,6 +983,8 @@ function openModal(id=null, src=null){
   _isBlankNewItemSession = !existing && !src;
   const btnCamaraAlta = document.getElementById('btnUsarCamaraAlta');
   if(btnCamaraAlta) btnCamaraAlta.style.display = _isBlankNewItemSession ? '' : 'none';
+  const btnSaveNew = document.getElementById('btnSaveNew');
+  if(btnSaveNew) btnSaveNew.style.display = !existing ? '' : 'none';
   const m = existing ? items.find(x=>Number(x.id)===Number(id)) : src;
   if(existing && !m) return;
   const readonly = existing && !can('items.write');
@@ -1221,7 +1223,7 @@ function printBulkItemQrs(itemsOverride){
   w.document.close();
 }
 
-async function saveItem(){
+async function saveItem(cerrarTrasGuardar = true){
   clearFieldErrors();
   const name=document.getElementById('f_item').value.trim();
   let hasError = false;
@@ -1282,7 +1284,11 @@ async function saveItem(){
     // localStorage no disponible: no bloquea guardado
   }
   const btn = document.getElementById('btnSave');
-  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+  const btnNew = document.getElementById('btnSaveNew');
+  btn.disabled = true;
+  if(btnNew) btnNew.disabled = true;
+  if(cerrarTrasGuardar) btn.textContent = '⏳ Guardando...';
+  else if(btnNew) btnNew.textContent = '⏳ Guardando...';
   try {
     if(eid){
       const item={...items.find(x=>x.id===eid),...v};
@@ -1311,7 +1317,7 @@ async function saveItem(){
     }
     modalHasChanges = false;
     clearDraft();
-    closeM(true);
+    if(cerrarTrasGuardar) closeM(true);
     if(cf){
       const all = getBase();
       renderInvKeepPage();
@@ -1319,8 +1325,14 @@ async function saveItem(){
     } else {
       renderHome();
     }
+    if(!cerrarTrasGuardar){
+      openModal(); // reabre en blanco para el siguiente, sin cerrar/reabrir el modal visualmente
+    }
   } catch(err) { toast(friendlyError(err),'err'); }
-  finally { btn.disabled=false; btn.textContent='💾 Guardar'; }
+  finally {
+    btn.disabled=false; btn.textContent='💾 Guardar';
+    if(btnNew){ btnNew.disabled=false; btnNew.textContent='💾➕ Guardar y añadir otro'; }
+  }
 }
 
 // ═════════════════════════════════════════════════════════

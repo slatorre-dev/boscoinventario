@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v599 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v600 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
@@ -26,7 +26,10 @@ progreso en vivo. Fix suelto de la misma sesión: `#mConf` (confirmDialog)
 gana `z-index` propio — sin él, quedaba tapado e inaccesible si se abría
 con otro modal `.mbg` posterior en el HTML ya abierto detrás (bug
 preexistente, no visible hasta que el borrador de "Añadir varios" lo
-disparó en pruebas). Otras piezas
+disparó en pruebas). Modal manual de ítem gana botón "💾➕ Guardar y añadir
+otro" (v600, solo en alta nueva) — guarda y reabre el modal en blanco sin
+cerrarlo, para dar de alta varios a mano seguidos sin repetir el ciclo
+completo cada vez (`saveItem(cerrarTrasGuardar)`). Otras piezas
 recientes: vista global agrupada de solo lectura para superadmin en
 ⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
 `mantenimientos`, historial por ítem), Historial de ítems como timeline

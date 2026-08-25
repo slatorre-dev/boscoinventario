@@ -2584,6 +2584,37 @@ actualizado tras crear/confirmar, diálogo de imprimir QR con el conteo
 correcto y `printBulkItemQrs` recibiendo la lista exacta de recién creados,
 modal quedando abierto en modo continuo tras confirmar. `sw.js` → `v599`.
 
+### 25/08/2026 (v599→v600): "Guardar y añadir otro" en el modal manual de ítem
+
+Cuarta pieza de la sesión. Tras explicar que "Añadir varios" ya cubre el
+caso de alta rápida en serie por foto, el usuario confirmó que el hueco
+real estaba en el modal manual (`js/modal-item.js`) — cuando no hay foto
+posible y hay que teclear cada ítem a mano, guardar cerraba el modal
+entero y había que reabrir "＋ Nuevo ítem" desde cero para el siguiente.
+
+- `saveItem()` gana un parámetro `cerrarTrasGuardar = true` (por defecto,
+  sin cambiar el comportamiento de siempre). Botón nuevo
+  `#btnSaveNew` ("💾➕ Guardar y añadir otro") junto a "Guardar", visible
+  solo en alta nueva (`!existing`, oculto al editar), llama a
+  `saveItem(false)`.
+- Con `cerrarTrasGuardar=false`: guarda igual que siempre (mismo POST
+  `add`, mismo toast "Ítem añadido"), pero en vez de `closeM(true)` llama
+  a `openModal()` de nuevo — reabre el modal en blanco **sin cerrarlo
+  visualmente** (ya estaba abierto, solo se resetean los campos y el
+  foco vuelve a Nombre). Aula/ubicación/proveedor se mantienen vía el
+  "recordar último" ya existente (v597), así que dar de alta 10 ítems
+  seguidos del mismo sitio no obliga a re-elegir aula cada vez.
+- Ambos botones se deshabilitan durante el guardado (evita doble envío
+  si se hace doble clic), y se restauran los dos al terminar
+  independientemente de cuál se pulsó.
+
+Verificado con Playwright headless (`apiPost` interceptado): botón visible
+solo en alta nueva y oculto al editar, tras "Guardar y añadir otro" el
+modal permanece abierto con el nombre vacío y la aula ya seleccionada
+conservada, ítem quedó creado en el array `items`; segundo ítem guardado
+con el botón normal "Guardar" cierra el modal como siempre. Sin errores de
+consola. `sw.js` → `v600`.
+
 ---
 
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
