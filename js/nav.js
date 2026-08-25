@@ -119,6 +119,14 @@ function goCaja(id){
   openSub();
 }
 
+function goSearchResults(q){
+  q = String(q||'').trim();
+  if(!q) return;
+  _push({page:'search', id:q}, '#search/'+encodeURIComponent(q));
+  cf={type:'search', id:q, label:`Resultados: "${q}"`, icon:'🔍'};
+  openSub();
+}
+
 function openSub(){
   _subFilter = null;
   const hm = document.getElementById('hintMaintenance');
@@ -133,6 +141,7 @@ function openSub(){
   else if(cf.type==='maintenance'){typeLabel='Mantenimiento';}
   else if(cf.type==='ocultos'){typeLabel='Ocultos';}
   else if(cf.type==='caja'){typeLabel='Caja';}
+  else if(cf.type==='search'){typeLabel='Búsqueda';}
   else{typeLabel='Asignatura/Módulo';}
 
   // Clase de tipo en sub-header para degradado y animación
@@ -160,6 +169,8 @@ function openSub(){
     document.getElementById('sMeta').textContent = `${all.length} ítem${all.length!==1?'s':''} oculto${all.length!==1?'s':''} al resto de usuarios`;
   } else if(cf.type==='caja'){
     document.getElementById('sMeta').textContent = `${all.length} componente${all.length!==1?'s':''} · ${all.reduce((a2,x)=>a2+(Number(x.qty)||0),0)} unidades`;
+  } else if(cf.type==='search'){
+    document.getElementById('sMeta').textContent = `${all.length} resultado${all.length!==1?'s':''} en todo el inventario`;
   } else {
     document.getElementById('sMeta').textContent = `${cf.ciclo.name} · ${all.length} tipos · ${all.reduce((a2,x)=>a2+(Number(x.qty)||0),0)} unidades`;
   }
@@ -177,6 +188,8 @@ function openSub(){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>🙈 Ítems ocultos</strong>`;
   } else if(cf.type==='caja'){
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>📦 ${escHtml(cf.label)}</strong>`;
+  } else if(cf.type==='search'){
+    document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><strong>🔍 ${escHtml(cf.label)}</strong>`;
   } else {
     document.getElementById('bc').innerHTML=`<span class="bc-link" onclick="goHome()">Inicio</span><span class="sep">›</span><span class="bc-link" onclick="openCiclo('${cf.ciclo.id}')">${escHtml(cf.ciclo.icon)} ${escHtml(cf.ciclo.name)}</span><span class="sep">›</span><strong>${escHtml(cf.label)}</strong>`;
   }
@@ -184,8 +197,8 @@ function openSub(){
   // Breadcrumb del sub-header (ruta de ubicación: Inicio › Tipo › Nombre)
   const subBc = document.getElementById('subBc');
   if(subBc){
-    const tipoIcono = {aula:'🏫', cat:'📂', lowstock:'⚠️', maintenance:'🛠️', ocultos:'🙈', caja:'📦'}[cf.type] || '📚';
-    const tipoNombre = {aula:'Aula', cat:'Categoría', lowstock:'Stock bajo', maintenance:'Mantenimiento', ocultos:'Ocultos', caja:'Caja'}[cf.type] || 'Asignatura/Módulo';
+    const tipoIcono = {aula:'🏫', cat:'📂', lowstock:'⚠️', maintenance:'🛠️', ocultos:'🙈', caja:'📦', search:'🔍'}[cf.type] || '📚';
+    const tipoNombre = {aula:'Aula', cat:'Categoría', lowstock:'Stock bajo', maintenance:'Mantenimiento', ocultos:'Ocultos', caja:'Caja', search:'Búsqueda'}[cf.type] || 'Asignatura/Módulo';
     if(cf.ciclo){
       subBc.innerHTML = `<span class="bc-link" onclick="goHome()">🏠 Inicio</span><span class="sep">›</span><span class="bc-link" onclick="openCiclo('${cf.ciclo.id}')">${escHtml(cf.ciclo.icon)} ${escHtml(cf.ciclo.name)}</span><span class="sep">›</span><span class="bc-current">${escHtml(cf.icon)} ${escHtml(cf.label)}</span>`;
     } else {
@@ -193,7 +206,7 @@ function openSub(){
     }
   }
 
-  const noActions = cf.type==='lowstock' || cf.type==='maintenance' || cf.type==='caja';
+  const noActions = cf.type==='lowstock' || cf.type==='maintenance' || cf.type==='caja' || cf.type==='search';
   document.getElementById('btnN').style.display = noActions ? 'none' : 'flex';
   document.getElementById('btnE').style.display = noActions ? 'none' : 'flex';
   const btnRevision = document.getElementById('btnRevisionAula');
@@ -245,6 +258,7 @@ function navigateFromHash(hash){
   if(seg === 'mod'  && id) { goMod(id); return; }
   if(seg === 'item' && id) { openItemRoute(id); return; }
   if(seg === 'caja' && id) { goCaja(id); return; }
+  if(seg === 'search' && id) { goSearchResults(id); return; }
   goHome();
 }
 

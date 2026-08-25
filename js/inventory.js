@@ -46,6 +46,7 @@ function getBase(){
     if(cf.type==='maintenance') return needsMaintenance(x);
     if(cf.type==='ocultos') return x.oculto==1;
     if(cf.type==='caja') return Number(x.parent_id)===Number(cf.id);
+    if(cf.type==='search') return fuzzyMatch(cf.id, itemSearchText(x));
     return x.mod===cf.id;
   });
 }

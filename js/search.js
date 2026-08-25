@@ -166,7 +166,10 @@ function globalSearch(q){
       </div>`;
     }).join('')
     +(_gsMatches.length>14?`<div class="gsr-more">+${_gsMatches.length-14} más — sigue escribiendo para filtrar</div>`:'')
-    +`<div class="gsr-print-row"><button class="gsr-print-btn" onclick="printGsResults(event,'${q.replace(/'/g,"\\'")}')">🖨️ Imprimir resultados (${_gsMatches.length})</button></div>`;
+    +`<div class="gsr-print-row">
+        <button class="gsr-print-btn" onclick="gsSelectAll(event,'${q.replace(/'/g,"\\'")}')">☑️ Seleccionar todos (${_gsMatches.length})</button>
+        <button class="gsr-print-btn" onclick="printGsResults(event,'${q.replace(/'/g,"\\'")}')">🖨️ Imprimir resultados (${_gsMatches.length})</button>
+      </div>`;
   res.classList.add('open');
 }
 
@@ -194,6 +197,18 @@ function gsOpenItem(id){
 function gsCrearItemDesdeQuery(q){
   gsClear();
   openModal(null, { item: q });
+}
+
+function gsSelectAll(e, q){
+  e.stopPropagation();
+  if(!_gsMatches.length) return;
+  if(typeof bulkSelected === 'undefined'){ toast('Sistema de edición en lote no disponible','err'); return; }
+  bulkSelected.clear();
+  _gsMatches.forEach(x => bulkSelected.add(String(x.id)));
+  const n = _gsMatches.length;
+  gsClear();
+  goSearchResults(q);
+  toast(`${n} ítem${n!==1?'s':''} seleccionado${n!==1?'s':''} para acción en lote`,'ok');
 }
 
 function gsClear(){
