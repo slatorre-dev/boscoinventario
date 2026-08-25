@@ -87,6 +87,20 @@ propia del departamento. Usar `<optgroup>` ("Aulas del centro" / "Aula del
 departamento") ayuda a distinguirlas de un vistazo.
 **Prioridad:** Media
 
+**Jerarquía/zona en la rejilla de aulas de Inicio para superadmin**
+(25/08/2026) Mismo problema que el punto anterior pero en la vista "Por
+aula/espacio" de Inicio: para cualquier departamento normal son solo 4-5
+aulas (sin problema), pero la vista de superadmin llega a ~70 tarjetas
+idénticas (las aulas globales del centro, todas en el mismo cubo
+`iesjuanbosco`, sin campo que las distinga entre sí). Agrupar por
+`departamento` no ayuda aquí — casi todas comparten el mismo departamento
+genérico. Haría falta un campo nuevo opcional en `aulas` (zona/planta/
+edificio) usado solo para agrupar esta rejilla cuando superadmin no tiene
+un departamento activo elegido — cero impacto en la vista de cualquier
+departamento normal. Sin diseñar en detalle, el usuario decidió aparcarlo
+por ahora.
+**Prioridad:** Baja
+
 **Forzar cambio de contraseña en el primer login de cuentas genéricas — ✅ implementado (29/07/2026)**
 Columna `usuarios.password_temporal` (migración `0014`), marcada en las 48
 cuentas `departamentoXXX`/`profe1XXX`. Al hacer login con el flag activo,
@@ -325,10 +339,12 @@ Contador de visitas en localStorage, las aulas más usadas aparecen primero en h
 
 **Prioridad:** Cerrado
 
-### Modo Oscuro
-Variables CSS ya preparadas, solo falta toggle en perfil de usuario.
+### Modo Oscuro — ✅ implementado (25/08/2026, v606)
+Toggle manual en la topbar (no en perfil), variables CSS de `:root`
+redefinidas bajo `body.dark`, persistente en `localStorage`. Detalle en
+`docs/DEVELOPMENT.md`, entrada 25/08/2026.
 
-**Prioridad:** Media
+**Prioridad:** Cerrado
 
 ### Swipe en Cards Tablet
 El swipe para prestar/ver ya funciona en móvil. Falta adaptar para tablet (pointer:coarse + min-width:640px).
