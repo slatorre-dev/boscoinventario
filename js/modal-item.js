@@ -3,6 +3,16 @@
 // ═════════════════════════════════════════════════════════
 let modalHasChanges = false;
 let modalOriginalValues = {};
+let _isBlankNewItemSession = false;
+
+const MODAL_TRACKED_FIELDS = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+
+// Campos que cuentan para el indicador "X/N campos completados" — la
+// ficha "core" del ítem, sin mantenimiento/contenedor (condicionales,
+// no forman parte de un alta normal)
+const MODAL_COMPLETION_FIELDS = ['f_ref', 'f_item', 'f_fechaAdquisicion', 'f_aula', 'f_loc', 'f_ciclo', 'f_mod', 'f_cat', 'f_tags', 'f_est', 'f_qty', 'f_min', 'f_util', 'f_proveedor', 'f_serie', 'f_precio', 'f_fecha', 'f_obs'];
+
+const ITEM_DRAFT_KEY = 'item_draft_new_v1';
 
 function modalSectionShouldOpen(m, fields){
   if(!m) return false;
@@ -53,7 +63,7 @@ function _actualizarEnlacesManual(){
 }
 
 function captureModalOriginalValues(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id', 'f_foto'];
+  const fields = [...MODAL_TRACKED_FIELDS, 'f_foto'];
   modalOriginalValues = {};
   fields.forEach(field => {
     const el = document.getElementById(field);
@@ -80,8 +90,7 @@ function attachManualLinksListeners(){
 }
 
 function attachModalChangeListeners(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
-  fields.forEach(field => {
+  MODAL_TRACKED_FIELDS.forEach(field => {
     const el = document.getElementById(field);
     if(el){
       el.removeEventListener('change', checkModalForChanges);
@@ -93,10 +102,9 @@ function attachModalChangeListeners(){
 }
 
 function checkModalForChanges(){
-  const fields = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
   let hasChanges = false;
 
-  for(let field of fields){
+  for(let field of MODAL_TRACKED_FIELDS){
     const el = document.getElementById(field);
     if(!el) continue;
     const currentVal = el.type === 'checkbox' ? el.checked : el.value;
@@ -110,6 +118,73 @@ function checkModalForChanges(){
     modalHasChanges = hasChanges;
     updateModalIndicator();
   }
+  updateModalCompletion();
+  if(_isBlankNewItemSession) saveDraftIfNew();
+}
+
+function updateModalCompletion(){
+  const label = document.getElementById('mCompletionLabel');
+  const fill = document.getElementById('mCompletionFill');
+  const wrap = document.getElementById('mCompletion');
+  if(!label || !fill || !wrap) return;
+  let filled = 0;
+  MODAL_COMPLETION_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if(el && String(el.value || '').trim() !== '') filled++;
+  });
+  const total = MODAL_COMPLETION_FIELDS.length;
+  label.textContent = `${filled}/${total} campos completados`;
+  fill.style.width = `${Math.round(filled / total * 100)}%`;
+  wrap.style.display = '';
+}
+
+// ═════════════════════════════════════════════════════════
+// BORRADOR DE ALTA NUEVA (localStorage) — solo para "Nuevo ítem" en
+// blanco (no aplica a duplicar/editar/prefill desde cámara o búsqueda),
+// evita perder lo tecleado si se cierra el modal sin querer
+// ═════════════════════════════════════════════════════════
+function saveDraftIfNew(){
+  try{
+    const draft = {};
+    MODAL_TRACKED_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      draft[id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    if(!draft.f_item && !draft.f_util && !draft.f_obs){ localStorage.removeItem(ITEM_DRAFT_KEY); return; }
+    localStorage.setItem(ITEM_DRAFT_KEY, JSON.stringify({ts: Date.now(), fields: draft}));
+  }catch(e){ /* localStorage no disponible: no bloquea la edición */ }
+}
+
+function clearDraft(){
+  try{ localStorage.removeItem(ITEM_DRAFT_KEY); }catch(e){}
+}
+
+async function maybeRestoreDraft(){
+  let raw;
+  try{ raw = localStorage.getItem(ITEM_DRAFT_KEY); }catch(e){ return; }
+  if(!raw) return;
+  let draft;
+  try{ draft = JSON.parse(raw); }catch(e){ clearDraft(); return; }
+  if(!draft?.fields?.f_item){ clearDraft(); return; }
+  const mins = Math.max(1, Math.round((Date.now() - (draft.ts || 0)) / 60000));
+  const cuando = mins < 60 ? `hace ${mins} min` : `hace ${Math.round(mins / 60)} h`;
+  const continuar = await confirmDialog({
+    icon: '📝',
+    title: 'Borrador sin guardar',
+    message: `Tenías una alta de "${draft.fields.f_item}" sin terminar (${cuando}). ¿Continuar rellenándola?`,
+    confirmText: 'Continuar borrador'
+  });
+  if(!continuar){ clearDraft(); return; }
+  Object.entries(draft.fields).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(el.type === 'checkbox') el.checked = val; else el.value = val;
+  });
+  updateModSelect();
+  toggleMaintFields();
+  toggleContenedorFields();
+  checkModalForChanges();
 }
 
 function renderAulaOptions(list){
@@ -881,6 +956,7 @@ function openModal(id=null, src=null){
   eid=id; fillModalSelects();
   modalHasChanges = false;
   updateModalIndicator();
+  _isBlankNewItemSession = !existing && !src;
   const m = existing ? items.find(x=>Number(x.id)===Number(id)) : src;
   if(existing && !m) return;
   const readonly = existing && !can('items.write');
@@ -919,10 +995,10 @@ function openModal(id=null, src=null){
   syncCicloLabels();
   updateModSelect();
   document.getElementById('f_mod').value = m?.mod || (cf?.type==='mod'?cf.id:'');
-  document.getElementById('f_loc').value=m?.loc||'';
+  document.getElementById('f_loc').value = m?.loc || (!existing ? (localStorage.getItem('cam_last_loc') || '') : '');
   document.getElementById('f_est').value=m?.est||'Bueno';
   document.getElementById('f_util').value=m?.util||'';
-  document.getElementById('f_proveedor').value=m?.proveedor||'';
+  document.getElementById('f_proveedor').value = m?.proveedor || (!existing ? (localStorage.getItem('cam_last_proveedor') || '') : '');
   document.getElementById('f_precio').value = (m?.precio ?? '') === null ? '' : (m?.precio ?? '');
   document.getElementById('f_tags').value=m?.tags||'';
   document.getElementById('f_fecha').value=m?.fecha||new Date().toISOString().split('T')[0];
@@ -950,6 +1026,8 @@ function openModal(id=null, src=null){
   if(secDocs) secDocs.open = existing && modalSectionShouldOpen(m, ['obs']);
   const secContenedor = document.getElementById('mSecContenedor');
   if(secContenedor) secContenedor.open = existing && esContenedor;
+  const secMant = document.getElementById('mSecMantenimiento');
+  if(secMant) secMant.open = existing && (isMaintenanceMarked(m) || !!m?.mantEstado);
   fillParentSelect(id);
   document.getElementById('f_parent_id').value = m?.parent_id || '';
   toggleContenedorFields();
@@ -966,6 +1044,8 @@ function openModal(id=null, src=null){
   resetModalChanges();
   captureModalOriginalValues();
   _actualizarEnlacesManual();
+  updateModalCompletion();
+  if(_isBlankNewItemSession) maybeRestoreDraft();
 
   // Auto-focus en nombre para escribir directo
   setTimeout(() => document.getElementById('f_item').focus(), 0);
@@ -992,6 +1072,7 @@ function _autoRef(name){
 async function closeM(force=false){
   if(!force && modalHasChanges){
     if(!await confirmDialog({message:'Hay cambios sin guardar. ¿Descartar cambios?'})) return;
+    if(_isBlankNewItemSession) clearDraft();
   }
   document.getElementById('mItem').classList.remove('open');
   document.body.style.overflow = '';
@@ -1165,6 +1246,8 @@ async function saveItem(){
   try {
     if(v.aula) localStorage.setItem('cam_last_aula', String(v.aula));
     if(v.cat) localStorage.setItem('cam_last_cat', String(v.cat));
+    if(v.loc) localStorage.setItem('cam_last_loc', String(v.loc));
+    if(v.proveedor) localStorage.setItem('cam_last_proveedor', String(v.proveedor));
   } catch (e) {
     // localStorage no disponible: no bloquea guardado
   }
@@ -1197,6 +1280,7 @@ async function saveItem(){
       toast('Ítem añadido','ok');
     }
     modalHasChanges = false;
+    clearDraft();
     closeM(true);
     if(cf){
       const all = getBase();

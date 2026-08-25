@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v596';
+const VERSION = 'v597';
 const CACHE_SHELL   = 'inventario-ies-juan-bosco-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-ies-juan-bosco-runtime-' + VERSION;
 
