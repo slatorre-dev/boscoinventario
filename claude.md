@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v604 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v605 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
@@ -435,6 +435,13 @@ Workers AI, onboarding de cámara (v543-v557).
    que antes — lo que ya no es posible, por diseño, es que nadie
    (incluido el superadmin) vea la contraseña actual de otro usuario tal
    cual la escribió: un hash es irreversible a propósito.
+   ~~Backup expone contraseñas~~ ✅ verificado sin riesgo (25/08/2026):
+   auditado `functions/api/backup.js` y el resto de `functions/api/` — el
+   backup nunca ha seleccionado la columna `password`, y ningún endpoint
+   la devuelve al cliente fuera del login/cambio de contraseña. No hacía
+   falta tocar código, solo corregir el ejemplo desactualizado en
+   `docs/SECURITY.md`. Quedan 3 críticos: credenciales en URL/localStorage
+   (los más grandes, ver plan) y permisos solo revalidados en frontend.
 4. Más ideas de usabilidad sugeridas (sin priorizar) en
    [`docs/IDEAS.md`](docs/IDEAS.md): estado vacío por departamento,
    alertas de stock bajo, modo oscuro, etc.

@@ -2820,4 +2820,46 @@ tras el despliegue es quien lo confirma en producción.
 
 ---
 
+### 25/08/2026 (v604→v605): Fase 1 del plan de seguridad — auditoría del backup, sin cambios de código
+
+Octava pieza de la sesión. Con la contraseña ya hasheada, el usuario pidió
+un plan paso a paso para los 4 críticos restantes de `docs/SECURITY.md`.
+Se propuso empezar por el #5 ("Exportación de datos incluye passwords",
+`functions/api/backup.js`) por ser el de menor esfuerzo y riesgo.
+
+Al auditarlo, resultó que **no había nada que arreglar**: la consulta real
+en `runBackup()` es `SELECT usuario, nombre, rol, email FROM usuarios`
+— sin la columna `password`, ya excluida desde antes de esta sesión. El
+ejemplo "VULNERABLE" en `docs/SECURITY.md` (`SELECT * FROM usuarios`) era
+genérico/ilustrativo y no reflejaba el código real del proyecto.
+
+Se amplió la revisión a todo `functions/api/` (`grep -rn "password"`):
+las únicas consultas que leen `password` son las de login/verificación
+(`_middleware.js`, `auth.js`, `perfil.js`), siempre para comparar
+internamente — nunca se devuelve al cliente (`delete row.password;` antes
+de construir la respuesta en `_middleware.js` línea 51 y `auth.js` línea
+165). Los listados de usuarios (`usuarios.js`, `list.js`) nunca
+seleccionan esa columna. Ninguna ruta de exportación o listado expone
+contraseña ni hash.
+
+**Resultado:** `docs/SECURITY.md` (crítico #5 marcado como verificado sin
+riesgo, tabla resumen actualizada a "3 críticos pendientes, 2
+resueltos/verificados de 5, ~14h") y `claude.md` (Pendiente #3)
+actualizados para reflejar el hallazgo. Sin cambios en
+`functions/api/backup.js` ni en ningún otro archivo de código — este
+`sw.js` → `v605` es puramente procedimental (convención de la sesión de
+subir versión en cada pieza cerrada), no hay ningún asset de la shell
+cacheada que haya cambiado.
+
+Quedan 3 críticos pendientes: credenciales en URL + password en
+localStorage (mismo origen, la pieza más grande — migrar a
+`session_token` también para el login por contraseña, no solo Google
+OAuth) y permisos revalidados solo en frontend (portar
+`ACTION_PERMISSIONS` de `js/roles.js` al backend, endpoint por endpoint).
+Plan completo y orden recomendado discutido con el usuario, sin empezar
+todavía la Fase 3 (la de tokens de sesión) por ser la más invasiva —
+queda para una sesión dedicada.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
