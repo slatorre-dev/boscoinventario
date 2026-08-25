@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v598 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v599 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
@@ -15,7 +15,18 @@ el único campo realmente obligatorio (nombre), memoria de último
 Ubicación/Proveedor usado, categoría ya no se autoasigna (empieza vacía),
 borrador de alta nueva en `localStorage` con oferta de restaurar, y botón
 "📷 Usar cámara" junto al título para saltar del formulario manual al alta
-por cámara sin perder el hueco de permisos ya validado. Otras piezas
+por cámara sin perder el hueco de permisos ya validado. "Añadir varios"/
+"Revisar aula" (v599) ya no exigen navegar antes a la vista de un aula
+concreta — accesibles directo desde Inicio (⚡ Acciones rápidas), piden
+la aula como primer paso si hace falta; "Añadir varios" además guarda
+sesión en `localStorage` (sobrevive a cierres accidentales), ofrece
+imprimir QR de lo recién creado y vuelve a la cámara sin cerrarse (modo
+continuo, como ya tenía "Revisar aula"), y ambos muestran un contador de
+progreso en vivo. Fix suelto de la misma sesión: `#mConf` (confirmDialog)
+gana `z-index` propio — sin él, quedaba tapado e inaccesible si se abría
+con otro modal `.mbg` posterior en el HTML ya abierto detrás (bug
+preexistente, no visible hasta que el borrador de "Añadir varios" lo
+disparó en pruebas). Otras piezas
 recientes: vista global agrupada de solo lectura para superadmin en
 ⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
 `mantenimientos`, historial por ítem), Historial de ítems como timeline

@@ -1164,8 +1164,8 @@ function printItemQr(itemId){
   w.document.close();
 }
 
-function printBulkItemQrs(){
-  const data = (typeof getFiltered === 'function' ? getFiltered() : items)
+function printBulkItemQrs(itemsOverride){
+  const data = (itemsOverride || (typeof getFiltered === 'function' ? getFiltered() : items))
     .filter(x => x?.id);
   if(!data.length){
     toast('No hay ítems para imprimir QR','err');

@@ -345,6 +345,8 @@
             <button class="home-quick-btn red" data-perm="items.write" onclick="openDelModal()"><span class="home-quick-ico">🗑️</span><span><strong>Dar de baja</strong><small>Eliminar material</small></span></button>
             <a class="home-quick-btn cyan" href="javascript:void(0)" onclick="goDocsDpto()"><span class="home-quick-ico">📂</span><span><strong>Documentación</strong><small>Accesos del departamento</small></span></a>
             <button class="home-quick-btn amber-soft" onclick="goMaintenance()"><span class="home-quick-ico">🛠️</span><span><strong>Mantenimiento</strong><small>Revisiones pendientes</small></span></button>
+            <button class="home-quick-btn teal" data-perm="items.write" onclick="openMultiEquipo()"><span class="home-quick-ico">📸</span><span><strong>Inventariar aula</strong><small>Foto de mesa, alta en lote</small></span></button>
+            <button class="home-quick-btn rose" data-perm="items.write" onclick="openRevisionAula()"><span class="home-quick-ico">📷</span><span><strong>Revisar aula</strong><small>Comprobar que todo está donde debe</small></span></button>
             <button class="home-quick-btn violet" id="btnGoHistorial" style="display:none" onclick="goHistorialPage()"><span class="home-quick-ico">📋</span><span><strong>Historial</strong><small>Actividad reciente</small></span></button>
           </div>
         </div>
@@ -1752,7 +1754,18 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <!-- ══ MODO REVISIÓN RÁPIDA POR AULA (INVENTARIO ANDANDO) ══ -->
 <div class="mbg" id="mRevisionAula" onclick="if(event.target===this)closeRevisionAula()">
   <div class="modal" style="max-width:600px">
-    <div class="mh"><div class="mt" id="revisionTitulo">📷 Revisando aula</div><button class="mx" onclick="closeRevisionAula()">✕</button></div>
+    <div class="mh">
+      <div class="mh-title-wrap">
+        <div class="mt" id="revisionTitulo">📷 Revisando aula</div>
+        <div id="revisionSesionContador" style="display:none;font-size:12px;color:var(--muted)"></div>
+      </div>
+      <button class="mx" onclick="closeRevisionAula()">✕</button>
+    </div>
+    <div id="revisionAulaPicker" style="display:none">
+      <label for="revisionAulaPickerSel" style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">¿Qué aula vas a revisar?</label>
+      <select id="revisionAulaPickerSel" class="fi-w" style="width:100%;margin-bottom:12px"></select>
+      <button class="btn btn-p" style="width:100%" onclick="_confirmarAulaRevision()">Continuar</button>
+    </div>
     <video id="revisionVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px;display:none" autoplay playsinline></video>
     <div id="revisionEstado" style="display:none;font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Identificando equipo...</div>
     <div id="revisionResultado" style="display:none"></div>
@@ -1767,7 +1780,18 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <!-- ══ ALTA MASIVA MULTI-EQUIPO DESDE UNA FOTO ══ -->
 <div class="mbg" id="mMultiEquipo" onclick="if(event.target===this)closeMultiEquipo()">
   <div class="modal" style="max-width:700px">
-    <div class="mh"><div class="mt">📸 Fotografía la mesa con los equipos</div><button class="mx" onclick="closeMultiEquipo()">✕</button></div>
+    <div class="mh">
+      <div class="mh-title-wrap">
+        <div class="mt">📸 Fotografía la mesa con los equipos</div>
+        <div id="multiSesionContador" style="display:none;font-size:12px;color:var(--muted)"></div>
+      </div>
+      <button class="mx" onclick="closeMultiEquipo()">✕</button>
+    </div>
+    <div id="multiAulaPicker" style="display:none">
+      <label for="multiAulaPickerSel" style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">¿En qué aula estás?</label>
+      <select id="multiAulaPickerSel" class="fi-w" style="width:100%;margin-bottom:12px"></select>
+      <button class="btn btn-p" style="width:100%" onclick="_confirmarAulaMulti()">Continuar</button>
+    </div>
     <video id="multiVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px;display:none" autoplay playsinline></video>
     <div id="multiEstado" style="display:none;font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Identificando equipos...</div>
     <div id="multiListaWrap" style="display:none">
