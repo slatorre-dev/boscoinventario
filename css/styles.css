@@ -1036,7 +1036,7 @@ td{padding:10px 13px;font-size:13px;max-width:180px;overflow:hidden;text-overflo
   .scard-icon{font-size:20px!important}
   .scard-num{font-size:15px!important;line-height:1!important}
   .scard-lbl{display:none!important}
-  .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .choice-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
   .cgrid{display:flex!important;flex-direction:column!important;gap:12px!important}
   .icard,.ccard,.scard,.login-card,.modal,.cbox,.gsearch,.gsr,.docs-card,.pres-card,.loan-banner,.tw,.pager,.profile-section{
     box-shadow:none!important;
@@ -1421,13 +1421,21 @@ textarea.fi-w{resize:vertical;min-height:60px}
 
 @media(max-width:640px){
   /* ── TOPBAR ── */
-  .topbar{padding:0 12px}
+  /* Todos los iconos de la cabecera en una sola fila (no wrap) para que
+     la cabecera móvil ocupe como mucho 2 filas (marca + iconos). */
+  .topbar{padding:0 12px;flex-wrap:nowrap;gap:6px}
+  .brand-wrap{min-width:0;flex:1 1 auto;overflow:hidden;gap:4px}
   .brand-name{display:none}
   .brand-dept{display:none}
-  .brand-dept-select{display:none}
+  .brand-dept-select{display:none;max-width:132px;margin-left:4px}
+  .app-version{margin-left:4px;padding:3px 6px}
+  .dept-game-btn{width:32px;height:32px}
+  .dept-game-btn img{width:22px;height:22px}
   #connTxt{display:none}
   .breadcrumb{display:none}
   .mob-menu-btn{display:flex}
+  .topbar-right{flex:0 0 auto;flex-wrap:nowrap;gap:6px}
+  .theme-toggle-btn{width:30px;height:30px}
   /* En móvil: chip solo muestra avatar, nombre y botón ⏻ se ocultan */
   #userName{display:none}
   .user-logout{display:none}
@@ -1462,13 +1470,15 @@ textarea.fi-w{resize:vertical;min-height:60px}
   .home-hero h1{font-size:22px}
   .home-hero p{font-size:13px}
   .home-body,.sub-body,.ciclo-body{padding:14px}
-  .choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .ccard{padding:8px 10px;border-radius:11px}
-  .ccard-icon{font-size:22px;margin-bottom:3px}
-  .ccard-icon img{width:30px;height:30px}
-  .ccard-title{font-size:12px}
-  .ccard-desc{font-size:10px;line-height:1.25;margin-bottom:2px}
-  .ccard-count{top:5px;right:5px;font-size:9px;padding:2px 5px}
+  .choice-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .ccard{padding:6px 4px;border-radius:10px}
+  .ccard-icon{font-size:18px;margin-bottom:2px}
+  .ccard-icon img{width:22px;height:22px}
+  .ccard-title{font-size:10px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .ccard-desc{font-size:8px;line-height:1.2;margin-bottom:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ccard-warn{font-size:8px;margin-top:2px;white-space:normal}
+  .ccard-count{top:3px;right:3px;font-size:8px;padding:1px 4px}
+  .ccard-edit{width:20px;height:20px;top:3px;left:3px;font-size:9px}
   .mod-grid{grid-template-columns:1fr;gap:8px}
   .mod-card{padding:11px 12px}
 
