@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v602 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v603 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
@@ -36,7 +36,21 @@ panel post-QR (`abrirMantenimientoRapido()`/`_enfocarMantenimientoEnModal()`
 en `modal-item.js`); "Reservas" pasa de checkbox escondido a pestaña propia
 en Préstamos (`setPresTab('reservas')`); "⧉ Duplicar" en cada reserva
 pendiente reutiliza ciclo/aula/profesor/material con la fecha en blanco,
-descartando líneas cuyo ítem ya no tenga stock. Otras piezas
+descartando líneas cuyo ítem ya no tenga stock. **Pedidos arreglado de raíz
+(v603)**: el endpoint `/api/pedidos` no existía — cada 🛒 disparaba un 404
+silencioso, `notificarPedido` nunca notificó a nadie desde que se escribió.
+Ahora `functions/api/pedidos.js` (nuevo) hace `pedidoAdd`/`pedidoUpdate`/
+`pedidoRemove`/`pedidoClear` sobre tabla `pedidos` en D1 (migración `0030`,
+autocreada también en runtime igual que `ia_deteccion_ejemplos`), con email
+real al jefe/a de departamento al añadir (mismo patrón `sendGmail()` que
+`notificarVencidos`). La lista deja de vivir solo en `localStorage`:
+`list.js` la carga en el bulk de login, compartida por todo el
+departamento en vez de por navegador. **Migración `0030` no aplicada en
+remoto por mí** — no tengo acceso a wrangler/D1 en este sandbox; funciona
+igual gracias al autocreate en runtime, pero conviene ejecutarla a mano
+cuando se pueda (`npx wrangler d1 execute boscoinventario --remote
+--file=migrations/0030_pedidos.sql`) para que quede como migración
+formal aplicada. Otras piezas
 recientes: vista global agrupada de solo lectura para superadmin en
 ⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
 `mantenimientos`, historial por ítem), Historial de ítems como timeline
