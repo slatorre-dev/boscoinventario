@@ -691,6 +691,15 @@ export async function onRequestPost({ request, env, data }) {
       ? categoriasDept.map(c => `"${c}"`).join(', ')
       : '(ninguna categoría disponible)';
 
+    const ejemplosDeptFilter = superadmin ? '' : ' WHERE departamento=?';
+    const ejemplosDeptBind = superadmin ? [] : [dept];
+    const ejemplosRows = await env.DB.prepare(
+      `SELECT tipo, nombre, categoria, serie, marca, modelo, texto_libre, confianza
+       FROM ia_deteccion_ejemplos${ejemplosDeptFilter}
+       ORDER BY id DESC LIMIT 4`
+    ).bind(...ejemplosDeptBind).all().catch(() => ({ results: [] }));
+    const ejemplosTexto = formatLearningExamples(ejemplosRows?.results || []);
+
     async function runMultiQuestion(question, maxTokens = 720) {
       return env.AI.run('@cf/moondream/moondream3.1-9B-A2B', {
         task: 'query',
@@ -702,23 +711,41 @@ export async function onRequestPost({ request, env, data }) {
       });
     }
 
+    let motivoEncuadre = '';
+
     try {
       aiData = await runMultiQuestion(
-        `Analiza esta foto de una mesa o superficie con varios equipos/materiales de taller. Devuelve SOLO un array JSON. ` +
-        `Cada elemento debe tener: {"nombre": string, "cantidad": number, "categoriaSugerida": string|null, "confianza": number}. ` +
+        `Analiza esta foto de una mesa o superficie con varios equipos/materiales de taller. Devuelve SOLO un objeto JSON con esta forma: {"objetos": [{"nombre": string, "cantidad": number, "categoriaSugerida": string|null, "confianza": number}], "encuadreOk": boolean, "motivoEncuadre": string|null}. ` +
         `Agrupa objetos iguales en una sola fila con su cantidad. ` +
         `"categoriaSugerida" debe ser EXACTAMENTE una de: ${categoriasTexto}, o null. ` +
-        `"confianza" va de 0 a 1. Si no detectas nada fiable, devuelve []. No escribas texto fuera del array JSON.`
+        `"confianza" va de 0 a 1. Si no detectas nada fiable, "objetos" es []. ` +
+        `"encuadreOk" es false si la foto dificulta ver todos los objetos (mesa cortada fuera de encuadre, muy lejos para distinguirlos, muy borrosa u oscura); en ese caso "motivoEncuadre" da una instrucción corta y accionable (ej. "Aléjate para que quepa toda la mesa", "Acércate más, se ven demasiado pequeños"). Si el encuadre es correcto, "encuadreOk": true y "motivoEncuadre": null. ` +
+        `${ejemplosTexto}` +
+        `No escribas texto fuera del JSON.`
       );
     } catch (e) {
       return Response.json({ ok: false, error: 'Error del servicio de IA' });
     }
 
-    let objetos = [];
-    const raw = aiData?.result?.answer || '';
-    try {
-      const parsed = extractJsonArray(raw);
-      objetos = (Array.isArray(parsed) ? parsed : []).map(o => {
+    function parseObjetos(raw) {
+      let arr = [];
+      let encuadreOk = true;
+      let motivo = '';
+      try {
+        const parsedObj = extractJsonObject(raw);
+        if (parsedObj && Array.isArray(parsedObj.objetos)) {
+          arr = parsedObj.objetos;
+          if (parsedObj.encuadreOk === false) {
+            encuadreOk = false;
+            motivo = safeText(parsedObj.motivoEncuadre);
+          }
+        } else {
+          arr = extractJsonArray(raw) || [];
+        }
+      } catch (e) {
+        arr = [];
+      }
+      const objetos = (Array.isArray(arr) ? arr : []).map(o => {
         const nombre = String(o?.nombre || '').trim();
         const cantidad = Math.max(1, parseInt(o?.cantidad, 10) || 1);
         let categoriaSugerida = String(o?.categoriaSugerida || '').trim();
@@ -726,9 +753,12 @@ export async function onRequestPost({ request, env, data }) {
         if (categoriaSugerida && !categoriasDept.includes(categoriaSugerida)) categoriaSugerida = '';
         return { nombre, cantidad, categoriaSugerida, confianza };
       }).filter(o => o.nombre);
-    } catch (e) {
-      objetos = [];
+      return { objetos, encuadreOk, motivo };
     }
+
+    const primera = parseObjetos(aiData?.result?.answer || '');
+    let objetos = primera.objetos;
+    if (!primera.encuadreOk) motivoEncuadre = primera.motivo;
 
     // Segunda pasada más corta cuando no hay objetos fiables.
     if (!objetos.length || objetos.every(o => (o.confianza || 0) < 0.45)) {
@@ -747,17 +777,25 @@ export async function onRequestPost({ request, env, data }) {
           if (categoriaSugerida && !categoriasDept.includes(categoriaSugerida)) categoriaSugerida = '';
           return { nombre, cantidad, categoriaSugerida, confianza };
         }).filter(o => o.nombre);
-        if (objetos2.length > objetos.length) objetos = objetos2;
+
+        // Une por nombre normalizado en vez de sustituir: la segunda pasada no
+        // debe hacer perder detecciones válidas que la primera ya encontró.
+        const porNombre = new Map();
+        for (const o of objetos) porNombre.set(o.nombre.toLowerCase(), o);
+        for (const o of objetos2) {
+          const k = o.nombre.toLowerCase();
+          const existente = porNombre.get(k);
+          if (!existente || o.confianza > existente.confianza) porNombre.set(k, o);
+        }
+        objetos = [...porNombre.values()];
       } catch (e) {
         // ignore second pass failures
       }
     }
 
-    objetos = objetos
-      .sort((a, b) => (b.confianza || 0) - (a.confianza || 0))
-      .map(({ confianza, ...o }) => o);
+    objetos = objetos.sort((a, b) => (b.confianza || 0) - (a.confianza || 0));
 
-    return Response.json({ ok: true, objetos });
+    return Response.json({ ok: true, objetos, motivoEncuadre });
   }
 
   return Response.json({ ok: false, error: 'Accion desconocida' });

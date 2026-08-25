@@ -718,6 +718,52 @@ _Bloque trasladado íntegro desde CLAUDE.md el 25/08/2026 para reducir el tamañ
   `electricidadelectronica` (dejados en `mod=''` por la migración `0029`,
   antes de este cambio) a su ritmo. `sw.js` → `v595`.
 
+### 25/08/2026 (v595→v596): mejoras de precisión en "Añadir varios" (detectarMultiples)
+
+A petición del usuario tras un brainstorming sobre qué falta del roadmap de
+cámara+IA — de las dos funciones ya en producción que quedaban como
+candidatas a "mejorar precisión, no reconstruir" (pendiente #14 de
+`CLAUDE.md`), priorizó "Añadir varios" (`js/multi-equipo.js` +
+`detectarMultiples` en `functions/api/item.js`) sobre "Revisar aula", con
+dos síntomas concretos: objetos no detectados/mal contados, y nombres o
+categorías genéricos que hay que corregir fila a fila. Tres cambios, todos
+acotados a esos dos archivos, sin migración ni endpoint nuevo:
+
+1. **Aprendizaje de vocabulario del departamento.** `detectarMultiples` no
+   leía `ia_deteccion_ejemplos` — el aprendizaje por feedback (tabla
+   sembrada por `registrarFeedbackDeteccion`) solo alimentaba el flujo de
+   un único objeto (`buscarPorSerie`/`camara-serie.js`). Se añade la misma
+   consulta (últimos 4 ejemplos del departamento) + `formatLearningExamples()`
+   al prompt, y `confirmarCrearMulti()` ahora llama a
+   `registrarFeedbackDeteccion` (`tipo:'alta_multi'`) por cada fila creada
+   con el nombre/categoría ya corregidos por el usuario en la tabla editable
+   — no el valor crudo de la IA. Como la tabla no filtra por `tipo` al leer
+   los últimos 4 ejemplos, esto retroalimenta también al flujo individual
+   con vocabulario visto en altas masivas, y viceversa.
+2. **Autoevaluación de encuadre.** El prompt de `detectarMultiples` gana
+   `encuadreOk`/`motivoEncuadre` (mismo patrón que ya tenía `buscarPorSerie`
+   desde v560), pensado para el caso propio de una foto de mesa: mesa
+   cortada fuera de encuadre, demasiado lejos para distinguir objetos, o
+   borrosa. El motivo se muestra como toast `warn` junto a la lista
+   detectada (o como único mensaje si no se detectó nada).
+3. **La segunda pasada dejó de pisar la primera.** Cuando la primera pasada
+   sale con confianza baja, la segunda pasada (prompt más corto, un solo
+   intento) sustituía la lista entera si salía más larga — podía perder
+   detecciones válidas de la primera. Ahora se unen por nombre normalizado,
+   quedándose con la de mayor confianza por nombre repetido. Además, la
+   `confianza` por objeto —que se calculaba pero se descartaba antes de
+   responder al frontend— ahora llega a `multi-equipo.js`, que pinta de
+   ámbar (con tooltip) las filas por debajo de 0.45 antes de confirmar, en
+   vez de mostrarlas indistinguibles de las fiables.
+
+Fuera de alcance a propósito (decisión explícita, no descuido): no se tocó
+`revision-aula.js`, que reutiliza `buscarPorSerie` y por tanto ya recibe
+`motivoEncuadre` en la respuesta pero nunca lo muestra ni ofrece repetir
+foto con esa pista — mismo hueco de UX que aquí se cerró para el flujo de
+mesa, pendiente de cerrar ahí. `sw.js` → `v596`. Sin migración D1.
+Verificación: solo revisión de código, sin prueba con cámara real en esta
+sesión (pendiente confirmar en producción con una foto de mesa real).
+
   **2. Idea #6 — Multi-equipo en una foto / alta masiva (v547).** Botón
   "📸 Añadir varios" nuevo, también solo en vista de aula. Backend nuevo
   `detectarMultiples` (`functions/api/item.js`): una sola llamada a

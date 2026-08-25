@@ -93,11 +93,12 @@ async function capturarMulti() {
       return;
     }
     if (!res.objetos || !res.objetos.length) {
-      toast('No se detectó ningún equipo, prueba otra foto o mejora la luz/encuadre', 'err');
+      toast(res.motivoEncuadre || 'No se detectó ningún equipo, prueba otra foto o mejora la luz/encuadre', 'err');
       _volverACapturarMulti();
       return;
     }
-    _multiObjetos = res.objetos.map((o, i) => ({ _rowId: i, nombre: o.nombre, cantidad: o.cantidad, categoriaSugerida: o.categoriaSugerida || '' }));
+    if (res.motivoEncuadre) toast(res.motivoEncuadre, 'warn');
+    _multiObjetos = res.objetos.map((o, i) => ({ _rowId: i, nombre: o.nombre, cantidad: o.cantidad, categoriaSugerida: o.categoriaSugerida || '', confianza: Number(o.confianza) || 0 }));
     _poblarSelectorCicloMulti();
     _renderMultiLista();
   } catch (e) {
@@ -148,9 +149,12 @@ function _renderMultiLista() {
     const catOpts = ['<option value="">Sin categoría</option>']
       .concat(catNames.map(c => `<option value="${escHtml(c)}"${c === o.categoriaSugerida ? ' selected' : ''}>${escHtml(c)}</option>`))
       .join('');
+    const dudosa = (o.confianza || 0) < 0.45;
+    const rowAttrs = dudosa ? ' style="background:var(--amber-l)" title="Detección poco fiable, revisa esta fila"' : '';
+    const marca = dudosa ? '⚠️ ' : '';
     return `
-    <tr data-row-id="${o._rowId}">
-      <td style="padding:4px"><input type="text" class="fi-w" value="${escHtml(o.nombre)}" oninput="_multiActualizarFila(${o._rowId},'nombre',this.value)" style="width:100%"></td>
+    <tr data-row-id="${o._rowId}"${rowAttrs}>
+      <td style="padding:4px">${marca}<input type="text" class="fi-w" value="${escHtml(o.nombre)}" oninput="_multiActualizarFila(${o._rowId},'nombre',this.value)" style="width:100%"></td>
       <td style="padding:4px"><input type="number" class="fi-w" min="1" value="${Number(o.cantidad) || 1}" oninput="_multiActualizarFila(${o._rowId},'cantidad',this.value)" style="width:100%"></td>
       <td style="padding:4px"><select class="fi-w" onchange="_multiActualizarFila(${o._rowId},'categoriaSugerida',this.value)" style="width:100%">${catOpts}</select></td>
       <td style="padding:4px;text-align:center"><button class="btn-icon-only" onclick="_multiEliminarFila(${o._rowId})" title="Eliminar fila" style="cursor:pointer;border:none;background:none;font-size:16px">🗑️</button></td>
@@ -202,6 +206,15 @@ async function confirmarCrearMulti() {
     const res = await apiPost({ action: 'bulkImport', items: payload });
     if (!res.ok) throw new Error(res.error || 'Error al crear los ítems');
     if (res.items) items.push(...res.items);
+    _multiObjetos.forEach(o => {
+      apiPost({
+        action: 'registrarFeedbackDeteccion',
+        tipo: 'alta_multi',
+        nombre: o.nombre,
+        categoria: o.categoriaSugerida || '',
+        confianza: o.confianza || 0
+      }).catch(() => {});
+    });
     toast(`${res.imported} ítem${res.imported !== 1 ? 's' : ''} creado${res.imported !== 1 ? 's' : ''}`, 'ok');
     closeMultiEquipo();
     if (typeof renderInv === 'function') renderInv();

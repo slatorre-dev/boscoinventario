@@ -1,8 +1,12 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v593 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
-desplegado. Roadmap "Modo Cámara Inteligente" completo. Volt migrado a
-Cloudflare Workers AI. Piezas más recientes: vista global agrupada de
+**Estado:** v596 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
+pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
+de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
+de encuadre y aviso visual de filas de baja confianza (v596) — mismo gap
+sigue abierto en "Revisar aula" (ver Pendiente #14). Volt migrado a
+Cloudflare Workers AI. Piezas recientes: vista global agrupada de
 solo lectura para superadmin en ⚙️ Aulas/Categorías/Ciclos, Mantenimiento
 como flujo real (tabla `mantenimientos`, historial por ítem), Historial
 de ítems como timeline estructurado, y Planificación de prácticas
@@ -412,7 +416,16 @@ Workers AI, onboarding de cámara (v543-v557).
     roadmap de cámara+IA iniciado en v578 — ya tienen una primera
     versión en producción (`multi-equipo.js`/`detectarMultiples`,
     `revision-aula.js`); esto es sobre *mejorar* su precisión, no
-    construirlas desde cero.
+    construirlas desde cero. Pieza #2 (captura de mesa) ya recibió su
+    pasada de mejora (v596, `docs/DEVELOPMENT.md`): aprendizaje de
+    vocabulario del departamento (antes solo alimentaba el flujo de un
+    único objeto), autoevaluación de encuadre, y aviso visual de filas de
+    baja confianza en vez de descartar ese dato. **Pendiente real:** pieza
+    #3 (`revision-aula.js`) reutiliza `buscarPorSerie`, que ya devuelve
+    `motivoEncuadre` en la respuesta — pero el frontend de "Revisar aula"
+    nunca lo muestra ni ofrece repetir foto con esa pista, a diferencia de
+    `camara-serie.js` que sí lo usa. Mismo hueco de UX, sin cerrar ahí
+    todavía.
 15. Repetir con Playwright la verificación de producción de v578
     (prellenado visual del formulario, botón truncado en móvil) —
     quedó pendiente, no se hizo en v588 pese a tener Playwright
