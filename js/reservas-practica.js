@@ -147,13 +147,9 @@ async function guardarReservaPractica(){
 }
 
 // ─── VISTA DE RESERVAS PENDIENTES ────────────────────────
-
-function togglePresReservas(){
-  currentPresShowReservas = document.getElementById('presReservasToggle').checked;
-  document.getElementById('presContent').style.display = currentPresShowReservas ? 'none' : '';
-  document.getElementById('presReservasContent').style.display = currentPresShowReservas ? '' : 'none';
-  if(currentPresShowReservas) renderReservasPendientes();
-}
+// Pestaña propia dentro de Préstamos ("Reservas") — ver setPresTab()/
+// goPrestamos() en prestamos.js, que llaman a renderReservasPendientes()
+// directamente al entrar en esa pestaña.
 
 function getReservasPendientes(){
   return (typeof reservas !== 'undefined' ? reservas : []).filter(r => r.estado === 'pendiente');
@@ -166,6 +162,7 @@ function _reservaCardHtml(r){
   const accionesHtml = puedeGestionar ? `
     <div class="pres-actions" style="flex-direction:column;gap:6px">
       <button class="btn btn-sm btn-return" onclick="confirmarRecogidaReserva(${r.id})">✅ Confirmar recogida</button>
+      <button class="btn btn-sm" onclick="duplicarReservaPractica(${r.id})" title="Repetir esta práctica con el mismo material en otra fecha">⧉ Duplicar</button>
       <button class="btn btn-sm btn-d" onclick="cancelarReserva(${r.id})">✕ Cancelar</button>
     </div>` : '';
   return `<div class="pres-card">
@@ -221,6 +218,40 @@ async function confirmarRecogidaReserva(reservaId){
     goPrestamos();
   } catch(err){ toast('Error: '+err.message,'err'); }
   finally { _reservaConfirmSubmitting = false; }
+}
+
+// Repite una práctica ya planificada: mismo ciclo/módulo, aula, profesor/a
+// y material, pero con la fecha en blanco a propósito (es lo único que
+// tiene sentido cambiar al repetir). Si algún ítem original ya no tiene
+// stock disponible, esa línea no se copia y se avisa.
+function duplicarReservaPractica(reservaId){
+  const r = reservas.find(x => Number(x.id) === Number(reservaId));
+  if(!r) return;
+  openReservaPractica(); // abre en blanco con sus valores por defecto habituales
+
+  const cicloVal = r.cicloId ? `${r.cicloId}__${r.moduloCod}` : '';
+  const cicloSel = document.getElementById('res_ciclo');
+  if(cicloVal && [...cicloSel.options].some(o => o.value === cicloVal)) cicloSel.value = cicloVal;
+  const aulaSel = document.getElementById('res_aula');
+  if(r.aulaDestino && [...aulaSel.options].some(o => o.value === r.aulaDestino)) aulaSel.value = r.aulaDestino;
+  if(r.profesorId){
+    const profOpt = _reservaProfOptions.find(p => String(p.id) === String(r.profesorId));
+    if(profOpt) _renderProfSelectOptions('res_prof', _reservaProfOptions, profOpt.id);
+  }
+  document.getElementById('res_obs').value = r.obs || '';
+
+  const lineasOriginales = r.lineas || [];
+  _reservaLineas = lineasOriginales.map(l => {
+    const itemActual = items.find(x => Number(x.id) === Number(l.itemId));
+    const maxQty = itemActual ? Number(itemActual.qty) : 0;
+    return { _rowId: _reservaLineaRowId++, itemId: l.itemId, itemNombre: l.itemNombre, cantidad: Math.min(l.cantidad, maxQty), maxQty };
+  }).filter(l => l.maxQty > 0);
+  _renderReservaLineas();
+
+  const descartadas = lineasOriginales.length - _reservaLineas.length;
+  toast(descartadas > 0
+    ? `Práctica duplicada — ${descartadas} ítem${descartadas!==1?'s':''} sin stock disponible no se copi${descartadas!==1?'aron':'ó'}, revisa fecha y material`
+    : 'Práctica duplicada — revisa la fecha antes de guardar', 'ok');
 }
 
 async function cancelarReserva(reservaId){

@@ -439,13 +439,10 @@
     <div class="pres-tabs">
       <button class="pres-tab active" id="ptActivos" onclick="setPresTab('activos')">🟡 Activos</button>
       <button class="pres-tab" id="ptHistorial" onclick="setPresTab('historial')">✅ Historial</button>
+      <button class="pres-tab" id="ptReservas" onclick="setPresTab('reservas')">📅 Reservas</button>
       <label class="pres-venc-toggle" id="presVencToggleWrap">
         <input type="checkbox" id="presVencToggle" onchange="togglePresVencidos()">
         🔴 Solo vencidos
-      </label>
-      <label class="pres-venc-toggle" id="presReservasToggleWrap">
-        <input type="checkbox" id="presReservasToggle" onchange="togglePresReservas()">
-        📅 Ver reservas
       </label>
     </div>
     <div class="toolbar">

@@ -2631,6 +2631,53 @@ Fix de una línea: `document.getElementById('mSecMantenimiento').open = true;`
 antes del `.focus()`. Verificado con Playwright: sección abierta, valor
 "Pendiente", campo de nota realmente enfocado. `sw.js` → `v601`.
 
+### 25/08/2026 (v601→v602): "profesor/a usando toda la app" — mantenimiento de un toque, pestaña Reservas, duplicar práctica
+
+Quinta pieza de la sesión. Esta vez el ejercicio fue ponerse en el papel de
+un profesor/a usando el programa entero (no solo altas por cámara):
+préstamos, mantenimiento y planificación de prácticas. Préstamos ya estaba
+bien resuelto (preselecciona al profesor logueado, aulas destino filtradas,
+devolución a 7 días). Tres huecos reales, los tres implementados:
+
+**1. "🛠️ Marcar mantenimiento" de un toque desde la lista.** Antes solo
+existía el atajo del panel post-QR — desde la lista/tarjetas del
+inventario había que abrir la ficha completa y bajar hasta la sección
+Mantenimiento a mano. La lógica de "poner Estado=Pendiente + abrir la
+sección + enfocar la nota" (antes solo en `qr-scanner.js`) se extrajo a
+`_enfocarMantenimientoEnModal()` en `js/modal-item.js`, y
+`abrirMantenimientoRapido(id)` (mismo archivo: `openModal(id)` +
+`setTimeout(_enfocarMantenimientoEnModal, 50)`) es la nueva entrada
+reusada tanto por `qrQuickAction('maintenance')` como por un botón nuevo
+"🛠️ Marcar mantenimiento" en el menú "⋯ Más acciones" de `js/inventory.js`
+(tabla y tarjetas, las dos copias duplicadas de ese menú).
+
+**2. "Reservas" como pestaña propia en Préstamos**, no un checkbox
+("📅 Ver reservas") con el mismo estilo que "🔴 Solo vencidos" y por tanto
+invisible como destino real. `index.html`: tercer `<button class="pres-tab">`
+junto a Activos/Historial. `goPrestamos()`/`setPresTab()` en
+`js/prestamos.js` tratan `'reservas'` como un tab más (antes solo
+`['activos','historial']`): oculta buscador/agrupar-por/vencidos (no
+aplican), muestra `#presReservasContent` y llama a
+`renderReservasPendientes()` en vez de `renderPrestamos()`. Se eliminó
+`togglePresReservas()` (`js/reservas-practica.js`) y la variable global
+`currentPresShowReservas` (`js/state.js`), ambas ya sin uso.
+
+**3. "⧉ Duplicar" en cada reserva pendiente** (`duplicarReservaPractica(id)`,
+`js/reservas-practica.js`) — para repetir la misma práctica en otra fecha
+sin volver a teclear el material línea a línea. Abre "Planificar práctica"
+normal y sobrescribe sus defaults con los de la reserva original (ciclo/
+módulo, aula, profesor/a, observaciones, líneas de material) — **la fecha
+se deja en blanco a propósito**, es lo único que tiene sentido cambiar al
+repetir. Cada línea de material se revalida contra el stock *actual* (no
+el de cuando se hizo la reserva original): si un ítem ya no tiene stock
+disponible, esa línea no se copia y un toast avisa cuántas se descartaron.
+
+Verificado con Playwright headless: mantenimiento rápido abre la sección y
+enfoca la nota igual que el atajo QR; pestaña Reservas oculta el contenido
+normal y el buscador, muestra la reserva de prueba; duplicar copia ciclo/
+aula/profesor/obs y descarta correctamente la línea de un ítem sin stock
+(qty=0) manteniendo la que sí tenía. Sin errores de consola. `sw.js` → `v602`.
+
 ---
 
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

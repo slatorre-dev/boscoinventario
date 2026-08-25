@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v601 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v602 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
@@ -29,7 +29,14 @@ preexistente, no visible hasta que el borrador de "Añadir varios" lo
 disparó en pruebas). Modal manual de ítem gana botón "💾➕ Guardar y añadir
 otro" (v600, solo en alta nueva) — guarda y reabre el modal en blanco sin
 cerrarlo, para dar de alta varios a mano seguidos sin repetir el ciclo
-completo cada vez (`saveItem(cerrarTrasGuardar)`). Otras piezas
+completo cada vez (`saveItem(cerrarTrasGuardar)`). Ronda "profesor/a usando
+toda la app" (v602): botón "🛠️ Marcar mantenimiento" de un toque en el menú
+⋯ del inventario (tabla y tarjetas), reusa la misma lógica que el atajo del
+panel post-QR (`abrirMantenimientoRapido()`/`_enfocarMantenimientoEnModal()`
+en `modal-item.js`); "Reservas" pasa de checkbox escondido a pestaña propia
+en Préstamos (`setPresTab('reservas')`); "⧉ Duplicar" en cada reserva
+pendiente reutiliza ciclo/aula/profesor/material con la fecha en blanco,
+descartando líneas cuyo ítem ya no tenga stock. Otras piezas
 recientes: vista global agrupada de solo lectura para superadmin en
 ⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
 `mantenimientos`, historial por ítem), Historial de ítems como timeline
