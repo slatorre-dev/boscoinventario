@@ -6,6 +6,8 @@
 function toggleTheme() {
   const dark = document.body.classList.toggle('dark');
   try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.setAttribute('content', dark ? '#3b82f6' : '#2563eb');
 }
 
 // Ítems fijados en Inicio — por navegador (localStorage), no sincronizado
