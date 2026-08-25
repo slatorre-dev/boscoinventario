@@ -2753,4 +2753,71 @@ pull.
 
 ---
 
+### 25/08/2026 (v603→v604): contraseñas — de texto plano a hash PBKDF2
+
+Séptima pieza de la sesión. La comparación con Snipe-IT/GLPI/Odoo señaló el
+mayor riesgo de seguridad de la app: las contraseñas de `usuarios.password`
+se guardaban **en texto plano** en D1. Cualquiera con acceso de lectura a
+la base (un backup, un error de configuración, un vistazo desde el panel de
+Cloudflare) veía las contraseñas de los 48+ profesores tal cual.
+
+Cloudflare Workers no es Node.js — no hay `bcrypt` nativo (necesita
+bindings en C). La solución idiomática en este runtime es **Web Crypto API**
+(`crypto.subtle`, global, sin dependencias npm): PBKDF2, 100.000
+iteraciones, SHA-256, salt aleatoria de 16 bytes por contraseña. Formato
+guardado: `pbkdf2$100000$<salt hex>$<hash hex>`.
+
+1. **Migración perezosa, sin script de migración masiva ni afectar a
+   nadie.** `verifyPassword(password, stored)` acepta tanto el hash nuevo
+   como (si `stored` no empieza por `pbkdf2$`) el texto plano antiguo, para
+   no romper el login de las cuentas que aún no se han hasheado. En cada
+   login correcto con una contraseña todavía en texto plano, se rehashea
+   y reescribe inmediatamente (`UPDATE usuarios SET password=? WHERE
+   usuario=?` con el nuevo hash) — sin intervención de nadie, sin pedir
+   cambio de contraseña, sin downtime. Todas las cuentas quedan hasheadas
+   de forma natural a medida que la gente entra; las que no vuelvan a
+   entrar quedan igual de protegidas que antes (ni mejor ni peor) hasta
+   que lo hagan.
+2. **Duplicado en cada archivo que toca contraseñas** (patrón ya
+   establecido en el proyecto, sin imports entre `functions/api/*.js`):
+   `functions/api/_middleware.js` (login por usuario+password, la vía
+   principal), `functions/api/auth.js` (login GET alternativo,
+   `resetPassword`, `register`), `functions/api/perfil.js`
+   (`changePassword` — verifica la actual con `verifyPassword` antes de
+   aceptar la nueva), `functions/api/usuarios.js` (`userAdd`,
+   `userResetPassword` — solo necesitan `hashPassword`, nunca verifican
+   una contraseña anterior porque el superadmin no la conoce ni falta que
+   la conozca), `functions/api/oauth/login-google.js` (la contraseña
+   aleatoria de relleno que se genera para cuentas de Google, que nunca
+   se usa para iniciar sesión con contraseña, también se hashea).
+3. **Qué cambia para el superadmin y qué no.** Preguntado explícitamente,
+   el usuario eligió hash real (no cifrado reversible). Sigue pudiendo
+   **asignar/resetear** la contraseña de cualquier usuario exactamente
+   igual que antes (`userResetPassword`, sin cambios de flujo ni de
+   pantalla). Lo que ya **no** es posible, por diseño — es la naturaleza
+   de un hash de un solo sentido, no una limitación añadida aparte — es
+   que nadie, ni el propio superadmin, pueda **ver** la contraseña actual
+   de otra persona (ni la suya pasada): no se guarda de forma reversible
+   en ningún sitio.
+4. **Cero impacto de usabilidad.** El flujo de login es idéntico byte a
+   byte desde el cliente — usuario y contraseña de siempre, mismo
+   formulario, mismos mensajes de error. Todo el trabajo extra ocurre en
+   el servidor, en el momento de verificar.
+
+Verificado con un script Node.js aislado (scratchpad, no forma parte del
+repo) que reproduce exactamente `hashPassword`/`verifyPassword`/
+`_pwTimingSafeEqual`: 12 aserciones — formato `pbkdf2$100000$<32 hex>$<64
+hex>`, verificación correcta, rechazo correcto con contraseña incorrecta,
+salt distinta en cada hash de la misma contraseña, compatibilidad con
+texto plano heredado, casos límite de vacío/null, y comparación a tiempo
+constante. Los 5 archivos pasan `node --check`. No he podido probar el
+login real contra D1 (sin acceso a red/wrangler en este sandbox) — la
+lógica de hash está verificada de forma aislada, pero el primer login real
+tras el despliegue es quien lo confirma en producción.
+
+`docs/SECURITY.md` actualizado (crítico #3 marcado como resuelto). `sw.js`
+→ `v604`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

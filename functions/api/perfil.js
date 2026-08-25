@@ -13,6 +13,28 @@ function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
 
+// ── Hashing de contraseñas (PBKDF2 vía Web Crypto) — duplicado en cada
+// functions/api/*.js que toca contraseñas, ver _middleware.js/docs/SECURITY.md.
+function _pwBytesToHex(bytes){ return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function _pwHexToBytes(hex){ const b=new Uint8Array(hex.length/2); for(let i=0;i<b.length;i++) b[i]=parseInt(hex.substr(i*2,2),16); return b; }
+function _pwTimingSafeEqual(a,b){ if(a.length!==b.length) return false; let r=0; for(let i=0;i<a.length;i++) r|=a.charCodeAt(i)^b.charCodeAt(i); return r===0; }
+
+async function hashPassword(password){
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:saltBytes, iterations:100000, hash:'SHA-256' }, keyMaterial, 256);
+  return `pbkdf2$100000$${_pwBytesToHex(saltBytes)}$${_pwBytesToHex(new Uint8Array(bits))}`;
+}
+
+async function verifyPassword(password, stored){
+  if(!stored) return false;
+  if(!stored.startsWith('pbkdf2$')) return password === stored;
+  const [, iterStr, saltHex, hashHex] = stored.split('$');
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:_pwHexToBytes(saltHex), iterations:parseInt(iterStr,10), hash:'SHA-256' }, keyMaterial, 256);
+  return _pwTimingSafeEqual(_pwBytesToHex(new Uint8Array(bits)), hashHex);
+}
+
 export async function onRequestPost({ request, env, data }) {
   try {
     const body = await request.json();
@@ -45,12 +67,12 @@ export async function onRequestPost({ request, env, data }) {
 
       const current = await env.DB.prepare('SELECT password FROM usuarios WHERE usuario=?')
         .bind(user.usuario).first();
-      if (!current || current.password !== body.oldPassword) {
+      if (!current || !(await verifyPassword(body.oldPassword, current.password))) {
         return Response.json({ ok: false, error: 'La contraseña actual no es correcta' });
       }
 
       await env.DB.prepare('UPDATE usuarios SET password=?, password_temporal=0 WHERE usuario=?')
-        .bind(body.newPassword, user.usuario).run();
+        .bind(await hashPassword(body.newPassword), user.usuario).run();
       await auditLog(env.DB, user, 'changePassword', 'Contraseña cambiada');
       return Response.json({ ok: true });
     }

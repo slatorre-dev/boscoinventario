@@ -78,9 +78,9 @@ JSON.parse(localStorage.inv_session).password  // "MyPassword123"
 
 ---
 
-### 3. Password Sin Hashing en BD
+### 3. Password Sin Hashing en BD — ✅ RESUELTO (25/08/2026)
 
-**Severidad:** CRÍTICA (CVSS 10.0)
+**Severidad:** CRÍTICA (CVSS 10.0) — histórico, ver estado abajo
 
 **Descripción:**
 ```sql
@@ -106,17 +106,39 @@ SELECT * FROM usuarios WHERE usuario=? AND password=?;
 - Multas regulatorias (GDPR: 4% revenue)
 - Pérdida de confianza
 
-**Solución:**
+**Solución implementada (25/08/2026):** `bcrypt` no funciona en el runtime
+de Cloudflare Workers (no es Node, sin bindings nativos) — se usó PBKDF2
+vía la Web Crypto API nativa (`crypto.subtle`, sin dependencias externas),
+100.000 iteraciones, SHA-256, salt aleatoria de 16 bytes por contraseña.
+Formato almacenado: `pbkdf2$100000$<salt hex>$<hash hex>`.
+
 ```javascript
-// functions/api/auth.js
-const bcrypt = require('bcrypt');
-
-// Al crear usuario:
-const hashedPassword = await bcrypt.hash(password, 10);
-
-// Al validar:
-const isValid = await bcrypt.compare(password, hashedPassword);
+// Duplicado en cada functions/api/*.js que toca contraseñas
+// (_middleware.js, auth.js, perfil.js, usuarios.js, oauth/login-google.js)
+async function hashPassword(password){
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:saltBytes, iterations:100000, hash:'SHA-256' }, keyMaterial, 256);
+  return `pbkdf2$100000$${bytesToHex(saltBytes)}$${bytesToHex(new Uint8Array(bits))}`;
+}
 ```
+
+**Migración sin fricción para el usuario:** las 48+ cuentas existentes
+seguían con la contraseña en claro en el momento del despliegue. En vez de
+una migración masiva de una sola vez (imposible sin conocer las
+contraseñas reales — un hash no se puede generar a partir de otro hash),
+se usa migración perezosa: `verifyPassword()` acepta tanto el formato
+hasheado como el texto plano antiguo, y en cuanto una cuenta inicia sesión
+con éxito usando aún su contraseña en claro, se rehashea en ese mismo
+instante. Nadie tiene que cambiar su contraseña ni hacer nada especial —
+cada cuenta migra sola la próxima vez que se usa.
+
+**Nota sobre el superadmin:** puede seguir asignando una contraseña nueva
+a cualquier usuario (`userResetPassword`, sin necesitar la anterior) —
+eso no cambia. Lo que ya no es posible, por diseño (decisión explícita del
+usuario del proyecto, no una limitación técnica accidental), es que nadie
+— ni siquiera el superadmin — pueda ver la contraseña actual de otro
+usuario tal cual la escribió: el hash es irreversible a propósito.
 
 ---
 
@@ -575,12 +597,12 @@ npm install -D eslint-plugin-security
 |---|---|---|---|---|
 | 1 | Credenciales en URL | CRÍTICA | Bearer tokens | 8h |
 | 2 | Password en localStorage | CRÍTICA | Solo token | 2h |
-| 3 | Password sin hash | CRÍTICA | bcrypt | 6h |
+| 3 | Password sin hash | ✅ Resuelto 25/08/2026 | PBKDF2 (`crypto.subtle`) | — |
 | 4 | Permisos solo frontend | CRÍTICA | Re-validar backend | 4h |
 | 5 | Backup con passwords | CRÍTICA | Excluir credenciales | 2h |
 
-**Total Críticos: 5**
-**Horas para resolver: ~22h**
+**Total Críticos pendientes: 4** (1 resuelto de 5)
+**Horas para resolver lo pendiente: ~16h**
 
 ---
 

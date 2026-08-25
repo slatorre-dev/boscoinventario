@@ -4,6 +4,28 @@ function randomToken() {
   return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// ── Hashing de contraseñas (PBKDF2 vía Web Crypto) — duplicado en cada
+// functions/api/*.js que toca contraseñas, ver _middleware.js/docs/SECURITY.md.
+function _pwBytesToHex(bytes){ return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function _pwHexToBytes(hex){ const b=new Uint8Array(hex.length/2); for(let i=0;i<b.length;i++) b[i]=parseInt(hex.substr(i*2,2),16); return b; }
+function _pwTimingSafeEqual(a,b){ if(a.length!==b.length) return false; let r=0; for(let i=0;i<a.length;i++) r|=a.charCodeAt(i)^b.charCodeAt(i); return r===0; }
+
+async function hashPassword(password){
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:saltBytes, iterations:100000, hash:'SHA-256' }, keyMaterial, 256);
+  return `pbkdf2$100000$${_pwBytesToHex(saltBytes)}$${_pwBytesToHex(new Uint8Array(bits))}`;
+}
+
+async function verifyPassword(password, stored){
+  if(!stored) return false;
+  if(!stored.startsWith('pbkdf2$')) return password === stored;
+  const [, iterStr, saltHex, hashHex] = stored.split('$');
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:_pwHexToBytes(saltHex), iterations:parseInt(iterStr,10), hash:'SHA-256' }, keyMaterial, 256);
+  return _pwTimingSafeEqual(_pwBytesToHex(new Uint8Array(bits)), hashHex);
+}
+
 function appBaseUrl(request, bodyOrParams) {
   const raw = bodyOrParams?.appUrl || '';
   if (raw && /^https?:\/\//i.test(raw)) {
@@ -128,10 +150,20 @@ export async function onRequestGet({ request, env }) {
 
   if (action === 'login') {
     if (!u || !p) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
-    const user = await env.DB.prepare(
-      'SELECT usuario, nombre, rol, email, departamento, password_temporal FROM usuarios WHERE usuario=? AND password=?'
-    ).bind(u.trim(), p).first();
-    if (!user) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+    const row = await env.DB.prepare(
+      'SELECT usuario, nombre, rol, email, departamento, password_temporal, password FROM usuarios WHERE usuario=?'
+    ).bind(u.trim()).first();
+    if (!row || !(await verifyPassword(p, row.password))) {
+      return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+    }
+    // Migración perezosa: contraseña aún en claro -> se rehashea ahora que
+    // se acaba de comprobar que es correcta, sin que el usuario haga nada.
+    if (!String(row.password || '').startsWith('pbkdf2$')) {
+      await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
+        .bind(await hashPassword(p), row.usuario).run();
+    }
+    delete row.password;
+    const user = row;
     if (user.departamento) {
       const dept = await env.DB.prepare('SELECT nombre, icono FROM departamentos WHERE slug=?').bind(user.departamento).first().catch(() => null);
       if (dept) { user.departamentoNombre = dept.nombre; user.departamentoIcono = dept.icono; }
@@ -197,7 +229,7 @@ export async function onRequestPost({ request, env }) {
       }
 
       await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
-        .bind(body.newPassword, row.usuario).run();
+        .bind(await hashPassword(body.newPassword), row.usuario).run();
       await env.DB.prepare('DELETE FROM reset_tokens WHERE token=?').bind(body.token).run();
       return Response.json({ ok: true });
     } catch (error) {
@@ -237,11 +269,14 @@ export async function onRequestPost({ request, env }) {
         counter++;
       }
 
+      // Contraseña de relleno aleatoria — nadie la usa nunca, el profesor
+      // siempre elige la suya de verdad vía el enlace de bienvenida (abajo).
+      // Se hashea igual que cualquier otra, por consistencia.
       const randomPass = Math.random().toString(36).slice(2, 15) + Math.random().toString(36).slice(2, 15);
       await env.DB.prepare(`
         INSERT INTO usuarios (usuario, nombre, email, password, rol, auth_method, created_at, departamento)
         VALUES (?, ?, ?, ?, 'Profesor/a', 'local', datetime('now'), ?)
-      `).bind(usuario, nombre, email, randomPass, departamento).run();
+      `).bind(usuario, nombre, email, await hashPassword(randomPass), departamento).run();
 
       const token = randomToken();
       const expires = Date.now() + 60 * 60 * 1000;

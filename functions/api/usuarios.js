@@ -16,6 +16,19 @@ function moduloId(row) {
   return `${row.cicloId}__${row.modCod}`;
 }
 
+// ── Hashing de contraseñas (PBKDF2 vía Web Crypto) — duplicado en cada
+// functions/api/*.js que toca contraseñas, ver _middleware.js/docs/SECURITY.md.
+// Aquí solo se necesita hashear (alta y reseteo de contraseña de otro
+// usuario), no verificar — el superadmin/jefe de departamento no necesita
+// conocer la contraseña anterior para asignar una nueva.
+function _pwBytesToHex(bytes){ return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+async function hashPassword(password){
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:saltBytes, iterations:100000, hash:'SHA-256' }, keyMaterial, 256);
+  return `pbkdf2$100000$${_pwBytesToHex(saltBytes)}$${_pwBytesToHex(new Uint8Array(bits))}`;
+}
+
 function normalizeText(s){
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 }
@@ -118,7 +131,7 @@ export async function onRequestPost({ request, env, data }) {
     const u = body.usuario;
     const nuevoDept = superadmin ? (u.departamento || dept || '') : dept;
     await env.DB.prepare('INSERT INTO usuarios (usuario,password,nombre,rol,email,departamento) VALUES (?,?,?,?,?,?)')
-      .bind(u.usuario.trim(), u.password||'cambiar123', u.nombre.trim(), u.rol.trim(), u.email||'', nuevoDept).run();
+      .bind(u.usuario.trim(), await hashPassword(u.password||'cambiar123'), u.nombre.trim(), u.rol.trim(), u.email||'', nuevoDept).run();
     await auditLog(env.DB, user, 'userAdd', `Nuevo usuario: ${u.usuario} (${u.rol})`);
     return Response.json({ ok: true });
   }
@@ -172,7 +185,7 @@ export async function onRequestPost({ request, env, data }) {
       }
     }
     await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
-      .bind(newPassword, body.usuario).run();
+      .bind(await hashPassword(newPassword), body.usuario).run();
     await auditLog(env.DB, user, 'userResetPassword', `Contraseña reseteada: ${body.usuario}`);
     return Response.json({ ok: true });
   }
