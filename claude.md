@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v603 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v604 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Roadmap "Modo Cámara Inteligente" completo, ahora en fase de
 pulido de precisión: "Añadir varios" (`detectarMultiples`) gana aprendizaje
 de vocabulario del departamento (`ia_deteccion_ejemplos`), autoevaluación
@@ -48,8 +48,18 @@ real al jefe/a de departamento al añadir (mismo patrón `sendGmail()` que
 departamento en vez de por navegador. Migración `0030` aplicada en remoto
 por el usuario desde su VS Code (25/08/2026, `wrangler` ya autenticado
 ahí) tras un `git pull` bloqueado por el `desktop.ini` de siempre
-(reproducido y resuelto igual que otras veces, ver Entorno). Otras piezas
-recientes: vista global agrupada de solo lectura para superadmin en
+(reproducido y resuelto igual que otras veces, ver Entorno). **Contraseñas
+sin hash arreglado (v604)**: `usuarios.password` ya no guarda texto plano
+— PBKDF2 (100.000 iteraciones, salt de 16 bytes) vía Web Crypto
+(`crypto.subtle`, nativo en Workers, sin dependencias), migración
+perezosa (cada login con contraseña aún en texto plano se rehashea al
+vuelo, sin script masivo ni afectar a nadie). El superadmin sigue
+pudiendo resetear/asignar la contraseña de cualquiera exactamente igual
+que antes; lo que ya no es posible para nadie, ni siquiera el
+superadmin, es **ver** la contraseña actual de otra persona — es
+inherente a un hash de un solo sentido, elegido explícitamente por el
+usuario frente a cifrado reversible. Cero impacto en el flujo de login
+visible. Otras piezas recientes: vista global agrupada de solo lectura para superadmin en
 ⚙️ Aulas/Categorías/Ciclos, Mantenimiento como flujo real (tabla
 `mantenimientos`, historial por ítem), Historial de ítems como timeline
 estructurado, y Planificación de prácticas (reservas de material). Historial
@@ -413,8 +423,18 @@ Workers AI, onboarding de cámara (v543-v557).
    departamento real y comprobar que ven solo su propio inventario (más
    el compartido `iesjuanbosco`).
 3. Seguridad crítica pendiente desde antes de la migración
-   multi-departamento: credenciales en query params, contraseñas sin
-   hash — ver [`docs/SECURITY.md`](docs/SECURITY.md).
+   multi-departamento: credenciales en query params (`?u=&p=`, visibles en
+   logs/historial del navegador) — ver [`docs/SECURITY.md`](docs/SECURITY.md).
+   ~~Contraseñas sin hash~~ ✅ resuelto (25/08/2026): PBKDF2 vía
+   `crypto.subtle` (nativo de Workers, sin dependencias) en
+   `_middleware.js`/`auth.js`/`perfil.js`/`usuarios.js`/
+   `oauth/login-google.js`. Migración perezosa — cada cuenta se rehashea
+   sola la próxima vez que inicia sesión con éxito, nadie tiene que
+   cambiar su contraseña. El superadmin sigue pudiendo asignar una nueva
+   contraseña a cualquier usuario (`userResetPassword`) exactamente igual
+   que antes — lo que ya no es posible, por diseño, es que nadie
+   (incluido el superadmin) vea la contraseña actual de otro usuario tal
+   cual la escribió: un hash es irreversible a propósito.
 4. Más ideas de usabilidad sugeridas (sin priorizar) en
    [`docs/IDEAS.md`](docs/IDEAS.md): estado vacío por departamento,
    alertas de stock bajo, modo oscuro, etc.

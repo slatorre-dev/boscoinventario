@@ -16,6 +16,18 @@ function generateSessionToken() {
   }
   return token;
 }
+
+// ── Hashing de contraseñas (PBKDF2 vía Web Crypto) — duplicado en cada
+// functions/api/*.js que toca contraseñas, ver _middleware.js/docs/SECURITY.md.
+// Aquí solo hace falta hashear: las cuentas de Google inician sesión con
+// session_token, nunca con esta contraseña de relleno.
+function _pwBytesToHex(bytes){ return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+async function hashPassword(password){
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name:'PBKDF2', salt:saltBytes, iterations:100000, hash:'SHA-256' }, keyMaterial, 256);
+  return `pbkdf2$100000$${_pwBytesToHex(saltBytes)}$${_pwBytesToHex(new Uint8Array(bits))}`;
+}
 async function getGoogleJwks() {
   const now = Date.now();
   if (jwksCache && (now - jwksCacheTime) < JWKS_CACHE_TTL) {
@@ -197,7 +209,7 @@ async function ensureUser(db, email, name) {
     await db.prepare(`
       INSERT INTO usuarios (usuario, nombre, email, password, rol, google_id, auth_method, session_token, created_at, departamento)
       VALUES (?, ?, ?, ?, 'profesor', ?, 'google', ?, datetime('now'), ?)
-    `).bind(usuario, name || email, email, randomPass, email, sessionToken, departamento).run();
+    `).bind(usuario, name || email, email, await hashPassword(randomPass), email, sessionToken, departamento).run();
 
     console.log('Usuario creado exitosamente:', usuario);
 
