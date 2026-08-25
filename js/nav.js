@@ -121,6 +121,9 @@ function goCaja(id){
 
 function openSub(){
   _subFilter = null;
+  const hm = document.getElementById('hintMaintenance');
+  if(hm) hm.style.display = 'none';
+  if(cf.type==='maintenance' && typeof showFeatureHintOnce==='function') showFeatureHintOnce('maintenance','hintMaintenance');
   const all=getBase();
   const low=all.filter(isLowStock).length;
   let typeLabel;

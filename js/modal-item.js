@@ -1514,6 +1514,7 @@ function openPedidos(){
   if(!requirePerm('orders.write')) return;
   renderPedidosList();
   document.getElementById('mPedidos').classList.add('open');
+  if(typeof showFeatureHintOnce==='function') showFeatureHintOnce('pedidos','hintPedidos');
 }
 function closePedidos(){ document.getElementById('mPedidos').classList.remove('open'); }
 

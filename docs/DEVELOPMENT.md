@@ -3033,4 +3033,46 @@ nueva.
 
 ---
 
+### 25/08/2026 — Recorrido de bienvenida por sección (v609)
+
+Cuarta y última mejora de la auditoría de UI del 25/08/2026 — cierra la
+ronda completa (modo oscuro v606, buscador global v607, favoritos v608).
+Siguiendo la recomendación explícita de la propia auditoría ("más barato
+que un tour interactivo: un banner/tooltip descartable la primera vez que
+se visita cada sección nueva"), no se amplía el tour de 4 pantallas que ya
+existe para cámara (`js/onboarding-camara.js`) — se generaliza el
+mecanismo que ya usaba `#camaraHint` (banner descartable en Home) a las 3
+secciones que la propia auditoría señaló como poco descubiertas:
+Mantenimiento, Pedidos, Reservas.
+
+- `js/ui-helpers.js`: `showFeatureHintOnce(key, elId)` /
+  `dismissFeatureHint(key, elId)` — mismo mecanismo de
+  `localStorage('hint_'+key+'_visto')` que ya usaba la cámara, ahora
+  reutilizable sin duplicar lógica por cada sección nueva que lo
+  necesite en el futuro.
+- 3 banners estáticos nuevos con la clase `.feature-hint` (variables CSS,
+  a diferencia de `.camara-hint` que tiene colores fijos — compatible con
+  el modo oscuro de v606 sin overrides extra):
+  - `js/nav.js` (`openSub()`): se oculta al entrar a cualquier
+    subpágina y solo se muestra si `cf.type==='maintenance'` —
+    `#pS`/`.sub-body` es compartido por aula/categoría/mantenimiento/
+    etc., así que el reset explícito evita que quede visible al navegar
+    a una vista donde no pinta nada.
+  - `js/prestamos.js` (`goPrestamos()`): se muestra/oculta según
+    `currentPresTab==='reservas'`, junto al resto de la lógica de tabs
+    que ya existía.
+  - `js/modal-item.js` (`openPedidos()`): se dispara al abrir el modal,
+    debajo de la descripción que ya tenía.
+
+Verificado con Playwright (`page.evaluate()`, sin backend disponible en
+este sandbox): mecanismo genérico (mostrar → descartar → no reaparece)
+probado sobre los 3 banners; integración real en `goMaintenance()`
+confirmando que se oculta al navegar a `goAula()`; integración real en
+`setPresTab('reservas')` alternando con `'activos'`. Sin errores de
+consola en ningún caso.
+
+Las 4 piezas de la auditoría de UI quedan cerradas.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

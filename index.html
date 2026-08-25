@@ -460,6 +460,10 @@
         🔴 Solo vencidos
       </label>
     </div>
+    <div class="feature-hint" id="hintReservas" style="display:none">
+      <span>📅 <strong>Reservas</strong>: planifica material para una práctica futura sin retirarlo todavía — se convierte en préstamo real el día de la fecha reservada.</span>
+      <button onclick="dismissFeatureHint('reservas','hintReservas')">Entendido</button>
+    </div>
     <div class="toolbar">
       <div class="sbox"><span class="si">🔍</span><input type="text" id="presSearch" placeholder="Buscar por ítem o profesor..." oninput="renderPrestamos()"></div>
       <label class="pres-group-select">
@@ -513,6 +517,10 @@
     </div>
   </div>
   <div class="sub-body">
+    <div class="feature-hint" id="hintMaintenance" style="display:none">
+      <span>🛠️ <strong>Mantenimiento</strong>: marca cualquier ítem con avería desde su menú ⋯ "Marcar mantenimiento", o edítalo aquí y cambia su estado. Verás todo lo pendiente reunido en esta vista.</span>
+      <button onclick="dismissFeatureHint('maintenance','hintMaintenance')">Entendido</button>
+    </div>
     <div class="print-header">
       <div class="print-header-title" id="printTitle"></div>
       <div class="print-header-meta" id="printMeta"></div>
@@ -1672,6 +1680,10 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   <div class="modal" style="max-width:540px">
     <div class="mh"><div class="mt">🛒 Solicitud de compra</div><button class="mx" onclick="closePedidos()">✕</button></div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Marca ítems para pedir. Puedes ajustar la cantidad y añadir una nota antes de imprimir.</div>
+    <div class="feature-hint" id="hintPedidos" style="display:none">
+      <span>🛒 Al añadir un ítem aquí se avisa por email al jefe/a de departamento — no hace falta avisar aparte.</span>
+      <button onclick="dismissFeatureHint('pedidos','hintPedidos')">Entendido</button>
+    </div>
     <div class="ped-list" id="pedList"></div>
     <div class="mf">
       <button class="btn" onclick="clearPedidos()" style="color:var(--red)">🗑 Vaciar lista</button>

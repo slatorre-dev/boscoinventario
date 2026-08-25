@@ -15,6 +15,21 @@ try { favoritos = new Set(JSON.parse(localStorage.getItem('inv_favoritos') || '[
 
 function isFavorito(id) { return favoritos.has(String(id)); }
 
+// Banners descartables de descubrimiento de funciones (mantenimiento,
+// pedidos, reservas...) — mismo mecanismo que ya usaba #camaraHint,
+// generalizado para no repetirlo por cada sección nueva.
+function showFeatureHintOnce(key, elId) {
+  try { if (localStorage.getItem('hint_' + key + '_visto')) return; } catch (e) { return; }
+  const el = document.getElementById(elId);
+  if (el) el.style.display = 'flex';
+}
+
+function dismissFeatureHint(key, elId) {
+  const el = document.getElementById(elId);
+  if (el) el.style.display = 'none';
+  try { localStorage.setItem('hint_' + key + '_visto', '1'); } catch (e) {}
+}
+
 function toggleFavorito(id) {
   id = String(id);
   favoritos.has(id) ? favoritos.delete(id) : favoritos.add(id);

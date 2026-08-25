@@ -95,6 +95,9 @@ function goPrestamos(tab){
   const presReservasContentEl = document.getElementById('presReservasContent');
   if(presContentEl) presContentEl.style.display = currentPresTab==='reservas' ? 'none' : '';
   if(presReservasContentEl) presReservasContentEl.style.display = currentPresTab==='reservas' ? '' : 'none';
+  const hintReservas = document.getElementById('hintReservas');
+  if(currentPresTab==='reservas'){ if(typeof showFeatureHintOnce==='function') showFeatureHintOnce('reservas','hintReservas'); }
+  else if(hintReservas){ hintReservas.style.display = 'none'; }
 
   const groupSelect = document.getElementById('presGroupBy');
   if(groupSelect) groupSelect.value = currentPresGroupBy;

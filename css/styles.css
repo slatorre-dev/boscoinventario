@@ -452,6 +452,10 @@ body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 .fav-chip-x{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;line-height:1;padding:2px;border-radius:50%;opacity:.6}
 .fav-chip-x:hover{opacity:1;background:var(--surface2);color:var(--red)}
 
+.feature-hint{margin:0 0 14px;background:var(--accent-l);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--text)}
+.feature-hint button{flex-shrink:0;background:none;border:1px solid var(--accent);color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:4px 10px;border-radius:6px;white-space:nowrap}
+.feature-hint button:hover{background:var(--white)}
+
 .choice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px}
 .home-sec{margin-top:0}
 .home-sec>summary{cursor:pointer;list-style:none;border-radius:8px;padding:6px 8px;margin:0 -8px;transition:background .15s}
