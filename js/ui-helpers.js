@@ -8,6 +8,20 @@ function toggleTheme() {
   try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
 }
 
+// Ítems fijados en Inicio — por navegador (localStorage), no sincronizado
+// entre dispositivos ni por departamento: es un atajo personal, como el tema.
+let favoritos = new Set();
+try { favoritos = new Set(JSON.parse(localStorage.getItem('inv_favoritos') || '[]').map(String)); } catch (e) {}
+
+function isFavorito(id) { return favoritos.has(String(id)); }
+
+function toggleFavorito(id) {
+  id = String(id);
+  favoritos.has(id) ? favoritos.delete(id) : favoritos.add(id);
+  try { localStorage.setItem('inv_favoritos', JSON.stringify([...favoritos])); } catch (e) {}
+  if (typeof renderFavoritos === 'function' && document.getElementById('pH')?.classList.contains('active')) renderFavoritos();
+}
+
 function confirmDialog({title, message, confirmText = 'Continuar', danger = false, icon} = {}) {
   return new Promise(resolve => {
     const modal = document.getElementById('mConf');

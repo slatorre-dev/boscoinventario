@@ -2992,4 +2992,45 @@ de bienvenida.
 
 ---
 
+### 25/08/2026 — Favoritos/ítems fijados en Inicio (v608)
+
+Tercera de las 4 mejoras de interfaz de la auditoría anterior. Patrón
+Airtable/Notion (⭐ pin) para acceder en un clic desde Home a los 5-10
+ítems que un profesor pide constantemente, sin pasar por el buscador cada
+vez. Almacenamiento en `localStorage` (`inv_favoritos`) — personal por
+navegador, no sincronizado entre dispositivos ni por departamento, mismo
+criterio que el modo oscuro (v606): es un atajo de conveniencia, no un
+dato de negocio que necesite vivir en D1.
+
+- `js/ui-helpers.js`: `favoritos` (`Set` cargado de `localStorage` al
+  arrancar), `isFavorito(id)`, `toggleFavorito(id)` — persiste y, si Home
+  está activa, refresca la sección al vuelo.
+- `js/inventory.js`: botón `⭐ Fijar en Inicio` / `Quitar de Inicio` en el
+  menú `⋯ Más acciones` de tabla y tarjetas, mismo patrón que `🛒 Pedido`
+  (clase `.activo` cuando ya está fijado).
+- `js/home.js`: `renderFavoritos()` (llamada desde `renderHome()`) pinta
+  la fila de chips en `#gFavoritos`/`#secFavoritos` — icono de categoría,
+  nombre, cantidad (coloreada vía `isLowStock()`, ya solo aplica a
+  consumibles como en el resto de la app) y una `✕` para desfijar sin
+  abrir el ítem. Sección oculta por completo cuando no hay ningún
+  favorito (sin estado vacío que enseñar — es opt-in desde el menú ⋯).
+  Clic en el chip reutiliza `openItemRoute(id)` (la misma función que ya
+  usa el buscador global) para abrir el ítem directamente.
+- `index.html`: `#secFavoritos`/`#gFavoritos` insertados en `.home-body`
+  justo debajo de las tarjetas de estadísticas, antes de "Por aula/
+  espacio" — la posición más visible sin desplazar el resto del layout.
+- `css/styles.css`: `.fav-chip`/`.fav-chip-qty`/`.fav-chip-x`, mismo
+  sistema de variables que el resto (compatible con el modo oscuro de
+  v606 sin overrides adicionales).
+
+Verificado con Playwright (`page.evaluate()` inyectando ítems falsos, sin
+backend disponible en este sandbox): fijar 2 ítems renderiza la fila con
+nombre/cantidad correctos, desfijar uno deja el otro, desfijar el último
+oculta la sección entera. Sin errores de consola.
+
+Queda 1 pieza de la misma auditoría: recorrido de bienvenida para gente
+nueva.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

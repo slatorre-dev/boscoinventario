@@ -1,13 +1,13 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v607 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
+**Estado:** v608 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
 desplegado. Seguridad: contraseñas ya hasheadas con PBKDF2 (migración
 perezosa), `backup.js` auditado sin fugas. Pedidos (`🛒`) funciona de
 verdad con email real y sincronización D1. Sesión actual: auditoría de UI
 (comparativa Snipe-IT/Notion/Linear) identificó 4 mejoras — modo oscuro
-(v606) y buscador global Ctrl+K/"/" funcionando desde cualquier pantalla
-(v607) ya implementados y desplegados; quedan favoritos/ítems fijados y
-recorrido de bienvenida. Historial completo sesión a sesión, con todo el
+(v606), buscador global Ctrl+K/"/" desde cualquier pantalla (v607) y
+favoritos/ítems fijados en Inicio (v608) ya implementados y desplegados;
+queda el recorrido de bienvenida. Historial completo sesión a sesión, con todo el
 detalle técnico y las lecciones de cada bug: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 (léelo si necesitas contexto de por qué algo se hizo así, o de un bug ya
 resuelto). Este archivo es solo el estado operativo actual — no lo

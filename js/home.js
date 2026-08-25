@@ -4,6 +4,7 @@
 function renderHome(){
   // Banner de préstamos
   renderLoanBanner();
+  renderFavoritos();
 
   const loading = !itemsLoaded;
   const total=items.length;
@@ -81,4 +82,22 @@ function renderLoanBanner(){
   const el = document.getElementById('loanBanner');
   if(!el) return;
   el.innerHTML = '';
+}
+
+function renderFavoritos(){
+  const sec = document.getElementById('secFavoritos');
+  const strip = document.getElementById('gFavoritos');
+  if(!sec || !strip) return;
+  const favs = [...favoritos].map(id=>items.find(x=>String(x.id)===id)).filter(Boolean);
+  sec.style.display = favs.length ? '' : 'none';
+  strip.style.display = favs.length ? '' : 'none';
+  strip.innerHTML = favs.map(x=>{
+    const cat=CATS[x.cat]||null;
+    const low=isLowStock(x);
+    return`<span class="fav-chip" onclick="openItemRoute('${String(x.id)}')" title="Abrir ${escHtml(x.item)}">
+      ${cat?escHtml(cat.i):'📦'} ${escHtml(x.item)}
+      <span class="fav-chip-qty ${low?'qlow':'qok'}">${x.qty}</span>
+      <button class="fav-chip-x" onclick="event.stopPropagation();toggleFavorito('${String(x.id)}')" title="Quitar de fijados">✕</button>
+    </span>`;
+  }).join('');
 }

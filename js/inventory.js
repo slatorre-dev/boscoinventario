@@ -1003,6 +1003,7 @@ function rTable(data,mc){
               <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
               <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
               <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
+              <button class="action-menu-item${isFavorito(x.id)?' activo':''}" onclick="event.stopPropagation();toggleFavorito(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Fijar en Inicio">⭐ ${isFavorito(x.id)?'Quitar de Inicio':'Fijar en Inicio'}</button>
               ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}
             </div>
           </div>
@@ -1079,6 +1080,7 @@ function rCards(data,mc){
             <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
             <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
             <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
+            <button class="action-menu-item${isFavorito(x.id)?' activo':''}" onclick="event.stopPropagation();toggleFavorito(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Fijar en Inicio">⭐ ${isFavorito(x.id)?'Quitar de Inicio':'Fijar en Inicio'}</button>
             ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}
           </div>
         </div>
