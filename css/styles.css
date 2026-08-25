@@ -15,6 +15,21 @@
   --sh:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
   --shh:0 4px 12px rgba(0,0,0,.10),0 12px 32px rgba(0,0,0,.10);
 }
+body.dark {
+  color-scheme: dark;
+  --bg:#0f1420; --white:#161d2e; --surface2:#1c2436; --border:#2a3448;
+  --text:#e5e9f2; --muted:#8b93a7;
+  --accent:#3b82f6; --accent-l:#1e3a5f;
+  --acc2:#a78bfa; --acc2-l:#2a2150;
+  --green:#10b981; --green-l:#0b2e22;
+  --amber:#f59e0b; --amber-l:#2e2007;
+  --red:#f87171; --red-l:#3f1d1d;
+  --teal:#22d3ee; --teal-l:#0b2b30;
+  --orange:#fb923c; --orange-l:#331a08;
+  --pink:#f472b6; --pink-l:#3a1530;
+  --sh:0 1px 3px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3);
+  --shh:0 4px 12px rgba(0,0,0,.5),0 12px 32px rgba(0,0,0,.5);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:auto;scroll-padding-top:58px}
 body{ 
@@ -68,6 +83,11 @@ body{
 .topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .topbar-btns{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .mob-menu-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--white);color:var(--text);font-size:20px;cursor:pointer;font-weight:700;line-height:1}
+.theme-toggle-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:16px;line-height:1;transition:background .15s}
+.theme-toggle-btn:hover{background:var(--surface2)}
+.theme-toggle-btn .theme-icon-dark{display:none}
+body.dark .theme-toggle-btn .theme-icon-light{display:none}
+body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 .breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
 .breadcrumb .bc-link{color:var(--accent);cursor:pointer;font-weight:600}
 .breadcrumb .bc-link:hover{text-decoration:underline}
@@ -2484,7 +2504,7 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
   top: calc(100% + 6px);
   right: 0;
   z-index: 300;
-  background: var(--surface);
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 8px 28px rgba(0,0,0,.13);
@@ -2503,8 +2523,6 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
 .preset-save-row input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; font-size: 13px; background: var(--surface2); color: var(--text); }
 .preset-save-row button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 5px 11px; font-size: 13px; cursor: pointer; font-weight: 600; }
 .preset-save-row button:hover { opacity: .88; }
-.dark .preset-panel { background: var(--surface); border-color: var(--border); }
-.dark .preset-apply-btn { background: var(--surface2); border-color: var(--border); }
 
 /* Easter egg: robot bailarín */
 @keyframes robotDance {

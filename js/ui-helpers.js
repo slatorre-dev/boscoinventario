@@ -3,6 +3,11 @@
 // validación inline de formularios
 // ═════════════════════════════════════════════════════════
 
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+}
+
 function confirmDialog({title, message, confirmText = 'Continuar', danger = false, icon} = {}) {
   return new Promise(resolve => {
     const modal = document.getElementById('mConf');

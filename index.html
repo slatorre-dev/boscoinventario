@@ -23,9 +23,19 @@
   #loadOverlay{position:fixed;inset:0;background:#f4f6fb;display:flex;align-items:center;justify-content:center;z-index:9998}
   #loadOverlay.lo-hide{opacity:0;pointer-events:none;transition:opacity .45s ease}
   @media(prefers-color-scheme:dark){#loadOverlay{background:#0f172a}}
+  body.dark #loadOverlay{background:#0f1420}
 </style>
 </head>
 <body>
+<script>
+(function(){
+  try{
+    var t=localStorage.getItem('theme');
+    var dark = t ? t==='dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+    if(dark) document.body.classList.add('dark');
+  }catch(e){}
+})();
+</script>
 
 <div id="loadBar"></div>
 <div id="connBar"></div>
@@ -54,6 +64,9 @@
     </button>
   </div>
   <div class="topbar-right">
+    <button class="theme-toggle-btn" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema claro/oscuro">
+      <span class="theme-icon-light">🌙</span><span class="theme-icon-dark">☀️</span>
+    </button>
     <div class="conn-status loading" id="connStatus"><span class="conn-dot"></span></div>
     <div class="breadcrumb" id="bc"></div>
     <button class="mob-menu-btn" id="mobMenuBtn" onclick="toggleMobMenu()" title="Menú">⋮</button>
