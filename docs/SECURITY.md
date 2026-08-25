@@ -202,33 +202,47 @@ export async function onRequestPost({ request, env }) {
 
 ---
 
-### 5. Exportación de Datos Incluye Passwords
+### 5. Exportación de Datos Incluye Passwords — ✅ VERIFICADO SIN RIESGO (25/08/2026)
 
-**Severidad:** CRÍTICA (CVSS 8.7)
+**Severidad:** CRÍTICA (CVSS 8.7) — histórico, ver estado abajo
 
-**Descripción:**
+**Descripción original (ejemplo genérico, no el código real del proyecto):**
 ```javascript
-// functions/api/backup.js - VULNERABLE
+// Patrón VULNERABLE que se buscó explícitamente en el código
 export async function onRequest({ env }) {
   const { results } = await env.DB.prepare(
     'SELECT * FROM usuarios'
   ).all();
-  
-  // ← Incluye passwords en plain text
+
+  // ← Incluiría passwords si se usara SELECT *
   const backup = {
     usuarios: results,  // { usuario, password, rol }
     items: [...],
     prestamos: [...]
   };
-  
+
   return Response.json(backup);
 }
 ```
 
-**Riesgo:**
+**Riesgo (si existiera):**
 - ✗ Archivo backup descargado sin encripción
 - ✗ Contraseñas de todos los usuarios expuestas
 - ✗ Ataque cuando usuario guarda archivo
+
+**Auditoría realizada (25/08/2026):** revisado `functions/api/backup.js` línea
+por línea — la consulta real es
+`SELECT usuario, nombre, rol, email FROM usuarios` (sin `password`), así
+que el backup JSON subido a Drive nunca ha incluido esa columna. Se
+revisó además cada `SELECT ... FROM usuarios` de todo `functions/api/`
+(`grep -rn "password" functions/api`): las únicas consultas que sí leen
+`password` son las de login/verificación (`_middleware.js`, `auth.js`,
+`perfil.js`) y siempre para comparar internamente contra el valor
+introducido — nunca se devuelve al cliente (`delete row.password;` antes
+de construir la respuesta en `_middleware.js` y `auth.js`); los listados
+de usuarios (`usuarios.js`, `list.js`) nunca seleccionan esa columna. No
+había nada que corregir en código — el ejemplo de este documento no
+reflejaba el estado real del proyecto en el momento en que se escribió.
 
 ---
 
@@ -599,10 +613,10 @@ npm install -D eslint-plugin-security
 | 2 | Password en localStorage | CRÍTICA | Solo token | 2h |
 | 3 | Password sin hash | ✅ Resuelto 25/08/2026 | PBKDF2 (`crypto.subtle`) | — |
 | 4 | Permisos solo frontend | CRÍTICA | Re-validar backend | 4h |
-| 5 | Backup con passwords | CRÍTICA | Excluir credenciales | 2h |
+| 5 | Backup con passwords | ✅ Verificado sin riesgo 25/08/2026 | Ya excluía `password` | — |
 
-**Total Críticos pendientes: 4** (1 resuelto de 5)
-**Horas para resolver lo pendiente: ~16h**
+**Total Críticos pendientes: 3** (2 resueltos/verificados de 5)
+**Horas para resolver lo pendiente: ~14h**
 
 ---
 
