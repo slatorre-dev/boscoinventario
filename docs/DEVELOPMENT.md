@@ -2615,6 +2615,22 @@ conservada, ítem quedó creado en el array `items`; segundo ítem guardado
 con el botón normal "Guardar" cierra el modal como siempre. Sin errores de
 consola. `sw.js` → `v600`.
 
+### 25/08/2026 (v600→v601): fix — el atajo "🛠️ Marcar mantenimiento" del panel post-QR quedó roto por la sección colapsable
+
+Encontrado auditando el resto de flujos de la app (préstamos/mantenimiento/
+reservas) a petición del usuario, no reportado por él. `qrQuickAction('maintenance')`
+(`js/qr-scanner.js`) abre el ítem, pone `f_mantEstado='Pendiente'` y hace
+`focus()` en `f_mantNota` — pero desde que "MANTENIMIENTO" pasa a ser un
+`<details>` colapsado por defecto (v597, ver sesión anterior), ese código
+nunca abría el `<details>`: el valor se rellenaba pero la sección seguía
+plegada, y `.focus()` sobre un campo dentro de un `<details>` cerrado no
+hace nada (el navegador no permite foco en contenido no renderizado) — el
+profesor no veía ni la sección ni el cursor en la nota tras usar el atajo.
+
+Fix de una línea: `document.getElementById('mSecMantenimiento').open = true;`
+antes del `.focus()`. Verificado con Playwright: sección abierta, valor
+"Pendiente", campo de nota realmente enfocado. `sw.js` → `v601`.
+
 ---
 
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
