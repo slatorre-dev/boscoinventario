@@ -138,6 +138,7 @@ function applyRoleUI(){
     ['btnPres','loans.write',  'flex'],
     ['btnPed', 'orders.write', 'flex'],
     ['btnPrint', null,         'flex'],
+    ['btnMisModulos', null,    'flex'],
     ['gsCamara', null,         'inline-flex']
   ];
   rules.forEach(([id, permission, displayType]) => {

@@ -83,6 +83,7 @@
       <button class="tbtn" id="btnInstall" style="display:none" onclick="installPWA()" title="Instalar app" aria-label="Instalar app">📲 <span class="btn-install-label">Instalar</span></button>
       <button class="tbtn tbtn-logout-mob" id="btnLogoutMob" onclick="logout()" title="Cerrar sesión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Cerrar sesión</button>
       <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintChoiceModal()" title="Imprimir inventario">🖨️ Imprimir</button>
+      <button class="tbtn" id="btnMisModulos" style="display:none" onclick="openMisModulosModal()">📚 Mis módulos</button>
       <div class="dept-menu-wrap" id="deptMenuWrap" style="display:none">
         <button class="tbtn tbtn-dept" id="btnDept" onclick="toggleDeptMenu()">⚙️ Departamento</button>
         <div class="dept-menu" id="deptMenu">
@@ -315,6 +316,23 @@
         <select id="selectDeptSelect"><option value="">Cargando...</option></select>
       </div>
       <button class="login-btn" id="selectDeptBtn" onclick="doSelectDepartamento()">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SELECCIÓN DE MÓDULOS/ASIGNATURAS (opcional, tras elegir departamento) ══ -->
+<div class="page" id="pSeleccionarModulos">
+  <div class="login-wrap">
+    <div class="login-card" style="width:min(560px,100%)">
+      <div class="login-icon" style="font-size:30px">📚</div>
+      <h1>¿Qué módulos o asignaturas impartes?</h1>
+      <p class="login-sub">Opcional — puedes hacerlo ahora o más tarde desde el botón "📚 Mis módulos" de la barra superior.</p>
+      <input type="text" id="onboardingModulosSearch" class="fi-w" placeholder="🔍 Buscar asignatura..." style="margin-bottom:12px">
+      <div id="onboardingModulosBody" style="max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px;margin-bottom:16px;text-align:left"></div>
+      <button class="login-btn" id="onboardingModulosBtn" onclick="guardarSeleccionModulosOnboarding()">💾 Guardar y continuar</button>
+      <div class="login-footer">
+        <button class="login-link" onclick="saltarSeleccionModulos()">Recordar más tarde</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1496,6 +1514,23 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   </div>
 </div>
 
+<!-- MODAL "MIS MÓDULOS" (autoservicio, cualquier rol) -->
+<div class="mbg" id="mMisModulos" style="z-index:600" onclick="if(event.target===this)closeMisModulosModal()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt">📚 Mis módulos/asignaturas</div><button class="mx" onclick="closeMisModulosModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Marca los módulos o asignaturas que impartes.</p>
+    <input type="text" id="misModulosSearch" class="fi-w" placeholder="🔍 Buscar asignatura..." oninput="filterMisModulos()" style="margin-bottom:12px">
+    <div id="mMisModulosBody" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px"></div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeMisModulosModal()">Cancelar</button>
+        <button class="btn btn-p" id="btnGuardarMisModulos" onclick="guardarMisModulosModal()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL GESTIÓN DE AULAS -->
 <div class="mbg" id="mAulas" onclick="if(event.target===this)closeAulasModal()">
   <div class="modal">
@@ -2090,6 +2125,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/audit-log.js"></script>
 <script defer src="js/modal-historial.js"></script>
 <script defer src="js/modal-accesos.js"></script>
+<script defer src="js/modal-mis-modulos.js"></script>
 <script defer src="js/modal-auditoria.js"></script>
 <script defer src="js/dept-game.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>

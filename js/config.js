@@ -39,6 +39,7 @@ const TH_OPTIONS = ['th-blue','th-green','th-amber','th-teal','th-orange','th-pi
 // ═════════════════════════════════════════════════════════
 // CICLOS Y MÓDULOS
 // ═════════════════════════════════════════════════════════
+let MIS_MODULOS = []; // moduloId[] que imparte el usuario logueado (ver meta.js:misModulos)
 let CICLOS = [
   {
     id:'gm_telecom',
