@@ -3395,4 +3395,51 @@ acción" para cualquier rol, incluido superadmin.
 
 ---
 
+### 26/08/2026 — Autoservicio de aulas + menú "Mis Cursos/Aulas" (v622)
+
+Extensión directa del autoservicio de módulos (v619): además de qué
+módulos/asignaturas imparte, el profesorado puede marcar en qué aulas da
+clase. Petición explícita del usuario: sin pantalla de onboarding (a
+diferencia de los módulos), solo accesible desde un menú nuevo.
+
+- **Migración**: tabla `aula_profesores(aula, usuario)`, PK compuesta —
+  más simple que `modulo_profesores` porque `aulas.id` ya es única por sí
+  sola (no hace falta departamento en la clave). Sin backfill (concepto
+  nuevo, nada que migrar). Aplicada con `--command` en vez de `--file`
+  porque la subida de archivo de wrangler falló varias veces por un fetch
+  intermitente esa tarde — el contenido es idéntico, solo cambió el
+  mecanismo de aplicarlo.
+- **`functions/api/usuarios.js`**: `reemplazarAulasUsuario()` (mismo
+  patrón de diff completo que `reemplazarModulosUsuario`) + acción
+  `selectAulas` — autoservicio puro, siempre el actor autenticado, sin
+  contraparte de admin (no se ha pedido). Sin restricción de departamento
+  sobre qué aulas se pueden marcar — el frontend solo ofrece las aulas
+  que el usuario ya ve en `AULAS` (global, ya scopeada), así que no hay
+  forma de marcar algo que no pudiera ver de todas formas.
+- **`functions/api/meta.js`**: `misAulas` (array de `aula.id`) para el
+  usuario logueado.
+- **UI**: el botón "📚 Mis módulos" de la topbar se convierte en un menú
+  desplegable "📌 Mis Cursos/Aulas" (reusa el mismo componente visual que
+  ⚙️ Departamento — `.dept-menu-wrap`/`.dept-menu`/`.dept-menu-item`,
+  incluido su comportamiento responsive en móvil, sin escribir CSS
+  nueva) con dos opciones: "📚 Módulos" y "🏫 Aulas". El modal de aulas
+  (`js/modal-mis-aulas.js`) es una lista plana con buscador, sin agrupar
+  por ciclo como los módulos — las aulas no tienen esa jerarquía.
+- **Lección de esta sesión aplicada aquí**: antes de dar por cerrado el
+  permiso/endpoint, se corrió el mismo chequeo cruzado
+  `ACTION_PERMISSIONS` vs `ENDPOINT_MAP` que destapó los bugs de
+  `userUnlock` e `importModulosCSV` — esta vez `selectAulas` se añadió a
+  los dos mapas a la vez y se verificó antes de desplegar, sin repetir el
+  fallo.
+- Verificado en producción con Playwright + `wrangler d1 execute`
+  (cuenta `profe1electricidadelectronica`): el menú se despliega con las
+  dos opciones, el modal de aulas lista las 72 aulas visibles para su
+  departamento, guardar persiste en `aula_profesores`, y una recarga
+  completa de sesión carga `MIS_AULAS` sin mostrar ninguna pantalla de
+  onboarding. Datos de prueba limpiados al terminar.
+
+`sw.js` → `v622`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

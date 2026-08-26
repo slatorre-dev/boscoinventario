@@ -1,25 +1,20 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v621 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
-fallidos seguidos, con desbloqueo manual desde 🔐 Usuarios, y panel
-**🛡️ Gestionar accesos** (historial de logins + clic en usuario → su
-Historial de acciones). **Autoasignación de departamento**: cuenta sin
-departamento (típico en Google con correo no mapeado en `EMAIL_DEPT_MAP`)
-elige el suyo en `#pSeleccionarDepartamento` al entrar, una sola vez, sin
-que el superadmin tenga que asignarlo. **Módulos con varios profesores +
-autoservicio** (26/08/2026): tabla nueva `modulo_profesores` (login↔módulo,
-muchos-a-muchos) sustituye a `ciclos.responsable` (un solo nombre, se
-pisaban entre sí) en `userAssignModulos`/`getUsers`/`importModulosCSV` —
-de paso corrige el bug ya conocido de que un superadmin solo podía tocar
-módulos de su propio departamento de referencia. Tras elegir departamento,
-pantalla opcional para elegir módulos/asignaturas ("Recordar más tarde"
-disponible), y botón "📚 Mis módulos" en la topbar (cualquier rol) para
-hacerlo en cualquier momento — mismo patrón de autoservicio que el
-departamento. El aviso de "otro profesor ya lo imparte" muestra correos,
-no nombres (puede haber varios). La importación de módulos por CSV, que
-se había quedado rota (dos bugs de plumbing: sin permiso en
-`ACTION_PERMISSIONS` y sin endpoint en `ENDPOINT_MAP`, v620-v621), ya
-funciona de extremo a extremo. Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+**Estado:** v622 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
+fallidos seguidos, panel **🛡️ Gestionar accesos**, y **autoasignación de
+departamento** (cuenta sin departamento lo elige ella misma al entrar,
+una sola vez). **Módulos con varios profesores + autoservicio**: tabla
+`modulo_profesores` (login↔módulo, muchos-a-muchos) sustituye a
+`ciclos.responsable`; tras elegir departamento, pantalla opcional para
+elegir módulos ("Recordar más tarde" disponible); aviso de "otro profesor
+ya lo imparte" con correos, no nombres. Importación de módulos por CSV
+reparada (dos bugs de permiso/endpoint, v620-v621). **Autoservicio de
+aulas** (26/08/2026): tabla `aula_profesores` (login↔aula) + acción
+`selectAulas` — el botón de la topbar pasa a ser un menú desplegable
+"📌 Mis Cursos/Aulas" con dos opciones, "📚 Módulos" (la de antes) y
+"🏫 Aulas" (nueva, checklist plana con buscador sobre `AULAS`) —
+**sin** paso de onboarding, solo accesible desde ese menú, a petición
+expresa del usuario. Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el
