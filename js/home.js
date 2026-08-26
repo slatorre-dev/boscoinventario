@@ -25,7 +25,18 @@ function renderHome(){
     <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">Stock bajo</div></div></div>
     <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">Mantenimiento</div></div></div>${ocCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
-  const aulaEntries = loading ? AULAS : AULAS.filter(a=>items.some(x=>x.aula===a.id));
+  const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';
+  const tieneMisAulas = esProfesor && Array.isArray(MIS_AULAS) && MIS_AULAS.length > 0;
+  const verTodasAulas = localStorage.getItem('home_ver_todas_aulas') === '1';
+  const filtrarPorMisAulas = tieneMisAulas && !verTodasAulas;
+  let aulaEntries = loading ? AULAS : AULAS.filter(a=>items.some(x=>x.aula===a.id));
+  if(filtrarPorMisAulas) aulaEntries = aulaEntries.filter(a=>MIS_AULAS.includes(a.id));
+  const misAulasToggleWrap = document.getElementById('misAulasToggleWrap');
+  if(misAulasToggleWrap){
+    misAulasToggleWrap.style.display = tieneMisAulas ? 'inline' : 'none';
+    const misAulasToggleBtn = document.getElementById('misAulasToggleBtn');
+    if(misAulasToggleBtn) misAulasToggleBtn.textContent = filtrarPorMisAulas ? '🏫 Ver todas las aulas' : '🏫 Ver solo mis aulas';
+  }
   document.getElementById('gAulas').innerHTML=aulaEntries.length
     ? aulaEntries.map(a=>{
     const n=items.filter(x=>x.aula===a.id).length;
@@ -66,6 +77,12 @@ function renderHome(){
   if(secCats) secCats.open = homeSectionOpenState('cats', catEntries.length);
   const secCiclos = document.getElementById('homeSecCiclos');
   if(secCiclos) secCiclos.open = homeSectionOpenState('ciclos', CICLOS.length);
+}
+
+function toggleVerTodasAulas(){
+  const actual = localStorage.getItem('home_ver_todas_aulas') === '1';
+  localStorage.setItem('home_ver_todas_aulas', actual ? '0' : '1');
+  renderHome();
 }
 
 function homeSectionOpenState(key, count){
