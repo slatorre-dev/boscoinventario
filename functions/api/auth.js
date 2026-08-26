@@ -166,6 +166,29 @@ async function getUserForLogin(db, usuario) {
   }
 }
 
+// ── Registro de accesos (panel "🛡️ Accesos", solo jefe/a de departamento y
+// superadmin) — reusa la tabla `log` ya existente para Historial de acciones
+// (historial.js la clasifica como tipo "Accesos" por el prefijo `login`).
+// Sin columna `departamento` propia: se ve por jefe/a de departamento via
+// JOIN a usuarios.departamento (igual que el resto del historial), así que
+// los intentos contra un usuario inexistente solo los ve el superadmin.
+function clientIp(request) {
+  return request.headers.get('CF-Connecting-IP') || request.headers.get('x-forwarded-for') || '';
+}
+
+async function logAccessAttempt(db, { usuario, nombre, rol, accion, detalle }) {
+  try {
+    await db.prepare("CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT DEFAULT '', usuario TEXT DEFAULT '', nombre TEXT DEFAULT '', rol TEXT DEFAULT '', accion TEXT DEFAULT '', itemId TEXT DEFAULT '', resumen TEXT DEFAULT '')").run();
+    const fecha = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    const rolNorm = String(rol || '').trim().toLowerCase();
+    const rolFinal = rolNorm === 'superadmin' ? 'Jefe/a Departamento' : (rol || '');
+    await db.prepare('INSERT INTO log (fecha,usuario,nombre,rol,accion,itemId,resumen) VALUES (?,?,?,?,?,?,?)')
+      .bind(fecha, usuario || '', nombre || '', rolFinal, accion, '', detalle || '').run();
+  } catch (error) {
+    console.warn('logAccessAttempt failed', error?.message || error);
+  }
+}
+
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const action = url.searchParams.get('action') || '';
@@ -174,10 +197,15 @@ export async function onRequestGet({ request, env }) {
 
   if (action === 'login') {
     if (!u || !p) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+    const ip = clientIp(request);
     const row = await getUserForLogin(env.DB, u.trim());
-    if (!row) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+    if (!row) {
+      await logAccessAttempt(env.DB, { usuario: u.trim(), accion: 'loginFail', detalle: `Usuario no encontrado · IP ${ip}` });
+      return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+    }
 
     if (Number(row.bloqueado) === 1) {
+      await logAccessAttempt(env.DB, { usuario: row.usuario, nombre: row.nombre, rol: row.rol, accion: 'loginBlocked', detalle: `Intento contra cuenta ya bloqueada · IP ${ip}` });
       return Response.json({ ok: false, error: 'Cuenta bloqueada por demasiados intentos fallidos. Ponte en contacto con el administrador.', bloqueado: true });
     }
 
@@ -187,6 +215,7 @@ export async function onRequestGet({ request, env }) {
       await env.DB.prepare('UPDATE usuarios SET intentos_fallidos=?, bloqueado=? WHERE usuario=?')
         .bind(intentos, bloquear ? 1 : 0, row.usuario).run();
       if (bloquear) {
+        await logAccessAttempt(env.DB, { usuario: row.usuario, nombre: row.nombre, rol: row.rol, accion: 'loginBlocked', detalle: `Bloqueada tras ${MAX_INTENTOS_LOGIN} intentos fallidos · IP ${ip}` });
         return Response.json({ ok: false, error: 'Cuenta bloqueada por demasiados intentos fallidos. Ponte en contacto con el administrador.', bloqueado: true });
       }
       const restantes = MAX_INTENTOS_LOGIN - intentos;
@@ -194,6 +223,7 @@ export async function onRequestGet({ request, env }) {
       if (restantes <= AVISO_RESTANTES) {
         error += ` (te quedan ${restantes} intento${restantes === 1 ? '' : 's'} antes de que se bloquee la cuenta)`;
       }
+      await logAccessAttempt(env.DB, { usuario: row.usuario, nombre: row.nombre, rol: row.rol, accion: 'loginFail', detalle: `Intento ${intentos}/${MAX_INTENTOS_LOGIN} · IP ${ip}` });
       return Response.json({ ok: false, error });
     }
 
@@ -207,6 +237,7 @@ export async function onRequestGet({ request, env }) {
       await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
         .bind(await hashPassword(p), row.usuario).run();
     }
+    await logAccessAttempt(env.DB, { usuario: row.usuario, nombre: row.nombre, rol: row.rol, accion: 'loginOk', detalle: `IP ${ip}` });
     delete row.password;
     delete row.intentos_fallidos;
     delete row.bloqueado;

@@ -3160,4 +3160,61 @@ de llegar al bloqueo.
 
 ---
 
+### 26/08/2026 — Fix ENDPOINT_MAP + panel "🛡️ Accesos" (v614-v615)
+
+**v614 — fix:** el botón "🔓 Desbloquear" del modal 🔐 Usuarios (añadido en
+v611-v613) no funcionaba: `userUnlock` se quedó sin registrar en
+`ENDPOINT_MAP` de `js/api.js` (la tabla que traduce cada `action` al
+endpoint real — `/api/usuarios`, `/api/item`, etc.). Sin esa entrada,
+`apiPost({action:'userUnlock',...})` llamaba a `/api/userUnlock`
+(inexistente) y fallaba con `HTTP 405`. Detectado probando en producción
+con Playwright: se bloqueó a propósito una cuenta de prueba
+(`profe1electricidadelectronica`, 5 intentos fallidos reales) para
+verificar el flujo end-to-end, y el botón de desbloqueo no respondía.
+Mientras se aplicaba el fix, la cuenta de prueba se desbloqueó a mano por
+`wrangler d1 execute`. Aplicada también la migración `0031_intentos_login.sql`
+en remoto (antes solo con autocura en runtime).
+
+**v615 — nuevo panel "🛡️ Gestionar accesos"** (menú ⚙️ Departamento, junto a
+🔐 Usuarios), petición del usuario para tener control de accesos: quién ha
+entrado, cuándo, con qué resultado, cuántos intentos.
+
+- **`functions/api/auth.js`**: cada intento de login (correcto, incorrecto,
+  bloqueado, o contra una cuenta ya bloqueada) se registra ahora en la
+  tabla `log` ya existente (helper `logAccessAttempt()`) — accion
+  `loginOk`/`loginFail`/`loginBlocked`, con IP (`CF-Connecting-IP`) y el
+  contador `intento N/5` en el resumen. Reusa la tabla de
+  auditoría/historial en vez de crear una tabla nueva — sin migración.
+  Intentos contra un usuario que no existe se registran igual (usuario
+  tal cual se escribió, sin nombre/rol), pero solo los ve el superadmin:
+  el scoping por departamento de `historial.js` hace `JOIN` contra
+  `usuarios.departamento`, que no existe para un login inventado.
+- **`functions/api/historial.js`**: `mapLogRow()` clasifica
+  `loginOk/loginFail/loginBlocked` como `tipo: 'Accesos'` — no hace falta
+  tocar el endpoint en sí, ya devuelve todo el `log` con scoping por
+  departamento del actor (igual que el resto del historial).
+- **`js/modal-accesos.js`** (nuevo): modal con (1) aviso destacado en rojo
+  de cuentas bloqueadas ahora mismo con botón "🔓 Desbloquear" directo
+  (mismo `userUnlock` que el modal 🔐 Usuarios, sin tener que cambiar de
+  pantalla) y (2) tabla de accesos (fecha, usuario, nombre, rol,
+  resultado con badge de color, detalle) con filtro por usuario y por
+  resultado. Reusa `apiGet('historial')` (filtrando `tipo==='Accesos'`
+  client-side, igual que hace `modal-historial.js` con sus propios
+  filtros) + `apiPost({action:'getUsers'})` para la lista de bloqueadas.
+- **`index.html`/`js/roles.js`**: botón "🛡️ Gestionar accesos" en el menú
+  Departamento con `data-perm="config.manage"` (mismo gate que Auditoría
+  de datos — jefe/a de departamento o superadmin); `openAccesosModal()`
+  además comprueba `requirePerm('config.manage')` por si se invoca desde
+  otro sitio.
+- **`css/styles.css`**: badges `.badge-loginok`/`loginfail`/`loginblocked`
+  (verde/ámbar/rojo, mismo patrón que `.badge-add`/`.badge-delete`) +
+  estilos del aviso de cuentas bloqueadas.
+- No se tocó `_middleware.js` ni el login de Google — mismo razonamiento
+  que en v611-v613 (ver esa entrada): solo se audita la pantalla de login
+  real, no cada request autenticada con `u`+`p` en query params.
+
+`sw.js` → `v615`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

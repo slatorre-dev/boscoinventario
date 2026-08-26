@@ -1849,6 +1849,14 @@ body{overflow-x:hidden}
 .badge-itemadd{background:var(--green-l);color:var(--green)}
 .badge-prestar,.badge-prestarcaja{background:var(--amber-l);color:var(--amber)}
 .badge-devolver{background:var(--teal-l);color:var(--teal)}
+.badge-loginok{background:var(--green-l);color:var(--green)}
+.badge-loginfail{background:var(--amber-l);color:var(--amber)}
+.badge-loginblocked{background:var(--red-l);color:var(--red)}
+
+.accesos-bloqueadas-box{padding:12px 14px;background:var(--red-l);border-bottom:1px solid var(--border)}
+.accesos-bloqueadas-title{font-size:12px;font-weight:800;color:var(--red);margin-bottom:6px}
+.accesos-bloqueada-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;font-size:13px}
+.accesos-bloqueada-user{color:var(--muted);font-weight:400}
 
 /* AUDITORÍA DE DATOS */
 #mAuditoria .modal{width:min(1200px,100%);max-height:95vh}

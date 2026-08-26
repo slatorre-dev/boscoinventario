@@ -49,7 +49,8 @@ function mapLogRow(row) {
   const rolNorm = normalizeText(row.rol);
   const rol = rolNorm === 'superadmin' ? 'Jefe/a Departamento' : row.rol;
   let tipo = 'Sistema';
-  if (['add', 'update', 'delete', 'bulkimport', 'itemadd', 'itemupdate', 'itemdelete', 'itembaja'].includes(actionKey)) tipo = 'Items';
+  if (['loginok', 'loginfail', 'loginblocked'].includes(actionKey)) tipo = 'Accesos';
+  else if (['add', 'update', 'delete', 'bulkimport', 'itemadd', 'itemupdate', 'itemdelete', 'itembaja'].includes(actionKey)) tipo = 'Items';
   else if (actionKey.startsWith('user') || ['updateprofile', 'changepassword'].includes(actionKey)) tipo = 'Usuarios';
   else if (actionKey.startsWith('prof')) tipo = 'Profesores';
   else if (['prestar', 'prestarcaja', 'devolver'].includes(actionKey)) tipo = 'Prestamos';

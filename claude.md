@@ -1,12 +1,15 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v613 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
+**Estado:** v615 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
 fallidos seguidos (solo en la pantalla de login, `POST/GET /api/auth`), con
 aviso desde el 3º intento y desbloqueo manual desde 🔐 Usuarios
-(`userUnlock`) — columnas `usuarios.intentos_fallidos`/`bloqueado`,
-migración **`migrations/0031_intentos_login.sql` pendiente de aplicar en
-remoto** (con autocura en runtime mientras tanto, ver `auth.js`/`usuarios.js`).
-Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+(`userUnlock`) — migración `0031_intentos_login.sql` ya aplicada en remoto.
+Nuevo panel **🛡️ Gestionar accesos** (menú Departamento): historial de
+logins correctos/incorrectos/bloqueos (fecha, usuario, rol, IP, intento
+N/5) + lista de cuentas bloqueadas ahora mismo con botón de desbloqueo —
+reusa la tabla `log` existente (`historial.js` clasifica `loginOk/Fail/
+Blocked` como tipo "Accesos"), sin migración nueva. Multi-departamento
+(Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el

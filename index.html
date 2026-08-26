@@ -94,6 +94,7 @@
           <div class="dept-menu-sep"></div>
           <button class="dept-menu-item" onclick="closeDeptMenu();openProfModal()">👥 Gestionar prestatarios externos</button>
           <button class="dept-menu-item" onclick="closeDeptMenu();openUsuariosModal()">🔐 Gestionar usuarios de la app</button>
+          <button class="dept-menu-item" data-perm="config.manage" onclick="closeDeptMenu();openAccesosModal()">🛡️ Gestionar accesos</button>
           <div class="dept-menu-sep"></div>
           <button class="dept-menu-item" onclick="closeDeptMenu();openImportModal()">📤 Importar CSV / Backup</button>
           <button class="dept-menu-item" onclick="closeDeptMenu();openExportModal()">📥 Exportar / Backup</button>
@@ -1897,6 +1898,48 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   </div>
 </div>
 
+<!-- ══ MODAL ACCESOS (login: correctos, incorrectos, bloqueos) ══ -->
+<div class="mbg" id="mAccesos" onclick="if(event.target===this)closeAccesosModal()" style="display:none">
+  <div class="modal historial-modal">
+    <div class="mh">
+      <h2>🛡️ Accesos</h2>
+      <button class="mbtn-close" onclick="closeAccesosModal()">✕</button>
+    </div>
+    <div class="historial-body" style="display:flex;flex-direction:column">
+      <div id="accesosBloqueadas"></div>
+      <div class="historial-controls">
+        <div class="historial-filter-row" style="grid-template-columns:minmax(160px,1fr) minmax(160px,.8fr) auto">
+          <input type="text" id="accesosFilterUsuario" placeholder="Filtrar por usuario..." class="historial-filter">
+          <select id="accesosFilterResultado" class="historial-filter">
+            <option value="">Todos los resultados</option>
+            <option value="loginOk">✅ Correcto</option>
+            <option value="loginFail">⚠ Incorrecto</option>
+            <option value="loginBlocked">🔒 Bloqueado</option>
+          </select>
+          <button class="mini-btn" onclick="limpiarFiltrosAccesos()">Limpiar filtros</button>
+        </div>
+      </div>
+      <table class="historial-table" id="accesosTable">
+        <thead>
+          <tr>
+            <th>Fecha y hora</th>
+            <th>Usuario</th>
+            <th>Nombre</th>
+            <th>Rol</th>
+            <th>Resultado</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody id="accesosTbody"></tbody>
+      </table>
+      <div id="accesosEmpty" style="text-align:center;padding:2rem;color:#999">Cargando accesos...</div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeAccesosModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL AUDITORÍA DE DATOS ══ -->
 <div class="mbg" id="mAuditoria" onclick="if(event.target===this)closeAuditoriaModal()" style="display:none">
   <div class="modal auditoria-modal">
@@ -2029,6 +2072,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/onboarding-camara.js"></script>
 <script defer src="js/audit-log.js"></script>
 <script defer src="js/modal-historial.js"></script>
+<script defer src="js/modal-accesos.js"></script>
 <script defer src="js/modal-auditoria.js"></script>
 <script defer src="js/dept-game.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
