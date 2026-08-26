@@ -3784,4 +3784,72 @@ Inicio.
 
 ---
 
+### 26/08/2026 — QR rápido extendido a serie/foto + email de solicitudes (v629)
+
+Dos ajustes pedidos justo después de v628: (1) el préstamo/devolución
+rápido no debía depender solo de escanear un QR — también tenía que
+funcionar identificando el ítem por número de serie o por foto al
+objeto; (2) las solicitudes de material debían avisar por email al
+jefe/a de departamento al crearse, igual que ya hace 🛒 Pedidos.
+
+- **Préstamo/devolución rápido unificado en los 3 flujos de cámara**
+  (`js/qr-scanner.js`, `js/camara-unificada.js`, `js/camara-serie.js`):
+  la pieza clave ya existía — `_showQrActionsStandalone(itemId)`
+  (`js/qr-scanner.js`) abre el panel de acciones con "📥 Devolver (tú)" /
+  "🙋 Me lo llevo" (añadidos en v628) sobre cualquier ítem, sin importar
+  cómo se identificó. Antes solo la detección de **QR** dentro de
+  `camara-unificada.js` lo usaba (`_mostrarAccionesQrEnModalUnificado`);
+  el resto de rutas (código de barras, número de serie leído por IA,
+  candidato fuzzy, "foto al objeto"/visual) llamaban a `openItemRoute()`
+  y abrían directamente la ficha completa, sin las acciones rápidas.
+  Se sustituyeron esas llamadas por `_showQrActionsStandalone()` en 7
+  puntos: `_abrirExactoSerieConfirmado()`, el match exacto por código de
+  barras y por IA dentro de `capturarSerie()`, los candidatos de
+  `_mostrarVisualCandidatos()` y de `serieAbrirCandidato()`
+  (`camara-serie.js`), y el match exacto y `camaraUnifAbrirCandidato()`
+  (`camara-unificada.js`) — más `_mostrarAccionesQrEnModalUnificado()`
+  ahora acepta un segundo parámetro `titulo` para reenviarlo. No se tocó
+  ninguna otra llamada a `openItemRoute()` del proyecto (favoritos,
+  historial, búsqueda, Volt) — esas sí deben abrir la ficha completa,
+  no forman parte de este flujo.
+  - **Encabezado del panel dinámico**: como el mismo panel de
+    `#mQrScanner` ahora se reutiliza desde código de barras/serie/foto y
+    no solo desde QR, el título estático "🔍 Escanear QR" habría quedado
+    engañoso. Se le puso `id="qrModalTitle"` (`index.html`) y
+    `_showQrActionsStandalone(itemId, tituloModal)` acepta un segundo
+    argumento opcional que lo sobrescribe ("🔢 Código detectado", "🔢
+    Número de serie detectado", "📷 Objeto identificado", etc.);
+    `openQrScanner()` lo resetea a "🔍 Escanear QR" al abrir el escáner
+    normal, para que no quede un título de una sesión anterior.
+  - El dato del ítem que necesitan las acciones rápidas (stock, aula,
+    módulo, foto) sale siempre del array `items` ya cargado en memoria
+    (`items.find()`), nunca de los objetos parciales que devuelven los
+    endpoints de búsqueda (`buscarPorSerie`/`buscarSeriePorCodigo`
+    devuelven filas completas en los matches exactos, pero los
+    candidatos "visual"/fuzzy solo traen `id,item,ref,aula,cat`) — como
+    todo el inventario del departamento ya está en `items` desde
+    `loadData()`, esto funciona igual de bien que ya funcionaba para
+    `openItemRoute()` antes del cambio, sin ninguna petición extra.
+- **Email al crear una solicitud** (`functions/api/solicitudes.js`):
+  añadidas `getGmailAccessToken()`/`sendGmail()` (mismo código que
+  `pedidos.js`/`prestar.js`, sin factorizar — el proyecto ya duplica
+  esas dos funciones en cada `functions/api/*.js` que envía correo, ver
+  nota en `_middleware.js`/`docs/SECURITY.md` sobre el mismo patrón con
+  el hash de contraseñas). Tras `solicitudCrear`, si el departamento
+  tiene un/a jefe/a con email registrado, se le envía un aviso HTML con
+  material/cantidad/comentario — silencioso si no hay credenciales
+  Gmail configuradas o nadie con email, igual que `pedidoAdd`. **No**
+  se añadió aviso al docente cuando jefatura cambia el estado
+  (`solicitudUpdate`) — no se pidió esta vez; el docente ya puede
+  consultarlo en 🧰 Solicitudes o en 🎒 Modo clase.
+- Verificación: `node --check` en los 4 archivos JS tocados + el backend
+  (sin errores), balance de etiquetas HTML y `grep` de todas las
+  llamadas a `openItemRoute()` restantes en el proyecto para confirmar
+  que solo quedaban las que debían quedar. No se probó en navegador real
+  en esta sesión.
+
+`sw.js` → `v629`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

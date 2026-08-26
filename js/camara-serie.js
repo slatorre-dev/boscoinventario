@@ -144,7 +144,7 @@ function _abrirExactoSerieConfirmado(id) {
   });
   window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
-  openItemRoute(id);
+  _showQrActionsStandalone(id, '🔢 Número de serie');
 }
 
 function _frameSharpnessScore(imageData) {
@@ -354,7 +354,7 @@ async function capturarSerie() {
             if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === resCodigo.item.id)) {
               items.push(resCodigo.item);
             }
-            openItemRoute(resCodigo.item.id);
+            _showQrActionsStandalone(resCodigo.item.id, '🔢 Código detectado');
             return;
           }
           _mostrarSerieCandidatos(resCodigo.candidatos);
@@ -419,7 +419,7 @@ async function capturarSerie() {
       if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === res.item.id)) {
         items.push(res.item);
       }
-      openItemRoute(res.item.id);
+      _showQrActionsStandalone(res.item.id, '🔢 Número de serie detectado');
       return;
     }
     if (res.match === 'fuzzy') {
@@ -515,7 +515,7 @@ function _mostrarVisualCandidatos(candidatos, nombreSugerido, categoriaSugerida,
   const filas = candidatos.map(c => {
     const aula = (typeof AULAS !== 'undefined' ? AULAS.find(a => a.id === c.aula) : null);
     const aulaNombre = aula ? aula.name : (c.aula || 'Sin aula');
-    return `<div class="serie-candidato" onclick="closeCamaraSerie();openItemRoute(${c.id})" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer">
+    return `<div class="serie-candidato" onclick="closeCamaraSerie();_showQrActionsStandalone(${c.id},'📷 Objeto identificado')" style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer">
       <div style="font-weight:600">${escHtml(c.item)}</div>
       <div style="font-size:12px;color:var(--muted)">${escHtml(aulaNombre)}${c.cat ? ' · ' + escHtml(c.cat) : ''}</div>
     </div>`;
@@ -643,7 +643,7 @@ async function serieAbrirCandidato(id) {
   });
   window._camaraReturnToScanner = _serieQuickMode();
   closeCamaraSerie();
-  openItemRoute(id);
+  _showQrActionsStandalone(id, '🔢 Número de serie');
   if (typeof items !== 'undefined' && Array.isArray(items) && items.some(x => Number(x.id) === Number(id))) return;
 
   const serie = _serieCandidatosPorId[String(id)] || '';
@@ -652,7 +652,7 @@ async function serieAbrirCandidato(id) {
     const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: serie });
     if (res.ok && res.match === 'exacto' && res.item) {
       if (!items.some(x => Number(x.id) === Number(res.item.id))) items.push(res.item);
-      openItemRoute(res.item.id);
+      _showQrActionsStandalone(res.item.id, '🔢 Número de serie');
     }
   } catch (e) {
     // Dejar el comportamiento por defecto si la recuperación falla.

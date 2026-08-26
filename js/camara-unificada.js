@@ -244,12 +244,11 @@ async function _manejarDeteccionUnificada(valor, formato) {
       if (res.match === 'exacto') {
         _camUnifPulseDetected();
         window._camaraReturnToScanner = _camUnifQuickMode();
-        document.getElementById('camaraUnifEstado').textContent = 'Código encontrado. Abriendo ficha...';
-        closeCamaraUnificada();
+        document.getElementById('camaraUnifEstado').textContent = 'Código encontrado.';
         if (typeof items !== 'undefined' && Array.isArray(items) && !items.some(x => x.id === res.item.id)) {
           items.push(res.item);
         }
-        openItemRoute(res.item.id);
+        _mostrarAccionesQrEnModalUnificado(res.item.id, '🔢 Código detectado');
         return true;
       }
       document.getElementById('camaraUnifEstado').style.display = 'none';
@@ -329,7 +328,7 @@ function camaraUnifCrearItemDesdeCodigo() {
 async function camaraUnifAbrirCandidato(id) {
   window._camaraReturnToScanner = _camUnifQuickMode();
   closeCamaraUnificada();
-  openItemRoute(id);
+  _showQrActionsStandalone(id, '🔢 Código');
   if (typeof items !== 'undefined' && Array.isArray(items) && items.some(x => Number(x.id) === Number(id))) return;
 
   const serie = _camUnifCandidatosPorId[String(id)] || '';
@@ -338,17 +337,17 @@ async function camaraUnifAbrirCandidato(id) {
     const res = await apiPost({ action: 'buscarSeriePorCodigo', codigo: serie });
     if (res.ok && res.match === 'exacto' && res.item) {
       if (!items.some(x => Number(x.id) === Number(res.item.id))) items.push(res.item);
-      openItemRoute(res.item.id);
+      _showQrActionsStandalone(res.item.id, '🔢 Código');
     }
   } catch (e) {
-    // Si falla, dejamos el comportamiento por defecto (openItemRoute ya lanzó toast).
+    // Si falla, dejamos el comportamiento por defecto (el primer intento ya avisó si el ítem no estaba en caché).
   }
 }
 
-function _mostrarAccionesQrEnModalUnificado(itemId) {
+function _mostrarAccionesQrEnModalUnificado(itemId, titulo) {
   closeCamaraUnificada();
   if (typeof _showQrActionsStandalone === 'function') {
-    _showQrActionsStandalone(itemId);
+    _showQrActionsStandalone(itemId, titulo);
   } else {
     openItemRoute(itemId);
   }

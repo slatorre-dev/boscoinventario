@@ -1858,7 +1858,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <!-- ══ ESCÁNER QR ══ -->
 <div class="mbg" id="mQrScanner" onclick="if(event.target===this)closeQrScanner()">
   <div class="modal" style="max-width:600px">
-    <div class="mh"><div class="mt">🔍 Escanear QR</div><button class="mx" onclick="closeQrScanner()">✕</button></div>
+    <div class="mh"><div class="mt" id="qrModalTitle">🔍 Escanear QR</div><button class="mx" onclick="closeQrScanner()">✕</button></div>
     <div id="qrScannerContent" style="display:none">
       <video id="qrVideo" style="width:100%;max-width:500px;border-radius:8px;margin-bottom:16px" autoplay playsinline></video>
       <div id="qrResult" style="font-size:13px;color:var(--muted);margin:16px 0;text-align:center">Apunta la cámara a un código QR...</div>

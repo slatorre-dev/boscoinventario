@@ -20,6 +20,46 @@ function isJefeDepartamento(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'jefe/a departamento';
 }
 
+async function getGmailAccessToken(env) {
+  if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET || !env.GOOGLE_OAUTH_REFRESH_TOKEN) return null;
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_OAUTH_CLIENT_ID,
+      client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+      refresh_token: env.GOOGLE_OAUTH_REFRESH_TOKEN,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  return data.access_token || null;
+}
+
+async function sendGmail(env, to, subject, htmlBody) {
+  const accessToken = await getGmailAccessToken(env);
+  if (!accessToken || !to) return;
+  const from = env.MAIL_FROM || 'inventarioelec@iesjuanbosco.es';
+  const subjectEncoded = '=?UTF-8?B?' + btoa(unescape(encodeURIComponent(subject))) + '?=';
+  const mime = [
+    `From: Inventario IES Juan Bosco <${from}>`,
+    `To: ${to}`,
+    `Subject: ${subjectEncoded}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset=utf-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    btoa(unescape(encodeURIComponent(htmlBody))),
+  ].join('\r\n');
+  const encoded = btoa(unescape(encodeURIComponent(mime)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw: encoded }),
+  }).catch(e => console.warn('sendGmail failed', e?.message));
+}
+
 async function auditLog(db, user, accion, resumen) {
   const fecha = new Date().toISOString().replace('T',' ').slice(0,19);
   try {
@@ -69,6 +109,26 @@ export async function onRequestPost({ request, env, data }) {
     ).bind(dept, nombre, cantidad, nota, user?.usuario || '', creadoPorNombre, fecha).run();
     const id = ins.meta?.last_row_id;
     await auditLog(env.DB, user, 'solicitudCrear', `Solicitud ${id}: ${nombre} (${cantidad})`);
+
+    // Notificación por email al jefe/a de departamento — silenciosa si falla
+    // o si no hay ninguno con email registrado, mismo criterio que pedidoAdd.
+    const jefeRow = await env.DB.prepare(
+      "SELECT email FROM usuarios WHERE departamento=? AND rol='jefe/a departamento' AND email!='' LIMIT 1"
+    ).bind(dept).first();
+    if (jefeRow?.email) {
+      const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+        <h2>Nueva solicitud de material</h2>
+        <p>${escHtml(creadoPorNombre || 'Alguien')} ha solicitado material que no está en el inventario:</p>
+        <table style="border-collapse:collapse">
+          <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(nombre)}</td></tr>
+          <tr><td style="padding:6px;font-weight:bold">Cantidad aproximada:</td><td style="padding:6px">${cantidad}</td></tr>
+          ${nota ? `<tr><td style="padding:6px;font-weight:bold">Comentario:</td><td style="padding:6px">${escHtml(nota)}</td></tr>` : ''}
+        </table>
+        <p style="font-size:12px;color:#6b7280">Puedes aceptarla, marcarla como recibida o descartarla desde 🧰 Solicitudes en la app.</p>
+        <p style="font-size:12px;color:#6b7280">Inventario IES Juan Bosco</p>
+      </div>`;
+      await sendGmail(env, jefeRow.email, `Solicitud de material: ${nombre}`, html);
+    }
 
     return Response.json({
       ok: true,

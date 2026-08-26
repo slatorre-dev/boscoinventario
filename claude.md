@@ -1,13 +1,16 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v628 | 26/08/2026 | **Cuatro mejoras centradas en el
-profesorado** (detalle en `docs/DEVELOPMENT.md` v628): plantillas de
+**Estado:** v629 | 26/08/2026 | **Cuatro mejoras centradas en el
+profesorado** (detalle en `docs/DEVELOPMENT.md` v628-v629): plantillas de
 práctica reutilizables (`localStorage`, sin backend) en "Planificar
-práctica"; préstamo/devolución QR rápido (Devolver / Me lo llevo, tras
-escanear); solicitudes de material separadas de 🛒 Pedidos (tabla y
-endpoint nuevos, migración 0034, jefatura cambia el estado); y "🎒 Modo
-clase" (`#modoclase`), vista móvil de botones grandes + resumen propio.
-Aulas asignables por admin a cualquier usuario
+práctica"; préstamo/devolución rápido (Devolver / Me lo llevo) tras
+identificar el ítem por **QR, código de barras, número de serie o foto al
+objeto** — mismo panel de acciones reutilizado en los tres flujos de
+cámara; solicitudes de material separadas de 🛒 Pedidos (tabla y endpoint
+nuevos, migración 0034, jefatura cambia el estado, **avisa por email** al
+crearse igual que Pedidos); y "🎒 Modo clase" (`#modoclase`), vista móvil
+de botones grandes + resumen propio. Aulas asignables por admin a
+cualquier usuario
 ("🏫 Aulas" en 🔐 Usuarios de la app, acción `userAssignAulas`, igual que
 ya existía para módulos) — cierra la asimetría módulos/aulas. Hints
 flotantes con flecha (apuntan a un botón real, ej. "📌 Mis Cursos/Aulas")

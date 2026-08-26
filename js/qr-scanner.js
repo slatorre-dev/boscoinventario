@@ -12,6 +12,8 @@ function openQrScanner() {
   const result = document.getElementById('qrResult');
   const actions = document.getElementById('qrActions');
   const video = document.getElementById('qrVideo');
+  const titleEl = document.getElementById('qrModalTitle');
+  if(titleEl) titleEl.textContent = '🔍 Escanear QR';
 
   modal.classList.add('open');
   content.style.display = 'block';
@@ -120,11 +122,16 @@ function _showQrActions(itemId) {
   if(del) del.disabled = !can('items.write') && !can('items.delete');
 }
 
-function _showQrActionsStandalone(itemId) {
+// tituloModal: texto del encabezado del panel — permite distinguir de dónde
+// vino el ítem (QR, código de barras, número de serie, foto/IA) reutilizando
+// siempre el mismo panel de acciones (incluidas Devolver/Me lo llevo).
+function _showQrActionsStandalone(itemId, tituloModal) {
   const modal = document.getElementById('mQrScanner');
   modal.classList.add('open');
   document.getElementById('qrScannerContent').style.display = 'none';
   document.getElementById('qrError').style.display = 'none';
+  const titleEl = document.getElementById('qrModalTitle');
+  if(titleEl) titleEl.textContent = tituloModal || '🔍 Escanear QR';
   _showQrActions(itemId);
 }
 
