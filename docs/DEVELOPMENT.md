@@ -3638,4 +3638,59 @@ real en vez de vivir como banner fijo en el flujo.
 
 ---
 
+### 26/08/2026 — Asignación de aulas por admin, para cualquier usuario (v627)
+
+El usuario notó la asimetría: desde 🔐 Usuarios de la app, un superadmin/
+jefe puede asignar **módulos** a cualquier usuario gestionado (botón "📚
+Módulos", acción `userAssignModulos`), pero las **aulas** solo existían
+como autoservicio (`selectAulas`, siempre el propio actor logueado — el
+comentario en `usuarios.js` decía literalmente "sin admin equivalente
+todavía"). Pidió cerrar ese hueco para cualquier rol de usuario
+gestionado (profesor, jefe/a, superadmin/admin).
+
+- **`functions/api/usuarios.js`**: nueva acción `userAssignAulas` —
+  mismo patrón que `userAssignModulos` (resuelve el departamento del
+  usuario **destino**, no del actor; solo un jefe de un departamento
+  distinto al del destino recibe 403; superadmin sin restricción),
+  reutiliza `reemplazarAulasUsuario()` ya existente (creada para
+  `selectAulas`, sin cambios). `getUsers` gana una tercera consulta
+  (`aula_profesores JOIN usuarios`, con el mismo filtro por
+  departamento que ya tenían las otras dos) y devuelve `usuarios[].aulas`
+  igual que ya hacía con `.modulos`.
+- **`js/prestamos.js`**: botón nuevo "🏫 Aulas (N)" junto a "📚 Módulos
+  (N)" en cada fila de 🔐 Usuarios de la app. `openAulasUsuario(i)` /
+  `_renderAulasUsuarioList(query)` / `_toggleAulaUsuario` /
+  `filterAulasUsuario` / `closeAulasUsuario` / `saveAulasUsuario()` —
+  lista plana sin agrupar (como `js/modal-mis-aulas.js`, el equivalente
+  de autoservicio), contra `AULAS` con un `Set` propio
+  (`_aulasUsuarioSeleccionadas`) en vez de `MIS_AULAS`. `_usuariosEditing`
+  gana `_aulas: u.aulas || []` junto a `_modulos`.
+- **`index.html`**: modal nuevo `#mAulasUsuario`, calcado de
+  `#mModUsuario` pero con buscador plano en vez de grupos por ciclo.
+- **`js/roles.js`/`js/api.js`**: `userAssignAulas` añadida a
+  `ACTION_PERMISSIONS` (`config.manage`, igual que `userAssignModulos`)
+  y a `ENDPOINT_MAP` (`usuarios`) — las dos a la vez, mismo cross-check
+  que evitó el bug de `importModulosCSV` en v620-v621.
+- **Limitación heredada, no nueva**: igual que ya pasaba con
+  `openModulosUsuario()` (usa el `CICLOS` global del actor, no del
+  departamento del usuario gestionado), `openAulasUsuario()` usa el
+  `AULAS` global del actor — para un superadmin gestionando un usuario
+  de otro departamento sin haber seleccionado ese departamento como
+  activo (`#deptActivoSelect`), la lista de aulas a marcar sería la de
+  su propio departamento de referencia, no la del usuario destino. No es
+  un bug introducido aquí, es la misma arquitectura que ya tenía el
+  equivalente de módulos; se deja igual por consistencia, sin ampliar el
+  alcance de esta sesión.
+- Verificado en producción con Playwright + `wrangler d1 execute`:
+  logueado como `Seba` (superadmin), abierto 🔐 Usuarios → fila de
+  `profe1electricidadelectronica` → "🏫 Aulas" → buscador filtra
+  correctamente ("Aula 36" → 1 resultado) → marcar y guardar escribe la
+  fila en `aula_profesores` (confirmado por consulta directa a D1) y
+  actualiza el badge a "🏫 Aulas (1)" sin recargar. Fila de prueba
+  borrada al terminar.
+
+`sw.js` → `v627`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
