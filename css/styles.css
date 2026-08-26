@@ -1818,12 +1818,12 @@ body{overflow-x:hidden}
   color: #6b21a8;
 }
 
-#mHistorial{align-items:center;justify-content:center}
-#mHistorial .historial-modal{width:min(1120px,calc(100vw - 32px));height:min(760px,calc(100svh - 32px));max-height:calc(100svh - 32px);padding:18px;display:flex;flex-direction:column;overflow:hidden}
-#mHistorial .mh{flex:0 0 auto;margin-bottom:14px}
-#mHistorial .mh h2{font-size:20px;font-weight:800;margin:0}
-#mHistorial .mbtn-close{background:var(--surface2);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
-#mHistorial .mbtn-close:hover{background:var(--border);color:var(--text)}
+#mHistorial,#mAccesos{align-items:center;justify-content:center}
+#mHistorial .historial-modal,#mAccesos .historial-modal{width:min(1120px,calc(100vw - 32px));height:min(760px,calc(100svh - 32px));max-height:calc(100svh - 32px);padding:18px;display:flex;flex-direction:column;overflow:hidden}
+#mHistorial .mh,#mAccesos .mh{flex:0 0 auto;margin-bottom:14px}
+#mHistorial .mh h2,#mAccesos .mh h2{font-size:20px;font-weight:800;margin:0}
+#mHistorial .mbtn-close,#mAccesos .mbtn-close{background:var(--surface2);border:none;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+#mHistorial .mbtn-close:hover,#mAccesos .mbtn-close:hover{background:var(--border);color:var(--text)}
 .historial-body{flex:1 1 auto;min-height:0;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--white);scrollbar-width:thin}
 .historial-controls{position:sticky;top:0;z-index:20;padding:10px;background:var(--surface2);border:0;border-bottom:1px solid var(--border);border-radius:9px 9px 0 0;margin-bottom:0}
 .historial-filter-row{display:grid;grid-template-columns:minmax(130px,.75fr) minmax(145px,.8fr) minmax(130px,.7fr) minmax(220px,1.4fr) auto;gap:8px;margin-bottom:0}
