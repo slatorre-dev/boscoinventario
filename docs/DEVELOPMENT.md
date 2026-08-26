@@ -3107,4 +3107,57 @@ correctitud. 2 detalles menores encontrados y corregidos en esta pieza:
 
 ---
 
+### 26/08/2026 — Bloqueo de cuenta tras intentos de login fallidos (v611-v613)
+
+Petición del usuario: limitar los intentos de login a 5, bloquear la
+cuenta al 5º avisando de que contacte con el administrador, y avisar antes
+de llegar al bloqueo.
+
+- **`functions/api/auth.js`** (`action=login`, `GET /api/auth`): nuevas
+  columnas `usuarios.intentos_fallidos`/`bloqueado` (helper
+  `getUserForLogin()`, con autocura vía `ALTER TABLE ... ADD COLUMN` +
+  reintento si la migración aún no se ha aplicado en remoto — mismo patrón
+  que la columna `responsable` en `usuarios.js`). Antes de comprobar la
+  contraseña se rechaza si `bloqueado=1` con el mensaje de contactar con el
+  administrador. Contraseña incorrecta → incrementa `intentos_fallidos`;
+  al llegar a 5 pone `bloqueado=1` y devuelve el mismo mensaje de bloqueo;
+  con 2 o 1 intentos restantes añade el aviso al mensaje de error normal
+  ("te quedan N intentos..."). Login correcto → resetea el contador a 0.
+- **Deliberadamente NO tocado `_middleware.js`**: ese archivo re-verifica
+  usuario+contraseña en cada llamada autenticada (todas las pantallas
+  mandan `?u=&p=` en cada request, no solo en el login — ver sección "Auth
+  actual" de `CLAUDE.md`). Contar ahí los fallos habría bloqueado cuentas
+  legítimas sin que nadie intentara loguearse a propósito: un dispositivo
+  con una sesión vieja en `localStorage` (contraseña cambiada desde otro
+  dispositivo, por ejemplo) manda la contraseña caducada en cada petición
+  de `loadData()` (meta+list), acumulando "intentos fallidos" solo por
+  tener la app abierta. El límite de 5 intentos se aplica únicamente en la
+  pantalla de login, que es donde tiene sentido (intentos deliberados de
+  adivinar una contraseña).
+- **`functions/api/usuarios.js`**: `getUsers` ahora selecciona también
+  `bloqueado` (con la misma autocura de columna); acción nueva
+  `userUnlock` (mismo scoping por departamento que `userResetPassword`/
+  `userDelete`) resetea `bloqueado=0, intentos_fallidos=0`, con
+  `auditLog`.
+- **`js/roles.js`**: `userUnlock` mapeado a `config.manage`, igual que el
+  resto de acciones de gestión de usuarios.
+- **`js/prestamos.js`**: `_renderUsuariosList()` muestra una insignia
+  "🔒 Bloqueada" y un botón "🔓 Desbloquear" (`_desbloquearUsuario()`,
+  llama a `userUnlock` y refresca la fila) en la fila de cualquier usuario
+  bloqueado dentro del modal 🔐 Usuarios.
+- **`migrations/0031_intentos_login.sql`**: `ALTER TABLE usuarios ADD
+  COLUMN intentos_fallidos/bloqueado` — **pendiente de aplicar en
+  remoto** (`npx wrangler d1 execute boscoinventario --remote
+  --file=migrations/0031_intentos_login.sql`) en la próxima sesión con
+  acceso a `wrangler login`; la autocura en runtime hace que la función
+  no rompa mientras tanto, pero conviene aplicarla para evitar el coste
+  extra de las columnas fallidas en cada login/`getUsers` hasta entonces.
+- No se tocó el login con Google (`oauth/login-google.js`): no usa
+  contraseña, la autenticación la hace Google, no aplica fuerza bruta de
+  contraseña ahí.
+
+`sw.js` → `v613`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

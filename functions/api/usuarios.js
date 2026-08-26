@@ -98,10 +98,14 @@ export async function onRequestPost({ request, env, data }) {
   const dept = user?.departamento || '';
 
   if (action === 'getUsers') {
+    // Autocura las columnas de bloqueo por intentos de login si la migración
+    // 0031 aún no se ha aplicado en remoto — mismo patrón que `responsable` más abajo.
+    await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN intentos_fallidos INTEGER DEFAULT 0').run().catch(() => {});
+    await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN bloqueado INTEGER DEFAULT 0').run().catch(() => {});
     const [usuariosRows, ciclosRows] = await Promise.all([
       superadmin
-        ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento FROM usuarios ORDER BY usuario').all()
-        : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
+        ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios ORDER BY usuario').all()
+        : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
       superadmin
         ? env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL').all()
         : env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL AND departamento=?').bind(dept).all(),
@@ -187,6 +191,18 @@ export async function onRequestPost({ request, env, data }) {
     await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
       .bind(await hashPassword(newPassword), body.usuario).run();
     await auditLog(env.DB, user, 'userResetPassword', `Contraseña reseteada: ${body.usuario}`);
+    return Response.json({ ok: true });
+  }
+
+  if (action === 'userUnlock') {
+    if (!superadmin) {
+      const target = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(body.usuario).first();
+      if (!target || (target.departamento || '') !== dept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
+    await env.DB.prepare('UPDATE usuarios SET bloqueado=0, intentos_fallidos=0 WHERE usuario=?').bind(body.usuario).run();
+    await auditLog(env.DB, user, 'userUnlock', `Cuenta desbloqueada: ${body.usuario}`);
     return Response.json({ ok: true });
   }
 

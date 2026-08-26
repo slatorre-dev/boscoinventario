@@ -142,6 +142,30 @@ async function ensureResetTable(db) {
   await db.prepare("CREATE TABLE IF NOT EXISTS reset_tokens (token TEXT PRIMARY KEY, usuario TEXT DEFAULT '', expires INTEGER DEFAULT 0)").run();
 }
 
+// ── Bloqueo por intentos de login fallidos — ver migrations/0031_intentos_login.sql.
+// MAX_INTENTOS_LOGIN intentos fallidos seguidos bloquean la cuenta (hay que
+// contactar con el administrador para desbloquearla, vía userUnlock en
+// usuarios.js); a partir de AVISO_RESTANTES intentos restantes se avisa en
+// el mensaje de error para que el usuario no llegue al bloqueo a ciegas.
+const MAX_INTENTOS_LOGIN = 5;
+const AVISO_RESTANTES = 2;
+
+// Lee el usuario para login incluyendo intentos_fallidos/bloqueado. Si la
+// migración 0031 aún no se ha aplicado en remoto, las columnas no existen
+// todavía: nos autocuramos añadiéndolas y reintentando una vez, igual que
+// el patrón ya usado en usuarios.js para la columna `responsable`.
+async function getUserForLogin(db, usuario) {
+  const sql = 'SELECT usuario, nombre, rol, email, departamento, password_temporal, password, intentos_fallidos, bloqueado FROM usuarios WHERE usuario=?';
+  try {
+    return await db.prepare(sql).bind(usuario).first();
+  } catch (error) {
+    if (!/no such column/i.test(error?.message || '')) throw error;
+    await db.prepare('ALTER TABLE usuarios ADD COLUMN intentos_fallidos INTEGER DEFAULT 0').run().catch(() => {});
+    await db.prepare('ALTER TABLE usuarios ADD COLUMN bloqueado INTEGER DEFAULT 0').run().catch(() => {});
+    return await db.prepare(sql).bind(usuario).first();
+  }
+}
+
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const action = url.searchParams.get('action') || '';
@@ -150,11 +174,32 @@ export async function onRequestGet({ request, env }) {
 
   if (action === 'login') {
     if (!u || !p) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
-    const row = await env.DB.prepare(
-      'SELECT usuario, nombre, rol, email, departamento, password_temporal, password FROM usuarios WHERE usuario=?'
-    ).bind(u.trim()).first();
-    if (!row || !(await verifyPassword(p, row.password))) {
-      return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+    const row = await getUserForLogin(env.DB, u.trim());
+    if (!row) return Response.json({ ok: false, error: 'Credenciales incorrectas' });
+
+    if (Number(row.bloqueado) === 1) {
+      return Response.json({ ok: false, error: 'Cuenta bloqueada por demasiados intentos fallidos. Ponte en contacto con el administrador.', bloqueado: true });
+    }
+
+    if (!(await verifyPassword(p, row.password))) {
+      const intentos = Number(row.intentos_fallidos || 0) + 1;
+      const bloquear = intentos >= MAX_INTENTOS_LOGIN;
+      await env.DB.prepare('UPDATE usuarios SET intentos_fallidos=?, bloqueado=? WHERE usuario=?')
+        .bind(intentos, bloquear ? 1 : 0, row.usuario).run();
+      if (bloquear) {
+        return Response.json({ ok: false, error: 'Cuenta bloqueada por demasiados intentos fallidos. Ponte en contacto con el administrador.', bloqueado: true });
+      }
+      const restantes = MAX_INTENTOS_LOGIN - intentos;
+      let error = 'Credenciales incorrectas';
+      if (restantes <= AVISO_RESTANTES) {
+        error += ` (te quedan ${restantes} intento${restantes === 1 ? '' : 's'} antes de que se bloquee la cuenta)`;
+      }
+      return Response.json({ ok: false, error });
+    }
+
+    // Login correcto: limpiar el contador de intentos fallidos.
+    if (row.intentos_fallidos) {
+      await env.DB.prepare('UPDATE usuarios SET intentos_fallidos=0 WHERE usuario=?').bind(row.usuario).run();
     }
     // Migración perezosa: contraseña aún en claro -> se rehashea ahora que
     // se acaba de comprobar que es correcta, sin que el usuario haga nada.
@@ -163,6 +208,8 @@ export async function onRequestGet({ request, env }) {
         .bind(await hashPassword(p), row.usuario).run();
     }
     delete row.password;
+    delete row.intentos_fallidos;
+    delete row.bloqueado;
     const user = row;
     if (user.departamento) {
       const dept = await env.DB.prepare('SELECT nombre, icono FROM departamentos WHERE slug=?').bind(user.departamento).first().catch(() => null);
