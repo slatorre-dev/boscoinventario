@@ -1531,6 +1531,23 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   </div>
 </div>
 
+<!-- MODAL "AULAS DEL USUARIO" (admin: superadmin/jefe asigna aulas a cualquier usuario) -->
+<div class="mbg" id="mAulasUsuario" style="z-index:600" onclick="if(event.target===this)closeAulasUsuario()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt" id="mAulasUsuarioTitle">🏫 Aulas del usuario</div><button class="mx" onclick="closeAulasUsuario()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Marca las aulas en las que da clase este profesor.</p>
+    <input type="text" id="aulasUsuarioSearch" class="fi-w" placeholder="🔍 Buscar aula..." oninput="filterAulasUsuario()" style="margin-bottom:12px">
+    <div id="mAulasUsuarioBody" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeAulasUsuario()">Cancelar</button>
+        <button class="btn btn-p" id="btnSaveAulasUsuario" onclick="saveAulasUsuario()">💾 Guardar aulas</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL "MIS MÓDULOS" (autoservicio, cualquier rol) -->
 <div class="mbg" id="mMisModulos" style="z-index:600" onclick="if(event.target===this)closeMisModulosModal()">
   <div class="modal" style="width:min(520px,100%)">

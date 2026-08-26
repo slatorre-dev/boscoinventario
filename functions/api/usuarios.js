@@ -146,7 +146,8 @@ export async function onRequestPost({ request, env, data }) {
     await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN intentos_fallidos INTEGER DEFAULT 0').run().catch(() => {});
     await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN bloqueado INTEGER DEFAULT 0').run().catch(() => {});
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))').run().catch(() => {});
-    const [usuariosRows, ciclosRows, profesRows] = await Promise.all([
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS aula_profesores (aula TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (aula, usuario))').run().catch(() => {});
+    const [usuariosRows, ciclosRows, profesRows, aulasProfesRows] = await Promise.all([
       superadmin
         ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios ORDER BY usuario').all()
         : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
@@ -156,9 +157,13 @@ export async function onRequestPost({ request, env, data }) {
       superadmin
         ? env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario').all()
         : env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario WHERE mp.departamento=?').bind(dept).all(),
+      superadmin
+        ? env.DB.prepare('SELECT ap.aula, ap.usuario FROM aula_profesores ap JOIN usuarios u ON u.usuario = ap.usuario').all()
+        : env.DB.prepare('SELECT ap.aula, ap.usuario FROM aula_profesores ap JOIN usuarios u ON u.usuario = ap.usuario WHERE u.departamento=?').bind(dept).all(),
     ]);
     const ciclos = ciclosRows?.results || [];
     const profes = profesRows?.results || [];
+    const aulasProfes = aulasProfesRows?.results || [];
     // Mapear usuario -> lista de moduloId, y moduloId -> lista de emails
     const modulosPorUsuario = {};
     const emailsPorModulo = {};
@@ -168,6 +173,11 @@ export async function onRequestPost({ request, env, data }) {
       modulosPorUsuario[row.usuario].push(mid);
       if (!emailsPorModulo[mid]) emailsPorModulo[mid] = [];
       emailsPorModulo[mid].push(row.email || '');
+    }
+    const aulasPorUsuario = {};
+    for (const row of aulasProfes) {
+      if (!aulasPorUsuario[row.usuario]) aulasPorUsuario[row.usuario] = [];
+      aulasPorUsuario[row.usuario].push(row.aula);
     }
     const todosModulos = ciclos.map(r => ({
       id: moduloId(r), cicloId: r.cicloId, cod: String(r.modCod), nombre: r.modNombre || '',
@@ -179,6 +189,7 @@ export async function onRequestPost({ request, env, data }) {
         ...u,
         rol: rolNorm === 'superadmin' ? 'Jefe/a Departamento' : u.rol,
         modulos: modulosPorUsuario[u.usuario] || [],
+        aulas: aulasPorUsuario[u.usuario] || [],
       };
     });
     return Response.json({ ok: true, usuarios, todosModulos });
@@ -273,6 +284,20 @@ export async function onRequestPost({ request, env, data }) {
     return Response.json({ ok: true });
   }
 
+  if (action === 'userAssignAulas') {
+    const usuarioDestino = String(body.usuario || '').trim();
+    const aulas = Array.isArray(body.aulas) ? body.aulas.map(String) : [];
+    if (!usuarioDestino) return Response.json({ ok: false, error: 'Usuario requerido' });
+    const targetRow = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(usuarioDestino).first();
+    if (!targetRow) return Response.json({ ok: false, error: 'Usuario no encontrado' });
+    if (!superadmin && targetRow.departamento !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
+    await reemplazarAulasUsuario(env.DB, usuarioDestino, aulas);
+    await auditLog(env.DB, user, 'userAssignAulas', `Aulas asignadas a ${usuarioDestino}: ${aulas.join(',')}`);
+    return Response.json({ ok: true });
+  }
+
   if (action === 'selectModulos') {
     const modulos = Array.isArray(body.modulos) ? body.modulos.map(String) : [];
     if (!dept) return Response.json({ ok: false, error: 'Selecciona primero tu departamento' });
@@ -284,9 +309,9 @@ export async function onRequestPost({ request, env, data }) {
   if (action === 'selectAulas') {
     // Autoservicio: en qué aulas da clase el usuario logueado (además de su
     // departamento) — mismo criterio que selectModulos, siempre el propio
-    // actor, sin admin equivalente todavía. `aulas.id` ya es única por sí
-    // sola (no hace falta departamento en la clave, a diferencia de los
-    // módulos).
+    // actor. Admin equivalente para asignar a cualquier usuario: ver
+    // `userAssignAulas` arriba. `aulas.id` ya es única por sí sola (no hace
+    // falta departamento en la clave, a diferencia de los módulos).
     const aulas = Array.isArray(body.aulas) ? body.aulas.map(String) : [];
     await reemplazarAulasUsuario(env.DB, user.usuario, aulas);
     await auditLog(env.DB, user, 'selectAulas', `Aulas propias actualizadas: ${aulas.join(',')}`);

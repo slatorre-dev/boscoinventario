@@ -906,7 +906,7 @@ async function openUsuariosModal(){
     const res = await apiPost({ action: 'getUsers' });
     if(!res.ok) throw new Error(res.error);
     _todosModulos = res.todosModulos || [];
-    _usuariosEditing = res.usuarios.map(u=>({...u, _nuevo:false, _resetPass:'', _modulos: u.modulos || []}));
+    _usuariosEditing = res.usuarios.map(u=>({...u, _nuevo:false, _resetPass:'', _modulos: u.modulos || [], _aulas: u.aulas || []}));
     _usuariosOriginal = res.usuarios.map(u=>u.usuario);
     _renderUsuariosList();
   } catch(e) {
@@ -930,6 +930,7 @@ function _renderUsuariosList(){
     const selfClass = esSelf ? ' usr-self' : '';
     const nMods = (u._modulos||[]).length;
     const modBadge = nMods > 0 ? `<span class="usr-mod-badge">${nMods}</span>` : '';
+    const nAulas = (u._aulas||[]).length;
     const rolDisplay = (u.rol || '').toLowerCase().trim() === 'superadmin' ? 'Jefe/a Departamento' : u.rol;
     const bloqueadoBadge = u.bloqueado ? `<span class="usr-mod-badge" style="background:var(--red,#dc2626)" title="Bloqueada por demasiados intentos de login fallidos">🔒 Bloqueada</span>` : '';
     return `<div class="usr-row">
@@ -951,6 +952,7 @@ function _renderUsuariosList(){
         : `<button class="btn btn-sm" onclick="_promptResetPass(${i})" title="Resetear contraseña">🔑 Reset</button>`
       }
       <button class="btn btn-sm usr-mods-btn" onclick="openModulosUsuario(${i})" title="Asignar módulos que imparte">📚 Módulos${nMods>0?` (${nMods})`:''}</button>
+      <button class="btn btn-sm usr-mods-btn" onclick="openAulasUsuario(${i})" title="Asignar aulas en las que da clase">🏫 Aulas${nAulas>0?` (${nAulas})`:''}</button>
       ${bloqueadoBadge}
       ${u.bloqueado && !u._nuevo ? `<button class="btn btn-sm" onclick="_desbloquearUsuario(${i})" title="Desbloquear cuenta">🔓 Desbloquear</button>` : ''}
       <button class="del-btn${selfClass}" onclick="_removeUsuarioRow(${i})" title="${esSelf?'No puedes eliminarte':'Eliminar usuario'}">🗑</button>
@@ -959,7 +961,7 @@ function _renderUsuariosList(){
 }
 
 function addUsuarioRow(){
-  _usuariosEditing.push({ usuario:'', nombre:'', email:'', rol:'Profesor/a', _nuevo:true, _resetPass:'', _modulos:[] });
+  _usuariosEditing.push({ usuario:'', nombre:'', email:'', rol:'Profesor/a', _nuevo:true, _resetPass:'', _modulos:[], _aulas:[] });
   _renderUsuariosList();
 }
 
@@ -1145,6 +1147,70 @@ async function saveModulosUsuario(){
   finally { btn.disabled=false; btn.textContent='💾 Guardar módulos'; }
 }
 
+// ─── AULAS POR USUARIO ────────────────────────────────────
+// Admin: superadmin/jefe de departamento asigna a cualquier usuario del
+// departamento en qué aulas da clase. Lista plana sin agrupar (como
+// js/modal-mis-aulas.js, el equivalente de autoservicio), pero contra
+// AULAS del usuario que gestiona (ya filtradas por su propio
+// departamento en meta.js) y con `_aulasUsuarioSeleccionadas` propio en
+// vez de MIS_AULAS.
+let _aulaUsuarioIdx = null;
+let _aulasUsuarioSeleccionadas = new Set();
+
+function openAulasUsuario(i){
+  _aulaUsuarioIdx = i;
+  const u = _usuariosEditing[i];
+  _aulasUsuarioSeleccionadas = new Set(u._aulas || []);
+  document.getElementById('mAulasUsuarioTitle').textContent = `🏫 Aulas de ${u.nombre||u.usuario}`;
+  document.getElementById('aulasUsuarioSearch').value = '';
+  _renderAulasUsuarioList('');
+  document.getElementById('mAulasUsuario').classList.add('open');
+}
+
+function _renderAulasUsuarioList(query){
+  const q = normalizeStr(query || '');
+  const body = document.getElementById('mAulasUsuarioBody');
+  if(!body) return;
+  const aulas = (AULAS || []).filter(a => !q || normalizeStr(a.name || a.id).includes(q));
+  body.innerHTML = aulas.map(a => `
+    <label class="mod-check-row">
+      <input type="checkbox" value="${escHtml(a.id)}" ${_aulasUsuarioSeleccionadas.has(a.id)?'checked':''} onchange="_toggleAulaUsuario('${escHtml(a.id)}',this.checked)">
+      <span class="mod-check-name">${a.icon?escHtml(a.icon)+' ':''}${escHtml(a.name || a.id)}</span>
+    </label>
+  `).join('') || '<p style="color:var(--muted);font-size:13px">Sin resultados.</p>';
+}
+
+function _toggleAulaUsuario(id, checked){
+  if(checked) _aulasUsuarioSeleccionadas.add(id);
+  else _aulasUsuarioSeleccionadas.delete(id);
+}
+
+function filterAulasUsuario(){
+  _renderAulasUsuarioList(document.getElementById('aulasUsuarioSearch')?.value || '');
+}
+
+function closeAulasUsuario(){
+  document.getElementById('mAulasUsuario').classList.remove('open');
+  _renderUsuariosList();
+}
+
+async function saveAulasUsuario(){
+  if(_aulaUsuarioIdx === null) return;
+  const u = _usuariosEditing[_aulaUsuarioIdx];
+  if(!u.nombre.trim()){ toast('Guarda primero el nombre del usuario antes de asignar aulas','err'); return; }
+  const btn = document.getElementById('btnSaveAulasUsuario');
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+  try {
+    const aulas = [..._aulasUsuarioSeleccionadas];
+    const res = await apiPost({ action:'userAssignAulas', usuario: u.usuario, aulas });
+    if(!res.ok) throw new Error(res.error);
+    u._aulas = aulas;
+    toast(`Aulas actualizadas para ${u.nombre}`,'ok');
+    closeAulasUsuario();
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { btn.disabled=false; btn.textContent='💾 Guardar aulas'; }
+}
+
 function importUsuariosCSV(input) {
   const file = input.files[0];
   if (!file) return;
@@ -1173,7 +1239,7 @@ function importUsuariosCSV(input) {
       if (_usuariosEditing.some(u => u.usuario.toLowerCase() === usuario.toLowerCase())) { omitidos++; return; }
       // El rol debe ser uno de los disponibles, si no forzar Profesor/a
       const rolFinal = ROLES_DISPONIBLES.includes(rol) ? rol : 'Profesor/a';
-      const entry = { usuario, nombre, email, rol: rolFinal, _nuevo: true, _resetPass: password, _modulos: [] };
+      const entry = { usuario, nombre, email, rol: rolFinal, _nuevo: true, _resetPass: password, _modulos: [], _aulas: [] };
       // Columna departamento (slug) solo tiene efecto si la usa superadmin —
       // un jefe/a de departamento normal siempre crea en su propio departamento.
       if (String(SESSION?.rol||'').trim().toLowerCase() === 'superadmin' && departamento) entry.departamento = departamento;
