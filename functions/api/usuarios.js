@@ -16,6 +16,29 @@ function moduloId(row) {
   return `${row.cicloId}__${row.modCod}`;
 }
 
+// Diff completo entre lo que el usuario tiene hoy en `modulo_profesores` y
+// `modulosNuevos` (array de moduloId, formato `cicloId__modCod`) — añade lo
+// que falta, borra lo que sobra. Usada por `userAssignModulos` (admin,
+// cualquier usuario destino) y `selectModulos` (autoservicio, siempre el
+// propio actor) — nunca por `importModulosCSV`, que solo añade (ver esa
+// acción más abajo).
+async function reemplazarModulosUsuario(db, usuarioLogin, departamento, modulosNuevos) {
+  await db.prepare('CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))').run().catch(() => {});
+  const actuales = await db.prepare('SELECT cicloId, modCod FROM modulo_profesores WHERE usuario=? AND departamento=?').bind(usuarioLogin, departamento).all();
+  const idsActuales = new Set((actuales.results || []).map(r => moduloId(r)));
+  const idsNuevos = new Set(modulosNuevos.filter(id => id.includes('__')));
+  for (const id of idsNuevos) {
+    if (idsActuales.has(id)) continue;
+    const [cicloId, modCod] = id.split('__');
+    await db.prepare('INSERT OR IGNORE INTO modulo_profesores (cicloId, modCod, departamento, usuario) VALUES (?,?,?,?)').bind(cicloId, modCod, departamento, usuarioLogin).run();
+  }
+  for (const id of idsActuales) {
+    if (idsNuevos.has(id)) continue;
+    const [cicloId, modCod] = id.split('__');
+    await db.prepare('DELETE FROM modulo_profesores WHERE cicloId=? AND modCod=? AND departamento=? AND usuario=?').bind(cicloId, modCod, departamento, usuarioLogin).run();
+  }
+}
+
 // ── Hashing de contraseñas (PBKDF2 vía Web Crypto) — duplicado en cada
 // functions/api/*.js que toca contraseñas, ver _middleware.js/docs/SECURITY.md.
 // Aquí solo se necesita hashear (alta y reseteo de contraseña de otro
@@ -207,25 +230,24 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   if (action === 'userAssignModulos') {
-    const nombre = (body.nombre || '').trim();
+    const usuarioDestino = String(body.usuario || '').trim();
     const modulos = Array.isArray(body.modulos) ? body.modulos.map(String) : [];
-    const legacyByCode = modulos.length > 0 && modulos.every(m => !m.includes('__'));
-    if (!nombre) return Response.json({ ok: false, error: 'Nombre requerido' });
-    await env.DB.prepare("ALTER TABLE ciclos ADD COLUMN responsable TEXT DEFAULT ''").run().catch(() => {});
-    const rows = superadmin
-      ? await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos').all()
-      : await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos WHERE departamento=?').bind(dept).all();
-    for (const row of rows.results) {
-      const id = moduloId(row);
-      const esMio = modulos.includes(id) || (legacyByCode && modulos.includes(String(row.modCod)));
-      const eraMio = (row.responsable || '').toLowerCase() === nombre.toLowerCase();
-      if (esMio && !eraMio) {
-        await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE cicloId=? AND modCod=? AND departamento=?').bind(nombre, row.cicloId, row.modCod, dept).run();
-      } else if (!esMio && eraMio) {
-        await env.DB.prepare("UPDATE ciclos SET responsable='' WHERE cicloId=? AND modCod=? AND departamento=?").bind(row.cicloId, row.modCod, dept).run();
-      }
+    if (!usuarioDestino) return Response.json({ ok: false, error: 'Usuario requerido' });
+    const targetRow = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(usuarioDestino).first();
+    if (!targetRow) return Response.json({ ok: false, error: 'Usuario no encontrado' });
+    if (!superadmin && targetRow.departamento !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
     }
-    await auditLog(env.DB, user, 'userAssignModulos', `Módulos asignados a ${nombre}: ${modulos.join(',')}`);
+    await reemplazarModulosUsuario(env.DB, usuarioDestino, targetRow.departamento || '', modulos);
+    await auditLog(env.DB, user, 'userAssignModulos', `Módulos asignados a ${usuarioDestino}: ${modulos.join(',')}`);
+    return Response.json({ ok: true });
+  }
+
+  if (action === 'selectModulos') {
+    const modulos = Array.isArray(body.modulos) ? body.modulos.map(String) : [];
+    if (!dept) return Response.json({ ok: false, error: 'Selecciona primero tu departamento' });
+    await reemplazarModulosUsuario(env.DB, user.usuario, dept, modulos);
+    await auditLog(env.DB, user, 'selectModulos', `Módulos propios actualizados: ${modulos.join(',')}`);
     return Response.json({ ok: true });
   }
 
