@@ -78,6 +78,7 @@ const ACTION_PERMISSIONS = {
   userResetPassword: 'config.manage',
   userUnlock: 'config.manage',
   userAssignModulos: 'config.manage',
+  importModulosCSV: 'config.manage',
   toggleOculto: 'visibility.manage'
 };
 

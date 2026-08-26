@@ -479,12 +479,11 @@ Workers AI, onboarding de cámara (v543-v557).
     vistas de filtro guardadas ("Mis vistas"), acciones en lote con
     preview/undo, modal de ítem reorganizado por secciones, etiquetas
     de estado explícitas, microcopy en vacíos/errores, accesibilidad.
-19. `importModulosCSV` no está en `ACTION_PERMISSIONS` (`js/roles.js`) —
-    el gate de `apiPost()` lo bloquea para cualquier rol, incluido
-    superadmin. La importación de módulos por CSV **no funciona hoy desde
-    el navegador** para nadie (detectado 26/08/2026 al verificar v619,
-    sin relación con ese cambio). Arreglo: añadir
-    `importModulosCSV: 'config.manage'` a `ACTION_PERMISSIONS`.
+~~19. `importModulosCSV` no está en `ACTION_PERMISSIONS`~~ ✅ corregido
+    (26/08/2026, v620) — le faltaba el permiso en `js/roles.js`, así que
+    el propio navegador bloqueaba la petición antes de enviarla, para
+    cualquier rol incluido superadmin. Sin relación con el cambio de
+    `modulo_profesores` de v619, solo se detectó al verificarlo.
 
 ---
 
