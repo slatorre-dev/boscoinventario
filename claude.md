@@ -1,18 +1,19 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v624 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login,
+**Estado:** v625 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login,
 panel **🛡️ Gestionar accesos**, **autoasignación de departamento**,
 **módulos con varios profesores + autoservicio** (`modulo_profesores`,
 import CSV reparada v620-v621) y **autoservicio de aulas**
 (`aula_profesores`) — todo accesible desde el menú de topbar "📌 Mis
-Cursos/Aulas". **Inicio personalizado para el profesorado** (26/08/2026):
-grid de aulas filtrado a las tuyas (enlace "Ver todas" para volver a la
-vista completa), tarjetas de Stock bajo/Mantenimiento acotadas a esas
-mismas aulas con etiqueta "(tus aulas)" cuando el filtro está activo
-(clicar sigue llevando a la vista completa del departamento, sin
-acotar), y aviso descartable en Inicio para quien todavía no ha elegido
-módulos ni aulas. Jefe/a de departamento y superadmin siempre ven todo;
-préstamos/reservas sin cambios. Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+Cursos/Aulas". **Inicio personalizado para el profesorado**: grid de
+aulas y tarjetas de Stock bajo/Mantenimiento acotados a "tus aulas" (con
+enlace para ver todas), aviso descartable para quien no ha elegido
+módulos ni aulas — jefe/a de departamento y superadmin siempre ven todo.
+**Atajos con una sola aula propia** (26/08/2026): "Inventariar aula",
+"Revisar aula" y el aula por defecto de "＋ Nuevo ítem" saltan el
+selector si solo tienes un aula elegida; Volt entiende "¿qué hay en mi
+aula?" y responde directo en ese mismo caso. Préstamos/reservas sin
+cambios. Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el

@@ -3530,4 +3530,50 @@ del usuario de dejar claro que las cifras se refieren a sus propias aulas.
 
 ---
 
+### 26/08/2026 — Atajos cuando solo tienes un aula propia (v625)
+
+Tercera ronda de sugerencias tras la pregunta abierta del usuario, ambas
+aprobadas: aprovechar `MIS_AULAS` (v622) para saltar el selector de aula
+en los flujos donde ya se pregunta por una, cuando el profesor solo tiene
+una propia — sin cambios para quien tiene varias o ninguna, que siguen
+viendo exactamente el mismo selector de siempre.
+
+- **`js/multi-equipo.js`/`js/revision-aula.js`**: `openMultiEquipo()`/
+  `openRevisionAula()` ya tenían una rama para "sin aula de contexto,
+  entrada directa desde Home" que mostraba un `<select>` con todas las
+  aulas (`_abrirMultiEquipoConPicker()`/`_abrirRevisionAulaConPicker()`).
+  Antes de caer a esa rama, si `MIS_AULAS.length===1` se llama
+  directamente a `_iniciarMultiEquipo(MIS_AULAS[0])`/
+  `_iniciarRevisionAula(MIS_AULAS[0])`, igual que si se hubiera abierto
+  ya dentro de esa aula (`cf.type==='aula'`).
+- **`js/modal-item.js`** (`openModal()`, prefill de `f_aula`): la cadena
+  de prioridad ya existente (ítem existente → aula actual del contexto →
+  última aula usada en cámara `cam_last_aula` → primera aula de la lista
+  como último recurso arbitrario) gana un escalón nuevo entre las dos
+  últimas: si hay `MIS_AULAS` con una sola aula, se usa esa en vez de
+  `AULAS[0]?.id` — solo cambia el último recurso, nunca compite con una
+  señal más específica (aula actual o la usada hace un momento con la
+  cámara, que puede ser otra distinta si el profesor está cubriendo una
+  clase que no es la suya).
+- **`js/agente-widget.js`** (intención `resumen_aula`): si
+  `extraerAulaDeFrase(q)` no encuentra ninguna aula nombrada pero la
+  frase contiene "mi aula"/"mis aulas" (regex `/\bmi(s)?\s+aula(s)?\b/`
+  sobre `n`, ya normalizado en ese punto de la función) y
+  `MIS_AULAS.length===1`, se resuelve esa aula directamente contra
+  `AULAS` por id. Si la frase pide "mi aula" pero el usuario tiene 0 o
+  varias, el mensaje de "¿de qué aula quieres el resumen?" se adapta para
+  decírselo explícitamente (que aún no ha elegido ninguna, o que tiene
+  varias y tiene que decir cuál) en vez del genérico de siempre.
+- Verificado en producción con Playwright + `wrangler d1 execute`, cuenta
+  de prueba con una sola aula marcada (`electricidadelectronica-aula35`):
+  `openModal()` precargó esa aula en el desplegable; `_multiAulaId`/
+  `_revisionAulaId` quedaron con esa misma aula sin mostrarse ningún
+  picker; en el chat real de Volt, "¿Qué hay en mi aula?" devolvió
+  directamente el resumen de Aula 35 sin pedir aclaración. Dato de prueba
+  limpiado al terminar.
+
+`sw.js` → `v625`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
