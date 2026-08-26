@@ -1,20 +1,18 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v622 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
-fallidos seguidos, panel **🛡️ Gestionar accesos**, y **autoasignación de
-departamento** (cuenta sin departamento lo elige ella misma al entrar,
-una sola vez). **Módulos con varios profesores + autoservicio**: tabla
-`modulo_profesores` (login↔módulo, muchos-a-muchos) sustituye a
-`ciclos.responsable`; tras elegir departamento, pantalla opcional para
-elegir módulos ("Recordar más tarde" disponible); aviso de "otro profesor
-ya lo imparte" con correos, no nombres. Importación de módulos por CSV
-reparada (dos bugs de permiso/endpoint, v620-v621). **Autoservicio de
-aulas** (26/08/2026): tabla `aula_profesores` (login↔aula) + acción
-`selectAulas` — el botón de la topbar pasa a ser un menú desplegable
-"📌 Mis Cursos/Aulas" con dos opciones, "📚 Módulos" (la de antes) y
-"🏫 Aulas" (nueva, checklist plana con buscador sobre `AULAS`) —
-**sin** paso de onboarding, solo accesible desde ese menú, a petición
-expresa del usuario. Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+**Estado:** v623 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
+fallidos seguidos, panel **🛡️ Gestionar accesos**, **autoasignación de
+departamento**, y **módulos con varios profesores + autoservicio** (tabla
+`modulo_profesores`, sustituye a `ciclos.responsable`; importación CSV
+reparada, v620-v621). **Autoservicio de aulas** (26/08/2026): tabla
+`aula_profesores` (login↔aula) — el botón de la topbar pasa a ser un menú
+desplegable "📌 Mis Cursos/Aulas" con "📚 Módulos" y "🏫 Aulas" (sin
+onboarding, solo accesible desde ese menú). **Inicio filtrado a "mis
+aulas"** (26/08/2026): un profesor que ya eligió sus aulas ve por defecto
+solo esas en el grid de Inicio, con enlace "Ver todas las aulas" para
+volver a la vista completa cuando lo necesite — jefe/a de departamento y
+superadmin siempre ven todo; préstamos/reservas sin cambios (puede
+necesitar material de otra aula/departamento). Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el

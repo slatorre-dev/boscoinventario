@@ -3442,4 +3442,43 @@ diferencia de los módulos), solo accesible desde un menú nuevo.
 
 ---
 
+### 26/08/2026 — Inicio filtrado a "mis aulas" (v623)
+
+Pregunta abierta del usuario ("algo que se te ocurra para facilitar al
+profesorado") → propuesta: usar `MIS_AULAS` (recién construido en v622)
+para que Inicio no obligue a un profesor a buscar su aula entre las
+decenas del departamento. El usuario pensaba que Inicio ya filtraba así
+— no era el caso, solo excluía aulas sin ítems (filtro pre-existente sin
+relación con el profesor logueado). Confirmó no tocar préstamos/reservas:
+puede necesitar material de otra aula o departamento.
+
+- **`js/home.js`** (`renderHome()`): `aulaEntries` gana un segundo filtro
+  — si `roleLabel()==='Profesor/a'` **y** `MIS_AULAS.length>0` **y** no
+  está activo `home_ver_todas_aulas` en `localStorage`, se cruza con
+  `MIS_AULAS`. Jefe/a de departamento y superadmin nunca se filtran
+  (`roleLabel()` no es `'Profesor/a'` para ellos). Un profesor que
+  todavía no ha elegido ninguna aula ve todo, igual que hoy — el filtro
+  solo se activa una vez hay datos que filtrar.
+- Nueva función `toggleVerTodasAulas()`: alterna
+  `localStorage.home_ver_todas_aulas` y vuelve a pintar Inicio — persiste
+  entre sesiones, igual que el patrón ya usado para
+  `home_sec_cats`/`home_sec_ciclos`.
+- **`index.html`**: enlace `🏫 Ver solo mis aulas` / `🏫 Ver todas las
+  aulas` junto al encabezado "Por aula / espacio", oculto por defecto y
+  solo visible cuando aplica.
+- Sin backend nuevo — toda la información ya existía desde v622.
+- Verificado en producción con Playwright + `wrangler d1 execute`: con
+  2 aulas marcadas, Inicio muestra solo esas 2 (de las 9 con ítems que
+  tiene el departamento); "Ver todas las aulas" restaura las 9 y cambia
+  el texto del enlace a "Ver solo mis aulas". No se pudo repetir la
+  prueba con una cuenta de jefe/a de departamento por no tener su
+  contraseña a mano — el filtro depende de `roleLabel()`, ya usado y
+  verificado extensamente en el resto del proyecto, así que el riesgo de
+  que se cuele para ese rol es bajo, pero queda sin comprobar
+  explícitamente en esta sesión.
+
+`sw.js` → `v623`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
