@@ -122,33 +122,44 @@ export async function onRequestPost({ request, env, data }) {
 
   if (action === 'getUsers') {
     // Autocura las columnas de bloqueo por intentos de login si la migración
-    // 0031 aún no se ha aplicado en remoto — mismo patrón que `responsable` más abajo.
+    // 0031 aún no se ha aplicado en remoto — mismo patrón que la tabla de
+    // módulos más abajo.
     await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN intentos_fallidos INTEGER DEFAULT 0').run().catch(() => {});
     await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN bloqueado INTEGER DEFAULT 0').run().catch(() => {});
-    const [usuariosRows, ciclosRows] = await Promise.all([
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))').run().catch(() => {});
+    const [usuariosRows, ciclosRows, profesRows] = await Promise.all([
       superadmin
         ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios ORDER BY usuario').all()
         : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
       superadmin
-        ? env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL').all()
-        : env.DB.prepare('SELECT cicloId, modCod, modNombre, responsable FROM ciclos WHERE modCod IS NOT NULL AND departamento=?').bind(dept).all(),
+        ? env.DB.prepare('SELECT cicloId, modCod, modNombre FROM ciclos WHERE modCod IS NOT NULL').all()
+        : env.DB.prepare('SELECT cicloId, modCod, modNombre FROM ciclos WHERE modCod IS NOT NULL AND departamento=?').bind(dept).all(),
+      superadmin
+        ? env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario').all()
+        : env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario WHERE mp.departamento=?').bind(dept).all(),
     ]);
     const ciclos = ciclosRows?.results || [];
-    // Mapear responsable -> lista de modCod
-    const modulosPorNombre = {};
-    for (const row of ciclos) {
-      const resp = (row.responsable || '').trim().toLowerCase();
-      if (!resp) continue;
-      if (!modulosPorNombre[resp]) modulosPorNombre[resp] = [];
-      modulosPorNombre[resp].push(moduloId(row));
+    const profes = profesRows?.results || [];
+    // Mapear usuario -> lista de moduloId, y moduloId -> lista de emails
+    const modulosPorUsuario = {};
+    const emailsPorModulo = {};
+    for (const row of profes) {
+      const mid = moduloId(row);
+      if (!modulosPorUsuario[row.usuario]) modulosPorUsuario[row.usuario] = [];
+      modulosPorUsuario[row.usuario].push(mid);
+      if (!emailsPorModulo[mid]) emailsPorModulo[mid] = [];
+      emailsPorModulo[mid].push(row.email || '');
     }
-    const todosModulos = ciclos.map(r => ({ id: moduloId(r), cicloId: r.cicloId, cod: String(r.modCod), nombre: r.modNombre || '', responsable: r.responsable || '' }));
+    const todosModulos = ciclos.map(r => ({
+      id: moduloId(r), cicloId: r.cicloId, cod: String(r.modCod), nombre: r.modNombre || '',
+      responsablesEmails: emailsPorModulo[moduloId(r)] || [],
+    }));
     const usuarios = usuariosRows.results.map(u => {
       const rolNorm = String(u.rol || '').trim().toLowerCase();
       return {
         ...u,
         rol: rolNorm === 'superadmin' ? 'Jefe/a Departamento' : u.rol,
-        modulos: modulosPorNombre[u.nombre.trim().toLowerCase()] || [],
+        modulos: modulosPorUsuario[u.usuario] || [],
       };
     });
     return Response.json({ ok: true, usuarios, todosModulos });
@@ -298,17 +309,15 @@ export async function onRequestPost({ request, env, data }) {
       resultados.push({ usuario: usuarioLogin, asignatura, ok: true, moduloEncontrado: match.modNombre });
     }
 
-    // Aplicar asignaciones acumuladas por usuario, fusionando con lo que ya tenían.
+    // Aplicar asignaciones acumuladas por usuario, fusionando con lo que ya
+    // tenían (solo inserta, nunca borra — a diferencia de
+    // reemplazarModulosUsuario, que sí hace diff completo).
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))').run().catch(() => {});
     for (const [usuarioLogin, info] of Object.entries(porUsuario)) {
-      const existentes = await env.DB.prepare('SELECT cicloId, modCod, responsable FROM ciclos WHERE departamento=?').bind(info.departamento).all();
-      for (const row of existentes.results) {
-        const id = moduloId(row);
-        const yaEraSuyo = (row.responsable || '').toLowerCase() === info.nombre.toLowerCase();
-        const debeSerSuyo = info.modIds.has(id) || yaEraSuyo;
-        if (debeSerSuyo && !yaEraSuyo) {
-          await env.DB.prepare('UPDATE ciclos SET responsable=? WHERE cicloId=? AND modCod=? AND departamento=?')
-            .bind(info.nombre, row.cicloId, row.modCod, info.departamento).run();
-        }
+      for (const id of info.modIds) {
+        const [cicloId, modCod] = id.split('__');
+        await env.DB.prepare('INSERT OR IGNORE INTO modulo_profesores (cicloId, modCod, departamento, usuario) VALUES (?,?,?,?)')
+          .bind(cicloId, modCod, info.departamento, usuarioLogin).run();
       }
     }
 
