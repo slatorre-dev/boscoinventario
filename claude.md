@@ -1,6 +1,10 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v625 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login,
+**Estado:** v626 | 26/08/2026 | Hints flotantes con flecha (apuntan a un
+botón real, ej. "📌 Mis Cursos/Aulas") + dos hints estáticos nuevos
+(Inventario: fijar en Inicio vía menú ⋮; ficha de ítem: galería de 3
+fotos) — mismo mecanismo descartable de siempre (`hint_<key>_visto`),
+detalle en `docs/DEVELOPMENT.md` v626. Bloqueo de cuenta tras 5 intentos de login,
 panel **🛡️ Gestionar accesos**, **autoasignación de departamento**,
 **módulos con varios profesores + autoservicio** (`modulo_profesores`,
 import CSV reparada v620-v621) y **autoservicio de aulas**
