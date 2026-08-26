@@ -498,6 +498,7 @@ async function loadData(){
     syncSessionUser(meta.user);
     showUserChip();
     if(meta.aulas && meta.aulas.length) AULAS = meta.aulas;
+    MIS_AULAS = Array.isArray(meta.misAulas) ? meta.misAulas : [];
     if(meta.cats && meta.cats.length) setCatsFromEntries(meta.cats.map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
     if(Array.isArray(meta.catsCrudo)) catsCrudo = meta.catsCrudo;
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;

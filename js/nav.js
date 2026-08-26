@@ -281,6 +281,8 @@ document.addEventListener('click', function(e){
     closeMobMenu();
   if(!e.target.closest('#deptMenuWrap'))
     closeDeptMenu();
+  if(!e.target.closest('#misCursosMenuWrap'))
+    closeMisCursosMenu();
 });
 
 // ─── MENÚ DEPARTAMENTO ────────────────────────────────────
@@ -289,4 +291,12 @@ function toggleDeptMenu(){
 }
 function closeDeptMenu(){
   document.getElementById('deptMenu').classList.remove('open');
+}
+
+// ─── MENÚ "MIS CURSOS/AULAS" (autoservicio, cualquier rol) ─
+function toggleMisCursosMenu(){
+  document.getElementById('misCursosMenu').classList.toggle('open');
+}
+function closeMisCursosMenu(){
+  document.getElementById('misCursosMenu').classList.remove('open');
 }
