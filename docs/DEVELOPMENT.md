@@ -3481,4 +3481,53 @@ puede necesitar material de otra aula o departamento.
 
 ---
 
+### 26/08/2026 — Aviso de descubrimiento + alertas acotadas a "mis aulas" (v624)
+
+Dos sugerencias propuestas ante la pregunta abierta del usuario ("otra
+sugerencia para facilitar al profesorado"), ambas aprobadas: un aviso de
+que el menú "📌 Mis Cursos/Aulas" existe (para quien nunca lo abre y por
+tanto nunca activa el filtro de Inicio de v623), y que las tarjetas de
+alerta de Inicio también respeten ese filtro — con la condición explícita
+del usuario de dejar claro que las cifras se refieren a sus propias aulas.
+
+- **Aviso descartable**: reutiliza el mecanismo genérico
+  `showFeatureHintOnce(key, elId)`/`dismissFeatureHint(key, elId)` ya
+  creado en v609 para Mantenimiento/Pedidos/Reservas — sin código nuevo
+  de persistencia, solo un banner `.feature-hint` más (`#hintMisCursosAulas`,
+  clave `misCursosAulas`) en `index.html`, arriba del todo en Inicio.
+  Condición para mostrarlo: rol Profesor/a y (`MIS_MODULOS` vacío o
+  `MIS_AULAS` vacío) — se oculta explícitamente en `renderHome()` si deja
+  de cumplirse, no basta con omitir la llamada a `showFeatureHintOnce()`
+  (ese helper nunca oculta un hint que ya estuviera visible de un render
+  anterior, solo decide si mostrarlo la primera vez).
+- **`js/home.js`**: el cálculo de `filtrarPorMisAulas` (antes calculado
+  solo para el grid de aulas, ver v623) se sube al principio de
+  `renderHome()` para poder reutilizarlo también en las tarjetas de
+  cabecera. `low`/`mant` se calculan sobre `items` acotado a `MIS_AULAS`
+  cuando el filtro está activo, y las etiquetas de esas dos tarjetas
+  ganan un `<span class="scard-lbl-sub">(tus aulas)</span>` (clase nueva
+  en `css/styles.css`, anula el `text-transform:uppercase`/`color:red`
+  que heredaría de `.scard-alert .scard-lbl` para que se lea como una
+  aclaración discreta, no como parte de la alerta). Las tarjetas de
+  "Ítems"/"Unidades" no se tocan — siguen siendo el total del
+  departamento, solo se acotaron las dos de alerta, que es lo que se
+  pidió.
+- **Deliberadamente sin tocar**: `goLowStock()`/`goMaintenance()` (el
+  clic en esas tarjetas) siguen abriendo la vista completa del
+  departamento sin acotar — acotar también ese destino tocaría el filtro
+  central de `js/inventory.js` (usado por más sitios, no solo estas dos
+  tarjetas) y no se pidió explícitamente. Queda anotado como posible
+  inconsistencia menor (tarjeta acotada → lista sin acotar al clicar) por
+  si se quiere cerrar en una sesión futura.
+- Verificado en producción con Playwright + `wrangler d1 execute`: el
+  aviso aparece para una cuenta sin módulos/aulas, se descarta con
+  "Entendido" y no reaparece tras recargar; con una aula marcada, la
+  tarjeta de Stock bajo pasó de mostrar el total del departamento (456) a
+  solo el de esa aula (411), con la etiqueta "(tus aulas)" visible en el
+  HTML de ambas tarjetas. Datos de prueba limpiados al terminar.
+
+`sw.js` → `v624`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

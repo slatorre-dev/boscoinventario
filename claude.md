@@ -1,18 +1,18 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v623 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
-fallidos seguidos, panel **🛡️ Gestionar accesos**, **autoasignación de
-departamento**, y **módulos con varios profesores + autoservicio** (tabla
-`modulo_profesores`, sustituye a `ciclos.responsable`; importación CSV
-reparada, v620-v621). **Autoservicio de aulas** (26/08/2026): tabla
-`aula_profesores` (login↔aula) — el botón de la topbar pasa a ser un menú
-desplegable "📌 Mis Cursos/Aulas" con "📚 Módulos" y "🏫 Aulas" (sin
-onboarding, solo accesible desde ese menú). **Inicio filtrado a "mis
-aulas"** (26/08/2026): un profesor que ya eligió sus aulas ve por defecto
-solo esas en el grid de Inicio, con enlace "Ver todas las aulas" para
-volver a la vista completa cuando lo necesite — jefe/a de departamento y
-superadmin siempre ven todo; préstamos/reservas sin cambios (puede
-necesitar material de otra aula/departamento). Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+**Estado:** v624 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login,
+panel **🛡️ Gestionar accesos**, **autoasignación de departamento**,
+**módulos con varios profesores + autoservicio** (`modulo_profesores`,
+import CSV reparada v620-v621) y **autoservicio de aulas**
+(`aula_profesores`) — todo accesible desde el menú de topbar "📌 Mis
+Cursos/Aulas". **Inicio personalizado para el profesorado** (26/08/2026):
+grid de aulas filtrado a las tuyas (enlace "Ver todas" para volver a la
+vista completa), tarjetas de Stock bajo/Mantenimiento acotadas a esas
+mismas aulas con etiqueta "(tus aulas)" cuando el filtro está activo
+(clicar sigue llevando a la vista completa del departamento, sin
+acotar), y aviso descartable en Inicio para quien todavía no ha elegido
+módulos ni aulas. Jefe/a de departamento y superadmin siempre ven todo;
+préstamos/reservas sin cambios. Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el
@@ -482,6 +482,12 @@ Workers AI, onboarding de cámara (v543-v557).
     que el bug de `userUnlock` de la sesión anterior). Verificado
     end-to-end contra producción sin atajos. Sin relación con el cambio de
     `modulo_profesores` de v619, solo se detectó al verificarlo.
+20. Las tarjetas de Stock bajo/Mantenimiento de Inicio ya se acotan a
+    "tus aulas" cuando aplica (v624), pero clicarlas (`goLowStock()`/
+    `goMaintenance()`) sigue abriendo la lista completa del departamento
+    sin acotar — inconsistencia menor, deliberada por ahora (acotar el
+    destino tocaría el filtro central de `js/inventory.js`, compartido
+    con más vistas).
 
 ---
 
