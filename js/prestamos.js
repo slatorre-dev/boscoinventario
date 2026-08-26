@@ -1013,8 +1013,10 @@ function _renderModUsuarioGroups(query){
     // Expandido si: hay búsqueda activa, se expandió a mano, o ya tiene módulos marcados (para no esconder lo ya asignado)
     const expanded = !!q || _modUsuarioExpanded.has(c.cid) || nMarcados > 0;
     const rows = modsFiltrados.map(m => {
-      const otroResp = m.respActual && m.respActual.toLowerCase() !== (u.nombre||'').toLowerCase()
-        ? `<span class="mod-otro-resp">(${escHtml(m.respActual)})</span>` : '';
+      const otrosEmails = (m.respEmails || []).filter(email => email && email.toLowerCase() !== (u.email||'').toLowerCase());
+      const otroResp = otrosEmails.length
+        ? `<span class="mod-otro-resp" title="${escHtml(otrosEmails.join(', '))}">También: ${escHtml(otrosEmails.slice(0,2).join(', '))}${otrosEmails.length>2?` +${otrosEmails.length-2}`:''}</span>`
+        : '';
       return `<label class="mod-check-row">
         <input type="checkbox" value="${m.mid}" ${m.checked?'checked':''} onchange="_toggleModUsuario('${m.mid}',this.checked)">
         <span class="mod-check-name">${escHtml(m.name)}</span>
@@ -1067,16 +1069,16 @@ function openModulosUsuario(i){
     cicloOrder.push('__otros__');
   }
 
-  // Mapa de responsables actuales desde backend (disponible solo tras redespliegue GAS)
+  // Mapa de responsables actuales desde backend (correos, puede haber varios)
   const respMap = {};
-  _todosModulos.forEach(m=>{ respMap[String(m.id || m.cod)] = m.responsable || ''; });
+  _todosModulos.forEach(m=>{ respMap[String(m.id || m.cod)] = m.responsablesEmails || []; });
 
   _modUsuarioCiclos = cicloOrder.map(cid => {
     const c = cicloMap[cid];
     const mods = c.mods.map(m => {
       const mid = String(m.id || m.cod);
-      const respActual = respMap[mid] || '';
-      return { ...m, mid, checked: seleccionados.has(mid) || seleccionados.has(String(m.cod)), respActual };
+      const respEmails = respMap[mid] || [];
+      return { ...m, mid, checked: seleccionados.has(mid) || seleccionados.has(String(m.cod)), respEmails };
     });
     return { cid, name: c.name, nivel: c.nivel, mods };
   }).filter(c => c.mods.length);
@@ -1122,17 +1124,22 @@ async function saveModulosUsuario(){
   const btn = document.getElementById('btnSaveModUsuario');
   btn.disabled = true; btn.textContent = '⏳ Guardando...';
   try {
-    const res = await apiPost({ action:'userAssignModulos', nombre: u.nombre.trim(), modulos: u._modulos || [] });
+    const res = await apiPost({ action:'userAssignModulos', usuario: u.usuario, modulos: u._modulos || [] });
     if(!res.ok) throw new Error(res.error);
     toast(`Módulos actualizados para ${u.nombre}`,'ok');
-    // Sincronizar responsable en _todosModulos local
-    _todosModulos.forEach(m=>{
-      const mid = String(m.id || m.cod);
-      const esMio = (u._modulos||[]).includes(mid);
-      const eraMio = (m.responsable||'').toLowerCase() === u.nombre.toLowerCase();
-      if(esMio) m.responsable = u.nombre;
-      else if(eraMio) m.responsable = '';
-    });
+    // Sincronizar responsablesEmails en _todosModulos local (si el usuario
+    // no tiene email guardado, no se puede reflejar aquí — se verá bien en
+    // el próximo getUsers)
+    if(u.email){
+      _todosModulos.forEach(m=>{
+        const mid = String(m.id || m.cod);
+        if(!m.responsablesEmails) m.responsablesEmails = [];
+        const idx = m.responsablesEmails.findIndex(e=>e.toLowerCase()===u.email.toLowerCase());
+        const esMio = (u._modulos||[]).includes(mid);
+        if(esMio && idx===-1) m.responsablesEmails.push(u.email);
+        else if(!esMio && idx!==-1) m.responsablesEmails.splice(idx,1);
+      });
+    }
     closeModulosUsuario();
   } catch(e){ toast('Error: '+e.message,'err'); }
   finally { btn.disabled=false; btn.textContent='💾 Guardar módulos'; }
