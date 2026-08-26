@@ -1,20 +1,22 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v618 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
-fallidos seguidos, con aviso desde el 3º intento y desbloqueo manual desde
-🔐 Usuarios (`userUnlock`) — migración `0031_intentos_login.sql` ya
-aplicada en remoto. Panel **🛡️ Gestionar accesos** (menú Departamento):
-historial de logins correctos/incorrectos/bloqueos (fecha, usuario, rol,
-IP, intento N/5, tabla `log` reusada) + cuentas bloqueadas con desbloqueo
-directo + clic en el usuario para saltar a su Historial de acciones ya
-filtrado. **Autoasignación de departamento** (26/08/2026): cualquier
-cuenta sin departamento (típicamente Google con correo @iesjuanbosco.es
-no mapeado en `EMAIL_DEPT_MAP`) ve al entrar una pantalla obligatoria
-`#pSeleccionarDepartamento` para elegir el suyo una sola vez
-(`selectDepartamento` en `perfil.js`) — ya no hace falta que el
-superadmin lo asigne a mano; se autocura también en sesiones ya abiertas
-sin departamento (el check vive en `loadData()`, no solo en el login).
-Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+**Estado:** v619 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
+fallidos seguidos, con desbloqueo manual desde 🔐 Usuarios, y panel
+**🛡️ Gestionar accesos** (historial de logins + clic en usuario → su
+Historial de acciones). **Autoasignación de departamento**: cuenta sin
+departamento (típico en Google con correo no mapeado en `EMAIL_DEPT_MAP`)
+elige el suyo en `#pSeleccionarDepartamento` al entrar, una sola vez, sin
+que el superadmin tenga que asignarlo. **Módulos con varios profesores +
+autoservicio** (26/08/2026): tabla nueva `modulo_profesores` (login↔módulo,
+muchos-a-muchos) sustituye a `ciclos.responsable` (un solo nombre, se
+pisaban entre sí) en `userAssignModulos`/`getUsers`/`importModulosCSV` —
+de paso corrige el bug ya conocido de que un superadmin solo podía tocar
+módulos de su propio departamento de referencia. Tras elegir departamento,
+pantalla opcional para elegir módulos/asignaturas ("Recordar más tarde"
+disponible), y botón "📚 Mis módulos" en la topbar (cualquier rol) para
+hacerlo en cualquier momento — mismo patrón de autoservicio que el
+departamento. El aviso de "otro profesor ya lo imparte" muestra correos,
+no nombres (puede haber varios). Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el
@@ -214,9 +216,10 @@ hace falta tener presentes al tocar código:
 - Los 3 superadmin tienen un `departamento` "de referencia" (no
   restringe nada, solo badge/base del selector): `Admin`→`iesjuanbosco`,
   `Seba`→`electricidadelectronica`, `jillescas`→`tecnologia`.
-- Otros gaps conocidos: `ubicaciones` (sitios sugeridos) sigue global,
-  no por departamento; `userAssignModulos` ejecutado por un `superadmin`
-  solo toca ciclos de su propio departamento de referencia.
+- Otro gap conocido: `ubicaciones` (sitios sugeridos) sigue global, no por
+  departamento. ~~`userAssignModulos` ejecutado por un `superadmin` solo
+  tocaba ciclos de su propio departamento de referencia~~ ✅ corregido
+  (26/08/2026, junto con el paso a `modulo_profesores`).
 
 ## Arquitectura de archivos clave
 
@@ -476,6 +479,12 @@ Workers AI, onboarding de cámara (v543-v557).
     vistas de filtro guardadas ("Mis vistas"), acciones en lote con
     preview/undo, modal de ítem reorganizado por secciones, etiquetas
     de estado explícitas, microcopy en vacíos/errores, accesibilidad.
+19. `importModulosCSV` no está en `ACTION_PERMISSIONS` (`js/roles.js`) —
+    el gate de `apiPost()` lo bloquea para cualquier rol, incluido
+    superadmin. La importación de módulos por CSV **no funciona hoy desde
+    el navegador** para nadie (detectado 26/08/2026 al verificar v619,
+    sin relación con ese cambio). Arreglo: añadir
+    `importModulosCSV: 'config.manage'` a `ACTION_PERMISSIONS`.
 
 ---
 

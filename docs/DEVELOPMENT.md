@@ -3281,4 +3281,84 @@ hasta que el superadmin se lo asignaba a mano desde 🔐 Usuarios. Ahora:
 
 ---
 
+### 26/08/2026 — Módulos con varios profesores + autoservicio (v619)
+
+Spec: `docs/superpowers/specs/2026-08-26-modulos-multiples-profesores-design.md`.
+Plan: `docs/superpowers/plans/2026-08-26-modulos-multiples-profesores.md`.
+
+Al diseñar que el profesor eligiera sus propios módulos/asignaturas tras
+elegir departamento (siguiente paso natural tras la autoasignación de
+departamento de v618), salió a la luz que `ciclos.responsable` (un solo
+nombre de texto libre por módulo) no admite que dos profesores impartan
+el mismo módulo — el segundo pisa al primero. Con la asignación pasando a
+ser autoservicio (cada profesor se marca a sí mismo, sin nadie
+centralizando), ese riesgo dejaba de ser una rareza.
+
+- **Migración `0032_modulo_profesores.sql`**: tabla nueva
+  `modulo_profesores(cicloId, modCod, departamento, usuario)`, PK
+  compuesta, muchos-a-muchos real por **login**, no por nombre. Backfill
+  desde `ciclos.responsable` emparejando por nombre exacto
+  (case-insensitive, mismo departamento) — en producción emparejó las 28
+  filas que había sin ningún nombre huérfano (verificado con la consulta
+  de control antes de dar la migración por buena). `ciclos.responsable`
+  **no se borra** (columna histórica inerte, no se vuelve a leer ni
+  escribir desde código nuevo).
+- **`functions/api/usuarios.js`**: nueva función compartida
+  `reemplazarModulosUsuario(db, usuario, departamento, modulosNuevos)`
+  (diff completo add+delete) usada por `userAssignModulos` (ahora recibe
+  `usuario` en vez de `nombre`) y la acción nueva `selectModulos`
+  (autoservicio — usa siempre `data.user`, nunca el body, mismo criterio
+  que `selectDepartamento`). `importModulosCSV` mantiene su semántica de
+  **fusión** (solo añade, nunca quita) pero ahora inserta directamente en
+  `modulo_profesores` por login en vez de pisar `ciclos.responsable` por
+  nombre — esto también arregla que antes, dos profesores en el mismo CSV
+  para la misma asignatura, el segundo borraba al primero. De paso,
+  resolver el departamento del usuario **destino** (en vez de usar el del
+  actor) corrige el bug ya documentado de que un superadmin solo podía
+  asignar módulos dentro de su propio departamento de referencia.
+- **`functions/api/meta.js`**: expone `misModulos` (moduloId del usuario
+  logueado) y, por módulo, `responsablesEmails` (correos de otros
+  profesores que lo imparten, el propio usuario excluido) — visible para
+  cualquier rol de su departamento, no solo admin (decisión ya tomada al
+  diseñar esto: correo en vez de nombre, porque puede haber varios).
+- **`js/prestamos.js`** (modal admin "📚 Módulos"): `saveModulosUsuario()`
+  envía `usuario` en vez de `nombre`; el aviso de "ya lo imparte" pasa de
+  un nombre a una lista de correos (`También: correo1, correo2 +N`),
+  excluyendo el correo del profesor que se está editando.
+- **`js/modal-mis-modulos.js`** (nuevo): checklist agrupada por ciclo
+  compartida entre la pantalla de onboarding (`#pSeleccionarModulos`, tras
+  guardar departamento) y el modal "📚 Mis módulos" — nuevo botón en la
+  topbar general (`#topbarBtns`, visible para cualquier rol autenticado,
+  **no** dentro de `#deptMenuWrap`: ese menú está oculto por completo sin
+  permiso `config.manage`, así que un profesor normal nunca vería el botón
+  si se hubiera puesto ahí — ver Global Constraints del plan).
+- **`js/auth.js`**: flag en memoria `_justSelectedDepartamento` (nunca en
+  `localStorage`) — se activa en `doSelectDepartamento()` y se consume una
+  única vez dentro de `loadData()`, justo después de que `meta.ciclos`
+  llega; si `misModulos` está vacío, muestra la pantalla de módulos en vez
+  de continuar a Home. Al no persistir el flag, nunca "resucita" en una
+  recarga de página ni en un login futuro — solo en el que sigue justo a
+  elegir departamento por primera vez.
+- **Verificado en producción** (Playwright + `wrangler d1 execute`, cuentas
+  de prueba `profe1electricidadelectronica`/`departamentoelectricidadelectronica`,
+  limpiadas al terminar): dos profesores en el mismo módulo sin pisarse;
+  onboarding completo (departamento → módulos → "Recordar más tarde" sin
+  guardar nada → no reaparece sola en la siguiente carga); botón "Mis
+  módulos" funcionando en cualquier momento; importación CSV fusionando
+  sin pisar asignaciones previas; aviso "También: correo" excluyendo
+  correctamente el propio correo del usuario editado.
+- Gap ya existente y sin relación con este cambio, detectado durante la
+  verificación: `importModulosCSV` no está en `ACTION_PERMISSIONS`
+  (`js/roles.js`), así que el gate de `apiPost()` lo bloquea para
+  cualquier rol, incluido superadmin, cuando se llama vía `apiPost()` —
+  la importación real desde la UI (`js/prestamos.js:importModulosCSV(input)`)
+  usa esa misma llamada, así que **hoy no funciona desde el navegador**
+  para nadie. No se ha corregido en esta sesión (fuera del alcance del
+  plan); pendiente para una sesión futura — añadir
+  `importModulosCSV: 'config.manage'` a `ACTION_PERMISSIONS`.
+
+`sw.js` → `v619`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
