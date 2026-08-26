@@ -67,6 +67,7 @@ const ACTION_PERMISSIONS = {
   changePassword: 'profile.write',
   selectDepartamento: 'profile.write',
   selectModulos: 'profile.write',
+  selectAulas: 'profile.write',
   pedidoAdd: 'orders.write',
   pedidoUpdate: 'orders.write',
   pedidoRemove: 'orders.write',
@@ -139,7 +140,7 @@ function applyRoleUI(){
     ['btnPres','loans.write',  'flex'],
     ['btnPed', 'orders.write', 'flex'],
     ['btnPrint', null,         'flex'],
-    ['btnMisModulos', null,    'flex'],
+    ['misCursosMenuWrap', null, 'flex'],
     ['gsCamara', null,         'inline-flex']
   ];
   rules.forEach(([id, permission, displayType]) => {
