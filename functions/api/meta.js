@@ -112,8 +112,9 @@ export async function onRequestGet({ request, env, data }) {
   const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run().catch(() => {});
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))").run().catch(() => {});
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS aula_profesores (aula TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (aula, usuario))").run().catch(() => {});
 
-  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows, profesRows] = await Promise.all([
+  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows, profesRows, misAulasRows] = await Promise.all([
     superadmin
       ? env.DB.prepare("SELECT * FROM aulas ORDER BY CASE WHEN id GLOB 'aula[0-9]*' THEN CAST(SUBSTR(id,5) AS INTEGER) ELSE orden END, orden, id").all()
       : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY CASE WHEN id GLOB 'aula[0-9]*' THEN CAST(SUBSTR(id,5) AS INTEGER) ELSE orden END, orden, id`).bind(dept).all(),
@@ -136,6 +137,7 @@ export async function onRequestGet({ request, env, data }) {
     superadmin
       ? env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario').all()
       : env.DB.prepare(`SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario WHERE mp.departamento=? OR mp.departamento='${genericDept}'`).bind(dept).all(),
+    env.DB.prepare('SELECT aula FROM aula_profesores WHERE usuario=?').bind(user.usuario).all(),
   ]);
 
   const emailsPorModulo = {};
@@ -171,6 +173,7 @@ export async function onRequestGet({ request, env, data }) {
     ubicaciones: mergeUbicaciones(ubicaciones.results, invLocs.results),
     ciclos: cicloOrder.map(id => cicloMap[id]),
     misModulos,
+    misAulas: (misAulasRows.results || []).map(r => r.aula),
     departamentos: superadmin ? departamentosRows.results : undefined,
     user
   });

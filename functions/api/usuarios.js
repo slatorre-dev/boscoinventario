@@ -39,6 +39,25 @@ async function reemplazarModulosUsuario(db, usuarioLogin, departamento, modulosN
   }
 }
 
+// Diff completo entre las aulas que el usuario tiene hoy en
+// `aula_profesores` y `aulasNuevas` (array de aula.id) — añade lo que
+// falta, borra lo que sobra. `aula.id` ya es única por sí sola, a
+// diferencia de los módulos no hace falta departamento en la clave.
+async function reemplazarAulasUsuario(db, usuarioLogin, aulasNuevas) {
+  await db.prepare('CREATE TABLE IF NOT EXISTS aula_profesores (aula TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (aula, usuario))').run().catch(() => {});
+  const actuales = await db.prepare('SELECT aula FROM aula_profesores WHERE usuario=?').bind(usuarioLogin).all();
+  const idsActuales = new Set((actuales.results || []).map(r => r.aula));
+  const idsNuevos = new Set(aulasNuevas);
+  for (const id of idsNuevos) {
+    if (idsActuales.has(id)) continue;
+    await db.prepare('INSERT OR IGNORE INTO aula_profesores (aula, usuario) VALUES (?,?)').bind(id, usuarioLogin).run();
+  }
+  for (const id of idsActuales) {
+    if (idsNuevos.has(id)) continue;
+    await db.prepare('DELETE FROM aula_profesores WHERE aula=? AND usuario=?').bind(id, usuarioLogin).run();
+  }
+}
+
 // ── Hashing de contraseñas (PBKDF2 vía Web Crypto) — duplicado en cada
 // functions/api/*.js que toca contraseñas, ver _middleware.js/docs/SECURITY.md.
 // Aquí solo se necesita hashear (alta y reseteo de contraseña de otro
@@ -259,6 +278,18 @@ export async function onRequestPost({ request, env, data }) {
     if (!dept) return Response.json({ ok: false, error: 'Selecciona primero tu departamento' });
     await reemplazarModulosUsuario(env.DB, user.usuario, dept, modulos);
     await auditLog(env.DB, user, 'selectModulos', `Módulos propios actualizados: ${modulos.join(',')}`);
+    return Response.json({ ok: true });
+  }
+
+  if (action === 'selectAulas') {
+    // Autoservicio: en qué aulas da clase el usuario logueado (además de su
+    // departamento) — mismo criterio que selectModulos, siempre el propio
+    // actor, sin admin equivalente todavía. `aulas.id` ya es única por sí
+    // sola (no hace falta departamento en la clave, a diferencia de los
+    // módulos).
+    const aulas = Array.isArray(body.aulas) ? body.aulas.map(String) : [];
+    await reemplazarAulasUsuario(env.DB, user.usuario, aulas);
+    await auditLog(env.DB, user, 'selectAulas', `Aulas propias actualizadas: ${aulas.join(',')}`);
     return Response.json({ ok: true });
   }
 
