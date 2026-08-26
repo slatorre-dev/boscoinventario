@@ -3361,4 +3361,38 @@ centralizando), ese riesgo dejaba de ser una rareza.
 
 ---
 
+### 26/08/2026 — Fix importModulosCSV: dos bugs de plumbing apilados (v620-v621)
+
+El usuario reportó que "lo de los módulos" no iba bien tras v619 y pidió
+arreglarlo. Diagnóstico: no era la tabla `modulo_profesores` ni el
+listado — era específicamente el botón "📥 Importar módulos CSV" del
+modal 🔐 Usuarios, que fallaba con "No tienes permisos para realizar esta
+acción" para cualquier rol, incluido superadmin.
+
+- **v620**: `importModulosCSV` no estaba en `ACTION_PERMISSIONS`
+  (`js/roles.js`) — `canAction()` devuelve `false` para cualquier acción
+  ausente del mapa, así que `apiPost()` la bloqueaba en el propio
+  navegador antes de mandar nada al servidor. Añadido
+  `importModulosCSV: 'config.manage'`.
+- **v621**: al arreglar el permiso, la petición sí salía pero volvía con
+  `HTTP 405` — `importModulosCSV` tampoco estaba en `ENDPOINT_MAP`
+  (`js/api.js`), así que `apiPost()` construía la URL con el nombre de la
+  acción como endpoint (`/api/importModulosCSV`, inexistente) en vez de
+  `/api/usuarios?action=importModulosCSV`. Mismo patrón exacto que el bug
+  de `userUnlock` de la sesión anterior (v614) — dos veces en la misma
+  semana es señal de que añadir una acción nueva a este proyecto tiene 3
+  sitios que tocar (`ACTION_PERMISSIONS`, `ENDPOINT_MAP`, el backend) y es
+  fácil olvidar uno. Se hizo un chequeo cruzado de los dos mapas
+  (`ACTION_PERMISSIONS` vs `ENDPOINT_MAP`) para confirmar que no queda
+  ningún otro hueco de esta forma — no lo hay.
+- Verificado end-to-end en producción vía `apiPost()` real (sin bypass):
+  una fila ambigua (dos asignaturas con el mismo nombre en el
+  departamento) devuelve el error esperado sin romper nada; una fila sin
+  ambigüedad se aplica correctamente y queda en `modulo_profesores`.
+  Datos de prueba limpiados al terminar.
+
+`sw.js` → `v621`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

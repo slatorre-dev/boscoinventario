@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v619 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
+**Estado:** v621 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
 fallidos seguidos, con desbloqueo manual desde 🔐 Usuarios, y panel
 **🛡️ Gestionar accesos** (historial de logins + clic en usuario → su
 Historial de acciones). **Autoasignación de departamento**: cuenta sin
@@ -16,7 +16,10 @@ pantalla opcional para elegir módulos/asignaturas ("Recordar más tarde"
 disponible), y botón "📚 Mis módulos" en la topbar (cualquier rol) para
 hacerlo en cualquier momento — mismo patrón de autoservicio que el
 departamento. El aviso de "otro profesor ya lo imparte" muestra correos,
-no nombres (puede haber varios). Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+no nombres (puede haber varios). La importación de módulos por CSV, que
+se había quedado rota (dos bugs de plumbing: sin permiso en
+`ACTION_PERMISSIONS` y sin endpoint en `ENDPOINT_MAP`, v620-v621), ya
+funciona de extremo a extremo. Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el
@@ -479,10 +482,12 @@ Workers AI, onboarding de cámara (v543-v557).
     vistas de filtro guardadas ("Mis vistas"), acciones en lote con
     preview/undo, modal de ítem reorganizado por secciones, etiquetas
     de estado explícitas, microcopy en vacíos/errores, accesibilidad.
-~~19. `importModulosCSV` no está en `ACTION_PERMISSIONS`~~ ✅ corregido
-    (26/08/2026, v620) — le faltaba el permiso en `js/roles.js`, así que
-    el propio navegador bloqueaba la petición antes de enviarla, para
-    cualquier rol incluido superadmin. Sin relación con el cambio de
+~~19. `importModulosCSV` bloqueada en el navegador para todos~~ ✅
+    corregido (26/08/2026, v620-v621) — dos bugs de plumbing apilados: sin
+    permiso en `ACTION_PERMISSIONS` (`js/roles.js`, v620) y, al arreglar
+    ese, sin endpoint en `ENDPOINT_MAP` (`js/api.js`, v621 — mismo patrón
+    que el bug de `userUnlock` de la sesión anterior). Verificado
+    end-to-end contra producción sin atajos. Sin relación con el cambio de
     `modulo_profesores` de v619, solo se detectó al verificarlo.
 
 ---
