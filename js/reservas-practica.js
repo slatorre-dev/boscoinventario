@@ -42,6 +42,7 @@ function openReservaPractica(){
   filterReservaItems();
 
   _renderReservaLineas();
+  _renderPlantillasList();
   document.getElementById('mReservaPractica').classList.add('open');
 }
 
@@ -105,6 +106,101 @@ function _reservaActualizarCant(rowId, valor){
 function _reservaEliminarLinea(rowId){
   _reservaLineas = _reservaLineas.filter(l => l._rowId !== rowId);
   _renderReservaLineas();
+}
+
+// ─── PLANTILLAS DE PRÁCTICA ───────────────────────────────
+// Personales y locales al navegador (localStorage, sin backend) — namespaced
+// por usuario para no mezclar plantillas entre docentes en un PC compartido
+// del taller. Guardan solo ciclo/módulo, aula y material+cantidades: fecha,
+// profesor/a y observaciones se rellenan de nuevo cada vez a propósito.
+function _plantillasStorageKey(){
+  return 'reservas_plantillas_' + (SESSION?.usuario || 'anon');
+}
+
+function getPlantillas(){
+  try { return JSON.parse(localStorage.getItem(_plantillasStorageKey()) || '[]'); }
+  catch(e){ return []; }
+}
+
+function savePlantillas(list){
+  try { localStorage.setItem(_plantillasStorageKey(), JSON.stringify(list)); }
+  catch(e){ /* localStorage lleno o no disponible — silencioso */ }
+}
+
+function _renderPlantillasList(){
+  const wrap = document.getElementById('resPlantillasWrap');
+  const list = document.getElementById('resPlantillasList');
+  if(!wrap || !list) return;
+  const plantillas = getPlantillas();
+  if(!plantillas.length){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = plantillas.map(p => `
+    <div class="res-plant-chip">
+      <button type="button" class="res-plant-use" onclick="aplicarPlantilla('${p.id}')" title="Aplicar esta plantilla">📋 ${escHtml(p.nombre)} <span class="res-plant-count">(${(p.lineas||[]).length})</span></button>
+      <button type="button" class="res-plant-del" onclick="eliminarPlantilla('${p.id}')" title="Eliminar plantilla">🗑</button>
+    </div>`).join('');
+}
+
+function guardarPlantillaActual(){
+  if(!_reservaLineas.length){ toast('Añade al menos un ítem antes de guardar la plantilla','err'); return; }
+  const nombre = (prompt('Nombre de la plantilla (ej. "Práctica Arduino básica"):') || '').trim();
+  if(!nombre) return;
+
+  const cicloVal = document.getElementById('res_ciclo').value;
+  const [cicloId, moduloCod] = cicloVal ? cicloVal.split('__') : ['', ''];
+  const cicloInfo = cicloId ? CICLOS.find(c => c.id === cicloId) : null;
+  const moduloInfo = cicloInfo ? (cicloInfo.modulos||[]).find(m => String(m.cod) === moduloCod) : null;
+
+  const plantilla = {
+    id: 'pl_' + Date.now(),
+    nombre,
+    cicloId: cicloId || '',
+    moduloCod: moduloCod || '',
+    moduloNombre: moduloInfo ? moduloInfo.name : '',
+    aulaDestino: document.getElementById('res_aula').value,
+    lineas: _reservaLineas.map(l => ({ itemId: l.itemId, itemNombre: l.itemNombre, cantidad: l.cantidad })),
+    creadoEn: new Date().toISOString(),
+  };
+  const lista = getPlantillas();
+  lista.push(plantilla);
+  savePlantillas(lista);
+  _renderPlantillasList();
+  toast(`Plantilla "${escHtml(nombre)}" guardada`,'ok');
+}
+
+// Filtra igual que duplicarReservaPractica(): descarta ítems que ya no
+// existen o se quedaron sin stock, avisando cuántos se excluyeron.
+function aplicarPlantilla(id){
+  const p = getPlantillas().find(x => x.id === id);
+  if(!p) return;
+
+  const cicloVal = p.cicloId ? `${p.cicloId}__${p.moduloCod}` : '';
+  const cicloSel = document.getElementById('res_ciclo');
+  if(cicloVal && [...cicloSel.options].some(o => o.value === cicloVal)) cicloSel.value = cicloVal;
+  const aulaSel = document.getElementById('res_aula');
+  if(p.aulaDestino && [...aulaSel.options].some(o => o.value === p.aulaDestino)) aulaSel.value = p.aulaDestino;
+
+  const lineasOriginales = p.lineas || [];
+  _reservaLineas = lineasOriginales.map(l => {
+    const itemActual = items.find(x => Number(x.id) === Number(l.itemId));
+    const maxQty = itemActual ? Number(itemActual.qty) : 0;
+    return { _rowId: _reservaLineaRowId++, itemId: l.itemId, itemNombre: l.itemNombre, cantidad: Math.min(l.cantidad, maxQty), maxQty };
+  }).filter(l => l.maxQty > 0);
+  _renderReservaLineas();
+
+  const descartadas = lineasOriginales.length - _reservaLineas.length;
+  toast(descartadas > 0
+    ? `Plantilla aplicada — ${descartadas} ítem${descartadas!==1?'s':''} sin stock disponible no se incluy${descartadas!==1?'eron':'ó'}, revisa el material`
+    : `Plantilla "${escHtml(p.nombre)}" aplicada`, descartadas > 0 ? 'warn' : 'ok');
+}
+
+async function eliminarPlantilla(id){
+  const lista = getPlantillas();
+  const p = lista.find(x => x.id === id);
+  if(!p) return;
+  if(!await confirmDialog({message:`¿Eliminar la plantilla "${p.nombre}"?`, danger:true, confirmText:'Eliminar'})) return;
+  savePlantillas(lista.filter(x => x.id !== id));
+  _renderPlantillasList();
 }
 
 async function guardarReservaPractica(){

@@ -2,6 +2,8 @@ let _qrStream = null;
 let _qrScanning = false;
 let _qrProcessingFrame = false;
 let _qrDetectedItemId = null;
+let _qrQuickProfesorPropio = null;
+let _qrQuickPrestamoDevolver = null;
 
 function openQrScanner() {
   const modal = document.getElementById('mQrScanner');
@@ -111,6 +113,7 @@ function _showQrActions(itemId) {
       ? 'Sin stock para nuevo préstamo; puedes registrar devoluciones'
       : '';
   }
+  _renderQrQuickActions(item);
   const maint = document.getElementById('qrActMaint');
   if(maint) maint.disabled = !can('items.write');
   const del = document.getElementById('qrActDelete');
@@ -207,4 +210,87 @@ function _startQrProcessing(video) {
   }
 
   processFrame();
+}
+
+// ─── PRÉSTAMO/DEVOLUCIÓN RÁPIDOS (pensado para docentes) ──
+// Tras detectar el ítem: si el docente actual ya tiene un préstamo activo
+// de ese material, "Devolver" es la acción principal; si hay stock, "Me lo
+// llevo" presta 1 unidad a su nombre usando su aula habitual (si solo
+// tiene una elegida en 📌 Mis Cursos/Aulas). El flujo completo
+// "Prestar / Devolver" (qrActLoan) sigue disponible como alternativa.
+function _renderQrQuickActions(item){
+  const wrap = document.getElementById('qrQuickActions');
+  const btnDev = document.getElementById('qrQuickDevolver');
+  const btnPres = document.getElementById('qrQuickPrestar');
+  _qrQuickProfesorPropio = null;
+  _qrQuickPrestamoDevolver = null;
+  if(!wrap || !btnDev || !btnPres) return;
+
+  const puedePrestar = typeof can === 'function' && can('loans.write');
+  if(puedePrestar && typeof loanTeacherOptions === 'function'){
+    const misOpciones = loanTeacherOptions();
+    _qrQuickProfesorPropio = misOpciones.find(p => p.nombre.toLowerCase().trim() === (SESSION?.nombre||'').toLowerCase().trim()) || null;
+  }
+
+  if(puedePrestar && _qrQuickProfesorPropio && Array.isArray(prestamos)){
+    _qrQuickPrestamoDevolver = prestamos.find(p =>
+      Number(p.itemId) === Number(item.id) &&
+      (p.estado === 'Activo' || p.estado === 'Parcial') &&
+      String(p.profesorId) === String(_qrQuickProfesorPropio.id)
+    ) || null;
+  }
+
+  btnDev.style.display = _qrQuickPrestamoDevolver ? 'flex' : 'none';
+  btnPres.style.display = (puedePrestar && _qrQuickProfesorPropio && Number(item.qty) > 0) ? 'flex' : 'none';
+  wrap.style.display = (btnDev.style.display === 'flex' || btnPres.style.display === 'flex') ? 'flex' : 'none';
+}
+
+async function qrQuickDevolver(){
+  if(!requirePerm('loans.write')) return;
+  const pres = _qrQuickPrestamoDevolver;
+  if(!pres) return;
+  const pendiente = Number(pres.cantidad) - Number(pres.cantidadDevuelta||0);
+  if(!await confirmDialog({message:`¿Devolver ${pendiente} unidad${pendiente!==1?'es':''} de "${pres.itemNombre}"?`, confirmText:'Devolver'})) return;
+  try {
+    const res = await apiPost({action:'devolver', presId:pres.id, cantidadDevuelta:pendiente});
+    if(!res.ok) throw new Error(res.error);
+    const idx = prestamos.findIndex(x => Number(x.id) === Number(pres.id));
+    if(idx>=0) prestamos[idx] = res.prestamo;
+    if(res.nuevoQty !== null && res.nuevoQty !== undefined){
+      const itemIdx = items.findIndex(x => Number(x.id) === Number(res.prestamo.itemId));
+      if(itemIdx>=0) items[itemIdx].qty = res.nuevoQty;
+    }
+    toast('Devolución registrada','ok');
+    qrResumeScan();
+  } catch(err){ toast('Error: '+err.message,'err'); }
+}
+
+async function qrQuickPrestar(){
+  if(!requirePerm('loans.write')) return;
+  const item = items.find(x => Number(x.id) === Number(_qrDetectedItemId));
+  const prof = _qrQuickProfesorPropio;
+  if(!item || !prof) return;
+  if(Number(item.qty) <= 0){ toast('Sin stock disponible','err'); return; }
+
+  const aulaHabitual = (Array.isArray(MIS_AULAS) && MIS_AULAS.length === 1) ? MIS_AULAS[0] : '';
+  const aulaTxt = aulaHabitual ? (AULAS.find(a=>a.id===aulaHabitual)?.name || aulaHabitual) : '';
+  if(!await confirmDialog({message:`¿Prestarte 1 × "${item.item}"${aulaTxt?` para ${aulaTxt}`:''}?`, confirmText:'Me lo llevo'})) return;
+
+  const f = new Date(); f.setDate(f.getDate()+7);
+  const modInfo = findModulo(item.mod);
+  const pres = {
+    itemId: item.id, itemNombre: item.item, cantidad: 1, aulaOrigen: item.aula,
+    aulaDestino: aulaHabitual, profesorId: prof.id, profesorNombre: prof.nombre,
+    fechaPrevista: f.toISOString().split('T')[0], obs: '',
+    moduloCod: modInfo ? item.mod : '', moduloNombre: modInfo ? modInfo.name : '',
+  };
+  try {
+    const res = await apiPost({action:'prestar', prestamo:pres});
+    if(!res.ok) throw new Error(res.error);
+    prestamos.push(res.prestamo);
+    const i = items.findIndex(x => Number(x.id) === Number(item.id));
+    if(i>=0) items[i].qty = Number(items[i].qty) - 1;
+    toast(`Préstamo registrado: 1 × ${item.item}`,'ok');
+    qrResumeScan();
+  } catch(err){ toast('Error: '+err.message,'err'); }
 }

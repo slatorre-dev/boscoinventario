@@ -7,6 +7,7 @@ let items = [];
 let profesores = [];
 let prestamos = [];
 let reservas = [];
+let solicitudes = [];
 let UBICACIONES = [];
 let cf = null;
 let currentCiclo = null;

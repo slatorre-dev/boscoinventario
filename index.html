@@ -78,6 +78,8 @@
       <button class="tbtn" id="btnN" style="display:none" onclick="openModal()">＋ Nuevo ítem</button>
       <button class="tbtn" id="btnPres" style="display:none;position:relative" onclick="goPrestamos()">⌛ Préstamos<span id="presVencBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px"></span></button>
       <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 Pedidos<span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
+      <button class="tbtn" id="btnSolicitudes" data-perm="solicitudes.write" style="display:none;position:relative" onclick="openSolicitudesModal()">🧰 Solicitudes<span class="pedido-badge" id="solBadge" style="display:none">0</span></button>
+      <button class="tbtn" id="btnModoClase" data-perm="loans.write" style="display:none" onclick="goModoClase()">🎒 Modo clase</button>
       <button class="tbtn" id="btnE" style="display:none" onclick="openExportModal()">📥 Exportar</button>
       <button class="tbtn" id="btnImp" onclick="openImportModal()">📤 Importar</button>
       <button class="tbtn" id="btnInstall" style="display:none" onclick="installPWA()" title="Instalar app" aria-label="Instalar app">📲 <span class="btn-install-label">Instalar</span></button>
@@ -401,6 +403,8 @@
             <button class="home-quick-btn accent" data-perm="items.write" onclick="openModal()"><span class="home-quick-ico">＋</span><span><strong>Añadir ítem</strong><small>Alta rápida manual</small></span></button>
             <button class="home-quick-btn amber" data-perm="loans.write" onclick="openPrestarPicker()"><span class="home-quick-ico">⌛</span><span><strong>Nuevo préstamo</strong><small>Prestar o devolver</small></span></button>
             <button class="home-quick-btn green" data-perm="loans.write" onclick="openReservaPractica()"><span class="home-quick-ico">📅</span><span><strong>Planificar práctica</strong><small>Reservar material</small></span></button>
+            <button class="home-quick-btn violet" data-perm="loans.write" onclick="goModoClase()"><span class="home-quick-ico">🎒</span><span><strong>Modo clase</strong><small>Vista rápida para móvil</small></span></button>
+            <button class="home-quick-btn cyan" data-perm="solicitudes.write" onclick="openSolicitudesModal()"><span class="home-quick-ico">🧰</span><span><strong>Solicitar material</strong><small>Aunque no exista en el inventario</small></span></button>
             <button class="home-quick-btn red" data-perm="items.write" onclick="openDelModal()"><span class="home-quick-ico">🗑️</span><span><strong>Dar de baja</strong><small>Eliminar material</small></span></button>
             <a class="home-quick-btn cyan" href="javascript:void(0)" onclick="goDocsDpto()"><span class="home-quick-ico">📂</span><span><strong>Documentación</strong><small>Accesos del departamento</small></span></a>
             <button class="home-quick-btn amber-soft" onclick="goMaintenance()"><span class="home-quick-ico">🛠️</span><span><strong>Mantenimiento</strong><small>Revisiones pendientes</small></span></button>
@@ -531,6 +535,26 @@
     </div>
     <div id="presContent"></div>
     <div id="presReservasContent" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ══ MODO CLASE (vista móvil reducida para docentes) ══ -->
+<div class="page" id="pModoClase">
+  <div class="sub-header">
+    <button class="sub-back" onclick="goHome()">←</button>
+    <div class="sub-tag" style="background:var(--green-l);color:var(--green)">🎒 Vista rápida</div>
+    <div class="sub-title">Modo clase</div>
+    <div class="sub-meta">Botones grandes para usar durante la clase</div>
+  </div>
+  <div class="sub-body">
+    <div class="mc-grid">
+      <button class="mc-btn mc-blue" onclick="openQrScanner()"><span class="mc-ico">📷</span><span>Escanear QR</span></button>
+      <button class="mc-btn mc-green" onclick="openReservaPractica()"><span class="mc-ico">📅</span><span>Preparar práctica</span></button>
+      <button class="mc-btn mc-amber" onclick="mcDevolverFoco()"><span class="mc-ico">📥</span><span>Devolver material</span></button>
+      <button class="mc-btn mc-violet" onclick="openSolicitudesModal()"><span class="mc-ico">🧰</span><span>Solicitar material</span></button>
+    </div>
+    <div class="sec-label" style="margin-top:22px">Tu resumen</div>
+    <div id="mcResumen" class="mc-resumen"></div>
   </div>
 </div>
 
@@ -1059,6 +1083,10 @@
 <div class="mbg" id="mReservaPractica" onclick="if(event.target===this)closeReservaPractica()">
   <div class="modal">
     <div class="mh"><span class="mt">📅 Planificar práctica</span><button class="mx" onclick="closeReservaPractica()">✕</button></div>
+    <div class="res-plantillas" id="resPlantillasWrap" style="display:none">
+      <div class="res-plantillas-label">📋 Plantillas guardadas</div>
+      <div class="res-plantillas-list" id="resPlantillasList"></div>
+    </div>
     <div class="fg">
       <div><label class="fl">Ciclo/Asignatura</label><select class="fi-w" id="res_ciclo"></select></div>
       <div><label class="fl">Aula destino</label><select class="fi-w" id="res_aula"></select></div>
@@ -1093,7 +1121,7 @@
     </div>
 
     <div class="mf">
-      <div></div>
+      <button class="btn" onclick="guardarPlantillaActual()" title="Guarda el material y cantidades actuales como plantilla reutilizable">💾 Guardar como plantilla</button>
       <div class="mf-right">
         <button class="btn" onclick="closeReservaPractica()">Cancelar</button>
         <button class="btn btn-loan" id="btnReservaGuardar" disabled onclick="guardarReservaPractica()">📅 Guardar reserva</button>
@@ -1803,6 +1831,30 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   </div>
 </div>
 
+<!-- ══ SOLICITUDES DE MATERIAL ══ -->
+<div class="mbg" id="mSolicitudes" onclick="if(event.target===this)closeSolicitudesModal()">
+  <div class="modal" style="max-width:560px">
+    <div class="mh"><div class="mt">🧰 Solicitudes de material</div><button class="mx" onclick="closeSolicitudesModal()">✕</button></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Pide material aunque todavía no exista como ítem del inventario. Jefatura decide si se acepta y lo convierte en pedido.</div>
+    <div class="fg">
+      <div class="full"><label class="fl">Material *</label><input class="fi-w" id="sol_nombre" placeholder="Ej. Multímetro digital"></div>
+      <div><label class="fl">Cantidad aproximada</label><input class="fi-w" id="sol_cantidad" type="number" min="1" value="1"></div>
+      <div class="full"><label class="fl">Comentario (opcional)</label><textarea class="fi-w" id="sol_nota" placeholder="Para qué lo necesitas, urgencia, etc."></textarea></div>
+    </div>
+    <div class="mf">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeSolicitudesModal()">Cerrar</button>
+        <button class="btn btn-p" id="btnSolicitudEnviar" onclick="crearSolicitud()">📨 Enviar solicitud</button>
+      </div>
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+      <div class="sec-label" id="solListTitle">Mis solicitudes</div>
+      <div id="solList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ESCÁNER QR ══ -->
 <div class="mbg" id="mQrScanner" onclick="if(event.target===this)closeQrScanner()">
   <div class="modal" style="max-width:600px">
@@ -1819,6 +1871,10 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
           <div class="qr-actions-title" id="qrActionsTitle"></div>
           <div class="qr-actions-meta" id="qrActionsMeta"></div>
         </div>
+      </div>
+      <div class="qr-quick-actions" id="qrQuickActions" style="display:none">
+        <button class="btn btn-return" id="qrQuickDevolver" style="display:none" onclick="qrQuickDevolver()">📥 Devolver (tú)</button>
+        <button class="btn btn-loan" id="qrQuickPrestar" style="display:none" onclick="qrQuickPrestar()">🙋 Me lo llevo</button>
       </div>
       <div class="qr-actions-grid">
         <button class="btn btn-p" onclick="qrQuickAction('open')">Abrir ficha</button>
@@ -2161,6 +2217,8 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/modal-config-backups.js"></script>
 <script defer src="js/prestamos.js"></script>
 <script defer src="js/reservas-practica.js"></script>
+<script defer src="js/solicitudes.js"></script>
+<script defer src="js/modo-clase.js"></script>
 <script defer src="js/import.js"></script>
 <script defer src="js/nav.js"></script>
 <script defer src="js/docs-dpto.js"></script>

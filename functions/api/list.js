@@ -152,6 +152,12 @@ export async function onRequestGet({ request, env, data }) {
     qty INTEGER NOT NULL DEFAULT 1, nota TEXT DEFAULT '', creadoPor TEXT DEFAULT '',
     fecha TEXT DEFAULT (datetime('now')), UNIQUE(itemId, departamento)
   )`).run().catch(() => {});
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS solicitudes_material (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, departamento TEXT NOT NULL DEFAULT '', nombre TEXT NOT NULL DEFAULT '',
+    cantidad INTEGER NOT NULL DEFAULT 1, nota TEXT DEFAULT '', estado TEXT NOT NULL DEFAULT 'pendiente',
+    respuesta TEXT DEFAULT '', creadoPor TEXT DEFAULT '', creadoPorNombre TEXT DEFAULT '',
+    fecha TEXT DEFAULT (datetime('now')), actualizadoEn TEXT DEFAULT ''
+  )`).run().catch(() => {});
 
   const catRenameMigrated = await env.DB.prepare("SELECT value FROM app_meta WHERE key='rename_consumibles_to_material_taller_v1'").first().catch(() => null);
   if (!catRenameMigrated) {
@@ -194,7 +200,7 @@ export async function onRequestGet({ request, env, data }) {
     ? 'SELECT * FROM inventario ORDER BY id'
     : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}') ORDER BY id`;
 
-  const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows, reservasRows, reservaItemsRows, pedidosRows] = await Promise.all([
+  const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows, reservasRows, reservaItemsRows, pedidosRows, solicitudesRows] = await Promise.all([
     superadmin ? env.DB.prepare(itemsQuery).all() : env.DB.prepare(itemsQuery).bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT * FROM profesores WHERE nombre != '' AND lower(nombre) != 'departamento' ORDER BY nombre").all()
@@ -223,6 +229,9 @@ export async function onRequestGet({ request, env, data }) {
     superadmin
       ? env.DB.prepare('SELECT * FROM pedidos ORDER BY id').all()
       : env.DB.prepare('SELECT * FROM pedidos WHERE departamento=? ORDER BY id').bind(dept).all(),
+    superadmin
+      ? env.DB.prepare('SELECT * FROM solicitudes_material ORDER BY id DESC').all()
+      : env.DB.prepare('SELECT * FROM solicitudes_material WHERE departamento=? ORDER BY id DESC').bind(dept).all(),
   ]);
 
   const cicloMap = {}, cicloOrder = [];
@@ -255,6 +264,7 @@ export async function onRequestGet({ request, env, data }) {
     cats: mergeCats(cats.results, itemRows),
     ciclos: cicloOrder.map(id => cicloMap[id]),
     pedidos: pedidosRows.results,
+    solicitudes: solicitudesRows.results,
     user
   });
 }

@@ -566,9 +566,11 @@ async function loadData(){
     profesores = res.profesores || [];
     prestamos = res.prestamos || [];
     reservas = res.reservas || [];
+    solicitudes = res.solicitudes || [];
     pedidos = {};
     (res.pedidos || []).forEach(p => { pedidos[p.itemId] = { qty: Number(p.qty)||1, nota: p.nota || '' }; });
     if(typeof updatePedBadge === 'function') updatePedBadge();
+    if(typeof updateSolBadge === 'function') updateSolBadge();
     itemsLoaded = true;
     if(typeof updatePresVencBadge === 'function') updatePresVencBadge();
     if(typeof getVencidosParaUsuario==='function'&&typeof toast==='function'){

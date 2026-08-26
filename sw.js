@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v627';
+const VERSION = 'v628';
 const CACHE_SHELL   = 'inventario-ies-juan-bosco-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-ies-juan-bosco-runtime-' + VERSION;
 
@@ -34,6 +34,8 @@ const SHELL = [
   './js/modal-config-backups.js',
   './js/prestamos.js',
   './js/reservas-practica.js',
+  './js/solicitudes.js',
+  './js/modo-clase.js',
   './js/import.js',
   './js/docs.js',
   './js/docs-dpto.js',

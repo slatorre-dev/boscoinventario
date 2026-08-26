@@ -248,6 +248,7 @@ function navigateFromHash(hash){
   const id = decodeURIComponent(rest.join('/'));
   if(seg === 'profile')    { goProfile(); return; }
   if(seg === 'prestamos')  { goPrestamos(); return; }
+  if(seg === 'modoclase')  { goModoClase(); return; }
   if(seg === 'lowstock')   { goLowStock(); return; }
   if(seg === 'maintenance') { goMaintenance(); return; }
   if(seg === 'ocultos')    { goOcultos(); return; }

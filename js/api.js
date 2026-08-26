@@ -13,6 +13,7 @@ const ENDPOINT_MAP = {
   userDelete:'usuarios', userResetPassword:'usuarios', userAssignModulos:'usuarios', userAssignAulas:'usuarios', userUnlock:'usuarios', selectModulos:'usuarios', importModulosCSV:'usuarios', selectAulas:'usuarios',
   getDocs:'docs', uploadDoc:'docs', deleteDoc:'docs',
   pedidoAdd:'pedidos', pedidoUpdate:'pedidos', pedidoRemove:'pedidos', pedidoClear:'pedidos',
+  solicitudCrear:'solicitudes', solicitudUpdate:'solicitudes',
 };
 
 function urlWithAuth(endpoint, params={}){

@@ -3,7 +3,7 @@
 // El resto son alias de compatibilidad (usuarios antiguos en BD).
 
 const _PERMS_JEFE    = ['*'];
-const _PERMS_PROFE   = ['items.write','docs.write','loans.write','orders.write','profile.write'];
+const _PERMS_PROFE   = ['items.write','docs.write','loans.write','orders.write','profile.write','solicitudes.write'];
 const _PERMS_LECTURA = ['profile.write'];
 
 const ROLE_PERMISSIONS = {
@@ -72,6 +72,8 @@ const ACTION_PERMISSIONS = {
   pedidoUpdate: 'orders.write',
   pedidoRemove: 'orders.write',
   pedidoClear: 'orders.write',
+  solicitudCrear: 'solicitudes.write',
+  solicitudUpdate: 'solicitudes.manage',
   getUsers: 'config.manage',
   userAdd: 'config.manage',
   userUpdate: 'config.manage',

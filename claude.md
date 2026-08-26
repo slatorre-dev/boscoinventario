@@ -1,13 +1,20 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v627 | 26/08/2026 | **Aulas asignables por admin** a
-cualquier usuario ("🏫 Aulas" en 🔐 Usuarios de la app, acción
-`userAssignAulas`, igual que ya existía para módulos) — cierra la
-asimetría módulos/aulas. Hints flotantes con flecha (apuntan a un botón
-real, ej. "📌 Mis Cursos/Aulas") + dos hints estáticos nuevos
-(Inventario: fijar en Inicio vía menú ⋮; ficha de ítem: galería de 3
-fotos) — mismo mecanismo descartable de siempre (`hint_<key>_visto`),
-detalle en `docs/DEVELOPMENT.md` v626-v627. Bloqueo de cuenta tras 5 intentos de login,
+**Estado:** v628 | 26/08/2026 | **Cuatro mejoras centradas en el
+profesorado** (detalle en `docs/DEVELOPMENT.md` v628): plantillas de
+práctica reutilizables (`localStorage`, sin backend) en "Planificar
+práctica"; préstamo/devolución QR rápido (Devolver / Me lo llevo, tras
+escanear); solicitudes de material separadas de 🛒 Pedidos (tabla y
+endpoint nuevos, migración 0034, jefatura cambia el estado); y "🎒 Modo
+clase" (`#modoclase`), vista móvil de botones grandes + resumen propio.
+Aulas asignables por admin a cualquier usuario
+("🏫 Aulas" en 🔐 Usuarios de la app, acción `userAssignAulas`, igual que
+ya existía para módulos) — cierra la asimetría módulos/aulas. Hints
+flotantes con flecha (apuntan a un botón real, ej. "📌 Mis Cursos/Aulas")
++ dos hints estáticos nuevos (Inventario: fijar en Inicio vía menú ⋮;
+ficha de ítem: galería de 3 fotos) — mismo mecanismo descartable de
+siempre (`hint_<key>_visto`), detalle en `docs/DEVELOPMENT.md` v626-v627.
+Bloqueo de cuenta tras 5 intentos de login,
 panel **🛡️ Gestionar accesos**, **autoasignación de departamento**,
 **módulos con varios profesores + autoservicio** (`modulo_profesores`,
 import CSV reparada v620-v621) y **autoservicio de aulas**

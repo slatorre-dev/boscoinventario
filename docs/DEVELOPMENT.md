@@ -3693,4 +3693,95 @@ gestionado (profesor, jefe/a, superadmin/admin).
 
 ---
 
+### 26/08/2026 — Cuatro mejoras para el uso diario del profesorado (v628)
+
+El usuario (perfil de docente/jefatura) pidió priorizar cuatro piezas de
+un roadmap más amplio: plantillas de práctica, préstamo/devolución QR
+rápido, solicitudes de material separadas de pedidos, y un "Modo clase"
+móvil — dejando fuera, de momento, la pantalla "Mi jornada" como nuevo
+Inicio.
+
+- **Plantillas de práctica** (`js/reservas-practica.js`, `index.html`):
+  sección "📋 Plantillas guardadas" dentro del modal de "Planificar
+  práctica" + botón "💾 Guardar como plantilla". Personales y locales al
+  navegador — `localStorage` con clave `reservas_plantillas_<usuario>`
+  (namespaced por usuario para no mezclar plantillas en un PC compartido
+  del taller), sin backend ni migración. Guarda solo ciclo/módulo, aula y
+  material+cantidades — fecha, profesor/a y observaciones se rellenan de
+  nuevo cada vez a propósito, porque cambian en cada uso. `aplicarPlantilla()`
+  reutiliza el mismo criterio de filtrado que `duplicarReservaPractica()`
+  (ya existente, sin tocar): descarta ítems que ya no existen o se
+  quedaron sin stock, avisando cuántos se excluyeron.
+- **Préstamo/devolución QR rápido** (`js/qr-scanner.js`, `index.html`,
+  `css/styles.css`): tras `_showQrActions()`, `_renderQrQuickActions()`
+  calcula si el docente logueado (emparejado por nombre contra
+  `loanTeacherOptions()`, mismo criterio que usa el resto de la app para
+  preseleccionar profesor) tiene un préstamo activo de ese ítem — si sí,
+  botón principal "📥 Devolver (tú)"; si hay stock, "🙋 Me lo llevo" (1
+  unidad, con su aula habitual si tiene exactamente una elegida en 📌 Mis
+  Cursos/Aulas, mismo patrón que ya usan `revision-aula.js`/
+  `multi-equipo.js`). Ambos piden confirmación (`confirmDialog`) y
+  reutilizan sin cambios los endpoints `prestar`/`devolver` de
+  `functions/api/prestar.js`. El botón "⌛ Prestar / Devolver" completo
+  sigue como alternativa. Todo gateado por `loans.write` (`requirePerm` +
+  oculto si no aplica).
+- **Solicitudes de material** — flujo nuevo y deliberadamente separado de
+  🛒 Pedidos (que exige un `itemId` ya existente en inventario): un
+  docente pide algo aunque no esté dado de alta todavía.
+  - Migración `0034_solicitudes_material.sql`: tabla `solicitudes_material`
+    (departamento, nombre, cantidad, nota, estado, respuesta, creadoPor,
+    creadoPorNombre, fecha, actualizadoEn) — aplicada en remoto.
+  - `functions/api/solicitudes.js` (nuevo): `solicitudCrear` (cualquier
+    docente, scoping por departamento del actor, sin más restricción de
+    rol — mismo criterio que `pedidoAdd`) y `solicitudUpdate` (**valida
+    en backend**, no solo en frontend, que el actor sea jefatura o
+    superadmin, y que la solicitud pertenezca a su departamento —
+    devuelve 403 si no).
+  - `functions/api/list.js`: nueva tabla en `Promise.all`, scoping
+    estricto por departamento (igual que `pedidos`, sin mezclar con el
+    departamento genérico `iesjuanbosco`), expuesta como `solicitudes` en
+    la respuesta.
+  - `js/roles.js`/`js/api.js`: permisos `solicitudes.write` (añadido a
+    `_PERMS_PROFE`) y `solicitudes.manage` (solo vía el comodín `*` de
+    jefe/superadmin) en `ACTION_PERMISSIONS`; endpoints mapeados a
+    `solicitudes` en `ENDPOINT_MAP`.
+  - `js/solicitudes.js` (nuevo) + modal `#mSolicitudes`: formulario de
+    alta + lista — "Mis solicitudes" para docentes, "Todas las
+    solicitudes del departamento" para jefatura/superadmin (con
+    `<select>` de estado inline, pide una respuesta opcional vía
+    `prompt()`). Badge de pendientes en el botón de topbar (`#solBadge`,
+    mismo patrón que `#pedBadge`).
+  - Sin notificación por email al crear una solicitud (pedidos/préstamos
+    sí notifican al jefe) — se puede añadir después con el mismo patrón
+    de `sendGmail()` si hace falta; no estaba en el criterio de esta
+    sesión y se dejó fuera para no ampliar el alcance.
+- **Modo clase** (`js/modo-clase.js`, nuevo, página `#pModoClase`): vista
+  móvil reducida con 4 botones grandes — Escanear QR (`openQrScanner()`),
+  Preparar práctica (`openReservaPractica()`), Devolver material
+  (`mcDevolverFoco()`, hace scroll al resumen de préstamos propios de la
+  misma página en vez de abrir un picker nuevo — cada línea ya tiene su
+  botón de devolución directa) y Solicitar material
+  (`openSolicitudesModal()`). Resumen propio: préstamos activos,
+  próximas reservas de práctica y solicitudes pendientes, todos
+  filtrados por el mismo emparejamiento "profesor propio" que el QR
+  rápido. Acceso desde topbar (🎒, gateado por `loans.write`) y desde
+  Inicio; ruta `#modoclase` añadida a `navigateFromHash()`
+  (`js/nav.js`). No sustituye Inicio/Inventario/Préstamos.
+- Sin tocar: `js/prestamos.js` (excepto lectura, sin ediciones),
+  `js/modal-item.js`, `js/state.js`/`js/api.js`/`js/roles.js` solo con
+  las líneas mínimas de fontanería (nuevo estado `solicitudes`, nuevo
+  endpoint, nuevos permisos) — nada de lo existente se reescribió.
+- Verificación de esta sesión: `node --check` sobre los 9 archivos
+  JS tocados/nuevos y los 2 backend nuevos/tocados (sin errores),
+  balance de etiquetas `<div>`/`<button>`/`<span>`/`<select>` y de llaves
+  CSS en `index.html`/`css/styles.css` (cuadrados), grep de colisión de
+  nombres de función nueva contra todo `js/`+`functions/` (ninguna
+  duplicada). No se probó en navegador real (sin Playwright en esta
+  sesión) — pendiente verificación visual manual de los 4 flujos.
+
+`sw.js` → `v628`. Migración `0034` aplicada en remoto
+(`npx wrangler d1 execute boscoinventario --remote`).
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
