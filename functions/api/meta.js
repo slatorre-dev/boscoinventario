@@ -111,8 +111,9 @@ export async function onRequestGet({ request, env, data }) {
   const superadmin = isSuperAdmin(user);
   const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run().catch(() => {});
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))").run().catch(() => {});
 
-  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows] = await Promise.all([
+  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows, profesRows] = await Promise.all([
     superadmin
       ? env.DB.prepare("SELECT * FROM aulas ORDER BY CASE WHEN id GLOB 'aula[0-9]*' THEN CAST(SUBSTR(id,5) AS INTEGER) ELSE orden END, orden, id").all()
       : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY CASE WHEN id GLOB 'aula[0-9]*' THEN CAST(SUBSTR(id,5) AS INTEGER) ELSE orden END, orden, id`).bind(dept).all(),
@@ -132,7 +133,22 @@ export async function onRequestGet({ request, env, data }) {
     superadmin
       ? env.DB.prepare('SELECT slug, nombre, icono FROM departamentos ORDER BY orden').all()
       : Promise.resolve({ results: [] }),
+    superadmin
+      ? env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario').all()
+      : env.DB.prepare(`SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario WHERE mp.departamento=? OR mp.departamento='${genericDept}'`).bind(dept).all(),
   ]);
+
+  const emailsPorModulo = {};
+  const misModulos = [];
+  for (const row of (profesRows.results || [])) {
+    const mid = `${row.cicloId}__${row.modCod}`;
+    if (row.usuario === user.usuario) {
+      misModulos.push(mid);
+    } else {
+      if (!emailsPorModulo[mid]) emailsPorModulo[mid] = [];
+      emailsPorModulo[mid].push(row.email || '');
+    }
+  }
 
   const cicloMap = {}, cicloOrder = [];
   for (const r of ciclosRows.results) {
@@ -140,7 +156,10 @@ export async function onRequestGet({ request, env, data }) {
       cicloMap[r.cicloId] = { id: r.cicloId, name: r.cicloNombre, nivel: r.nivel, icon: r.icon, th: r.th, desc: r.desc, departamento: r.departamento || '', modulos: [] };
       cicloOrder.push(r.cicloId);
     }
-    if (r.modCod) cicloMap[r.cicloId].modulos.push({ cod: r.modCod, name: r.modNombre, horas: r.modHoras });
+    if (r.modCod) {
+      const mid = `${r.cicloId}__${r.modCod}`;
+      cicloMap[r.cicloId].modulos.push({ cod: r.modCod, name: r.modNombre, horas: r.modHoras, responsablesEmails: emailsPorModulo[mid] || [] });
+    }
   }
 
   return Response.json({
@@ -151,6 +170,7 @@ export async function onRequestGet({ request, env, data }) {
     catsCrudo: superadmin ? cats.results : undefined,
     ubicaciones: mergeUbicaciones(ubicaciones.results, invLocs.results),
     ciclos: cicloOrder.map(id => cicloMap[id]),
+    misModulos,
     departamentos: superadmin ? departamentosRows.results : undefined,
     user
   });
