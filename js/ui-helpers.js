@@ -32,6 +32,53 @@ function dismissFeatureHint(key, elId) {
   try { localStorage.setItem('hint_' + key + '_visto', '1'); } catch (e) {}
 }
 
+// Hint flotante con flecha, anclado a un botón real (getBoundingClientRect)
+// en vez de a un banner fijo en el flujo — para features "escondidas" detrás
+// de un botón concreto (ej. un menú). Comparte la misma clave de localStorage
+// ('hint_<key>_visto') que showFeatureHintOnce/dismissFeatureHint, así que
+// puede sustituir a un hint estático sin que reaparezca para quien ya lo vio.
+// targetGetter: función que devuelve el elemento ancla vivo (se puede
+// recalcular en cada resize, ej. topbar que colapsa a menú hamburguesa).
+function showPointerHintOnce(key, targetGetter, html) {
+  try { if (localStorage.getItem('hint_' + key + '_visto')) return; } catch (e) { return; }
+  const target = typeof targetGetter === 'function' ? targetGetter() : document.getElementById(targetGetter);
+  if (!target) return;
+  let box = document.getElementById('floatingHintBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'floatingHintBox';
+    box.className = 'pointer-hint';
+    document.body.appendChild(box);
+  }
+  box.innerHTML = `<div class="pointer-hint-arrow"></div><span>${html}</span><button onclick="dismissPointerHint('${key}')">Entendido</button>`;
+  box.dataset.key = key;
+  box.style.display = 'block';
+  const reposition = () => _positionPointerHint(box, typeof targetGetter === 'function' ? targetGetter() : target);
+  reposition();
+  window.addEventListener('resize', reposition);
+  box._pointerHintReposition = reposition;
+}
+
+function dismissPointerHint(key) {
+  const box = document.getElementById('floatingHintBox');
+  if (box) {
+    box.style.display = 'none';
+    if (box._pointerHintReposition) window.removeEventListener('resize', box._pointerHintReposition);
+  }
+  try { localStorage.setItem('hint_' + key + '_visto', '1'); } catch (e) {}
+}
+
+function _positionPointerHint(box, target) {
+  if (!target) { box.style.display = 'none'; return; }
+  const r = target.getBoundingClientRect();
+  box.style.top = (r.bottom + 12) + 'px';
+  const maxLeft = window.innerWidth - box.offsetWidth - 8;
+  const left = Math.max(8, Math.min(r.left + r.width / 2 - box.offsetWidth / 2, maxLeft));
+  box.style.left = left + 'px';
+  const arrow = box.querySelector('.pointer-hint-arrow');
+  if (arrow) arrow.style.left = Math.max(10, Math.min(r.left + r.width / 2 - left - 8, box.offsetWidth - 26)) + 'px';
+}
+
 function toggleFavorito(id) {
   id = String(id);
   favoritos.has(id) ? favoritos.delete(id) : favoritos.add(id);

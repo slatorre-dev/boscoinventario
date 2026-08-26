@@ -414,10 +414,6 @@
   </div>
   <div class="home-body">
     <div id="loanBanner"></div>
-    <div class="feature-hint" id="hintMisCursosAulas" style="display:none">
-      <span>📌 <strong>Mis Cursos/Aulas</strong>: elige tus módulos/asignaturas y las aulas en las que das clase desde el menú de arriba — así verás solo lo tuyo en Inicio, y tus compañeros sabrán qué compartes con ellos.</span>
-      <button onclick="dismissFeatureHint('misCursosAulas','hintMisCursosAulas')">Entendido</button>
-    </div>
     <div class="stats-strip" id="hStats"></div>
     <div class="sec-label" id="secFavoritos" style="display:none">⭐ Fijados</div>
     <div class="fav-strip" id="gFavoritos"></div>
@@ -601,6 +597,10 @@
       </div>
     </div>
     <div id="activeFiltersBar" class="print-no"></div>
+    <div class="feature-hint" id="hintInvFijar" style="display:none">
+      <span>⭐ Abre el menú <strong>⋮</strong> de cualquier ítem para fijarlo en Inicio y tenerlo siempre a mano.</span>
+      <button onclick="dismissFeatureHint('invFijar','hintInvFijar')">Entendido</button>
+    </div>
     <div class="bulkbar print-no" id="bulkBar" style="display:none">
       <div class="bulk-count" id="bulkCount">0 seleccionados</div>
       <select id="bulkAction" onchange="renderBulkActionControl()">
@@ -730,6 +730,10 @@
                 <button type="button" class="btn btn-sm" onclick="printItemQr()" style="font-size:11px;padding:4px 6px;white-space:nowrap;width:100%">🖨️ QR</button>
               </div>
             </div>
+          </div>
+          <div class="feature-hint" id="hintItemFotos" style="display:none">
+            <span>📷 Puedes añadir hasta 3 fotos por ítem y marcar cuál es la <strong>principal</strong> (★) — la que se ve en las listas.</span>
+            <button onclick="dismissFeatureHint('itemFotos','hintItemFotos')">Entendido</button>
           </div>
           <div class="item-stock-strip">
             <div><label class="fl">Cantidad</label><input class="fi-w" id="f_qty" type="number" min="0" value="1"></div>

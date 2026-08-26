@@ -276,6 +276,19 @@ function toggleMobMenu(){
 function closeMobMenu(){
   document.getElementById('topbarBtns').classList.remove('open');
 }
+
+// Ancla real para el hint flotante de "Mis Cursos/Aulas": en escritorio el
+// botón vive suelto en el topbar, en móvil queda escondido dentro del menú
+// hamburguesa colapsado (#topbarBtns sin .open) — apuntamos al primero que
+// esté realmente visible.
+function _misCursosHintTarget(){
+  const btn = document.getElementById('btnMisCursos');
+  if (btn && btn.offsetParent !== null) return btn;
+  const mob = document.getElementById('mobMenuBtn');
+  if (mob && mob.offsetParent !== null) return mob;
+  return null;
+}
+
 document.addEventListener('click', function(e){
   if(!e.target.closest('#topbarBtns') && !e.target.closest('#mobMenuBtn'))
     closeMobMenu();

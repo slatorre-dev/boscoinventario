@@ -1021,6 +1021,7 @@ function openModal(id=null, src=null){
   document.getElementById('f_fechaAdquisicion').value = id ? (m?.fecha_adquisicion || '') : new Date().toISOString().slice(0,10);
   renderMainPhoto(m?.foto||'');
   _setFotosEditingFromMain(m?.foto||'');
+  if(!readonly && typeof showFeatureHintOnce==='function') showFeatureHintOnce('itemFotos','hintItemFotos');
   if(existing){
     apiPost({action:'fotosGet', itemId:id}).then(res => {
       if(res.ok && Array.isArray(res.fotos) && res.fotos.length){

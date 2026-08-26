@@ -154,6 +154,7 @@ function renderInv(){
     mc.innerHTML=`<div class="inv-loading-skeleton">${Array(6).fill(`<div class="skel-row"><div class="skel-cell skel" style="width:40%"></div><div class="skel-cell skel" style="width:20%"></div><div class="skel-cell skel" style="width:15%"></div><div class="skel-cell skel" style="width:15%"></div></div>`).join('')}</div>`;
     return;
   }
+  if(typeof showFeatureHintOnce==='function') showFeatureHintOnce('invFijar','hintInvFijar');
   renderActiveFilters();
   const data=getFiltered();
   const low=data.filter(isLowStock).length;

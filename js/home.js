@@ -17,12 +17,14 @@ function renderHome(){
   // personalizaciones de arriba (Inicio filtrado, aviso "también lo
   // imparte") se quedan sin usar. Se oculta explícitamente si ya no aplica
   // (no es profesor, o ya eligió ambas cosas), no solo se omite mostrarlo,
-  // porque showFeatureHintOnce() no oculta un hint que ya estaba visible.
-  const hintMisCursos = document.getElementById('hintMisCursosAulas');
-  if(hintMisCursos){
-    const necesitaConfigurar = esProfesor && (!Array.isArray(MIS_MODULOS) || !MIS_MODULOS.length || !Array.isArray(MIS_AULAS) || !MIS_AULAS.length);
-    if(necesitaConfigurar) showFeatureHintOnce('misCursosAulas', 'hintMisCursosAulas');
-    else hintMisCursos.style.display = 'none';
+  // porque showPointerHintOnce() no oculta un hint que ya estaba visible.
+  const necesitaConfigurarCursos = esProfesor && (!Array.isArray(MIS_MODULOS) || !MIS_MODULOS.length || !Array.isArray(MIS_AULAS) || !MIS_AULAS.length);
+  if(necesitaConfigurarCursos){
+    if(typeof showPointerHintOnce==='function') showPointerHintOnce('misCursosAulas', _misCursosHintTarget,
+      '📌 <strong>Mis Cursos/Aulas</strong>: elige aquí tus módulos/asignaturas y las aulas en las que das clase — así verás solo lo tuyo en Inicio.');
+  } else {
+    const box = document.getElementById('floatingHintBox');
+    if(box && box.dataset.key === 'misCursosAulas') box.style.display = 'none';
   }
 
   const total=items.length;
