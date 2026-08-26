@@ -83,7 +83,13 @@
       <button class="tbtn" id="btnInstall" style="display:none" onclick="installPWA()" title="Instalar app" aria-label="Instalar app">📲 <span class="btn-install-label">Instalar</span></button>
       <button class="tbtn tbtn-logout-mob" id="btnLogoutMob" onclick="logout()" title="Cerrar sesión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Cerrar sesión</button>
       <button class="tbtn" id="btnPrint" style="display:none" onclick="openPrintChoiceModal()" title="Imprimir inventario">🖨️ Imprimir</button>
-      <button class="tbtn" id="btnMisModulos" style="display:none" onclick="openMisModulosModal()">📚 Mis módulos</button>
+      <div class="dept-menu-wrap" id="misCursosMenuWrap" style="display:none">
+        <button class="tbtn" id="btnMisCursos" onclick="toggleMisCursosMenu()">📌 Mis Cursos/Aulas</button>
+        <div class="dept-menu" id="misCursosMenu">
+          <button class="dept-menu-item" onclick="closeMisCursosMenu();openMisModulosModal()">📚 Módulos</button>
+          <button class="dept-menu-item" onclick="closeMisCursosMenu();openMisAulasModal()">🏫 Aulas</button>
+        </div>
+      </div>
       <div class="dept-menu-wrap" id="deptMenuWrap" style="display:none">
         <button class="tbtn tbtn-dept" id="btnDept" onclick="toggleDeptMenu()">⚙️ Departamento</button>
         <div class="dept-menu" id="deptMenu">
@@ -1531,6 +1537,23 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   </div>
 </div>
 
+<!-- MODAL "MIS AULAS" (autoservicio, cualquier rol) -->
+<div class="mbg" id="mMisAulas" style="z-index:600" onclick="if(event.target===this)closeMisAulasModal()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt">🏫 Mis aulas</div><button class="mx" onclick="closeMisAulasModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Marca las aulas en las que das clase.</p>
+    <input type="text" id="misAulasSearch" class="fi-w" placeholder="🔍 Buscar aula..." oninput="filterMisAulas()" style="margin-bottom:12px">
+    <div id="mMisAulasBody" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeMisAulasModal()">Cancelar</button>
+        <button class="btn btn-p" id="btnGuardarMisAulas" onclick="guardarMisAulasModal()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL GESTIÓN DE AULAS -->
 <div class="mbg" id="mAulas" onclick="if(event.target===this)closeAulasModal()">
   <div class="modal">
@@ -2126,6 +2149,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/modal-historial.js"></script>
 <script defer src="js/modal-accesos.js"></script>
 <script defer src="js/modal-mis-modulos.js"></script>
+<script defer src="js/modal-mis-aulas.js"></script>
 <script defer src="js/modal-auditoria.js"></script>
 <script defer src="js/dept-game.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
