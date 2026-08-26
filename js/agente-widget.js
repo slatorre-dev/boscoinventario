@@ -3134,7 +3134,21 @@
 
     if (tipo === 'resumen_aula') {
       var aula = extraerAulaDeFrase(q);
-      if (!aula) { appendMsg('ai', '¿De qué aula quieres el resumen? Ej: "¿qué hay en el Aula 35?"'); return true; }
+      // "¿qué hay en mi aula?" — si no se nombró ninguna aula concreta pero
+      // el usuario ya eligió la suya (autoservicio "📌 Mis Cursos/Aulas") y
+      // solo tiene una, se resuelve directo sin preguntar.
+      if (!aula && /\bmi(s)?\s+aula(s)?\b/.test(n) && Array.isArray(MIS_AULAS) && MIS_AULAS.length === 1) {
+        aula = (AULAS || []).find(function(a) { return a.id === MIS_AULAS[0]; }) || null;
+      }
+      if (!aula) {
+        var pideMiAulaSinConfig = /\bmi(s)?\s+aula(s)?\b/.test(n) && Array.isArray(MIS_AULAS) && MIS_AULAS.length !== 1;
+        var msg = pideMiAulaSinConfig
+          ? (MIS_AULAS.length > 1
+              ? '¿De qué aula quieres el resumen? Tienes varias tuyas — dime cuál, o ábrelas desde "📌 Mis Cursos/Aulas".'
+              : 'Todavía no has elegido tu aula en "📌 Mis Cursos/Aulas". Dime el nombre, ej: "¿qué hay en el Aula 35?"')
+          : '¿De qué aula quieres el resumen? Ej: "¿qué hay en el Aula 35?"';
+        appendMsg('ai', msg); return true;
+      }
       var aulaItems = (items || []).filter(function(x) { return x.aula === aula.id; });
       if (!aulaItems.length) { appendMsg('ai', 'No encontré ítems en ' + esc(aula.name) + '.'); return true; }
       var bajos2 = aulaItems.filter(function(x) { return x.min && Number(x.qty) < Number(x.min); }).length;

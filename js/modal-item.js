@@ -1015,7 +1015,8 @@ function openModal(id=null, src=null){
   document.getElementById('f_ref').value = id ? (m?.ref||'') : '';
   document.getElementById('f_serie').value = id ? (m?.serie||'') : '';
   const aulaReciente = localStorage.getItem('cam_last_aula') || '';
-  document.getElementById('f_aula').value = m?.aula || (cf?.type==='aula' ? cf.id : (aulaReciente || AULAS[0]?.id));
+  const miAulaUnica = (Array.isArray(MIS_AULAS) && MIS_AULAS.length === 1) ? MIS_AULAS[0] : '';
+  document.getElementById('f_aula').value = m?.aula || (cf?.type==='aula' ? cf.id : (aulaReciente || miAulaUnica || AULAS[0]?.id));
   document.getElementById('f_item').value=m?.item||'';
   document.getElementById('f_fechaAdquisicion').value = id ? (m?.fecha_adquisicion || '') : new Date().toISOString().slice(0,10);
   renderMainPhoto(m?.foto||'');

@@ -14,6 +14,13 @@ const MULTI_DRAFT_KEY = 'multi_equipo_draft_v1';
 function openMultiEquipo() {
   const targetAulaId = (cf && cf.type === 'aula') ? cf.id : '';
   if (!targetAulaId) {
+    // Entrada directa desde Home sin aula de contexto — si el usuario solo
+    // tiene un aula propia (autoservicio "📌 Mis Cursos/Aulas"), entra
+    // directo a ella y ahorra el selector.
+    if (Array.isArray(MIS_AULAS) && MIS_AULAS.length === 1) {
+      _iniciarMultiEquipo(MIS_AULAS[0]);
+      return;
+    }
     _abrirMultiEquipoConPicker();
     return;
   }
