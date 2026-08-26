@@ -66,6 +66,7 @@ const ACTION_PERMISSIONS = {
   updateProfile: 'profile.write',
   changePassword: 'profile.write',
   selectDepartamento: 'profile.write',
+  selectModulos: 'profile.write',
   pedidoAdd: 'orders.write',
   pedidoUpdate: 'orders.write',
   pedidoRemove: 'orders.write',
