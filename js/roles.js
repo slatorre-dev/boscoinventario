@@ -74,6 +74,7 @@ const ACTION_PERMISSIONS = {
   userUpdate: 'config.manage',
   userDelete: 'config.manage',
   userResetPassword: 'config.manage',
+  userUnlock: 'config.manage',
   userAssignModulos: 'config.manage',
   toggleOculto: 'visibility.manage'
 };

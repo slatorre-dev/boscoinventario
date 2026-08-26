@@ -1,18 +1,15 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v610 | 25/08/2026 | Multi-departamento (Fases 0-3) completo y
-desplegado. Seguridad: contraseñas ya hasheadas con PBKDF2 (migración
-perezosa), `backup.js` auditado sin fugas. Pedidos (`🛒`) funciona de
-verdad con email real y sincronización D1. Auditoría de UI (comparativa
-Snipe-IT/Notion/Linear) completa y cerrada: modo oscuro (v606), buscador
-global Ctrl+K/"/" desde cualquier pantalla (v607), favoritos/ítems
-fijados en Inicio (v608) y banners de bienvenida descartables en
-Mantenimiento/Pedidos/Reservas (v609). Revisión posterior (v610): 2
-detalles menores corregidos — `--surface` (variable CSS sin definir en
-`:root`) sustituida por `--surface2` en `.mod-ciclo-group`/
-`.gsr-print-btn`, y `<meta name="theme-color">` ahora sigue al modo
-oscuro/claro (antes se quedaba fijo en azul claro, notorio en la barra
-del navegador móvil). Historial completo sesión a sesión, con todo el
+**Estado:** v613 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
+fallidos seguidos (solo en la pantalla de login, `POST/GET /api/auth`), con
+aviso desde el 3º intento y desbloqueo manual desde 🔐 Usuarios
+(`userUnlock`) — columnas `usuarios.intentos_fallidos`/`bloqueado`,
+migración **`migrations/0031_intentos_login.sql` pendiente de aplicar en
+remoto** (con autocura en runtime mientras tanto, ver `auth.js`/`usuarios.js`).
+Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
+ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
+fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
+Historial completo sesión a sesión, con todo el
 detalle técnico y las lecciones de cada bug: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 (léelo si necesitas contexto de por qué algo se hizo así, o de un bug ya
 resuelto). Este archivo es solo el estado operativo actual — no lo

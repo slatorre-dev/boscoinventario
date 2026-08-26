@@ -931,6 +931,7 @@ function _renderUsuariosList(){
     const nMods = (u._modulos||[]).length;
     const modBadge = nMods > 0 ? `<span class="usr-mod-badge">${nMods}</span>` : '';
     const rolDisplay = (u.rol || '').toLowerCase().trim() === 'superadmin' ? 'Jefe/a Departamento' : u.rol;
+    const bloqueadoBadge = u.bloqueado ? `<span class="usr-mod-badge" style="background:var(--red,#dc2626)" title="Bloqueada por demasiados intentos de login fallidos">🔒 Bloqueada</span>` : '';
     return `<div class="usr-row">
       <input class="fi-w usr-nombre${selfClass}" value="${escHtml(u.nombre||'')}" placeholder="Nombre completo *"
         onchange="_usuariosEditing[${i}].nombre=this.value" ${esSelf?'title="Es tu propia cuenta"':''}>
@@ -950,6 +951,8 @@ function _renderUsuariosList(){
         : `<button class="btn btn-sm" onclick="_promptResetPass(${i})" title="Resetear contraseña">🔑 Reset</button>`
       }
       <button class="btn btn-sm usr-mods-btn" onclick="openModulosUsuario(${i})" title="Asignar módulos que imparte">📚 Módulos${nMods>0?` (${nMods})`:''}</button>
+      ${bloqueadoBadge}
+      ${u.bloqueado && !u._nuevo ? `<button class="btn btn-sm" onclick="_desbloquearUsuario(${i})" title="Desbloquear cuenta">🔓 Desbloquear</button>` : ''}
       <button class="del-btn${selfClass}" onclick="_removeUsuarioRow(${i})" title="${esSelf?'No puedes eliminarte':'Eliminar usuario'}">🗑</button>
     </div>`;
   }).join('');
@@ -978,6 +981,18 @@ async function _promptResetPass(i){
     const res = await apiPost({ action:'userResetPassword', usuario:u.usuario, newPassword, password:newPassword });
     if(!res.ok) throw new Error(res.error);
     toast(`Contraseña actualizada para ${u.nombre||u.usuario}`,'ok');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+}
+
+async function _desbloquearUsuario(i){
+  const u = _usuariosEditing[i];
+  if(!await confirmDialog({message:`¿Desbloquear la cuenta de "${u.nombre||u.usuario}"? Podrá volver a intentar iniciar sesión.`})) return;
+  try {
+    const res = await apiPost({ action:'userUnlock', usuario:u.usuario });
+    if(!res.ok) throw new Error(res.error);
+    u.bloqueado = 0;
+    _renderUsuariosList();
+    toast(`Cuenta de ${u.nombre||u.usuario} desbloqueada`,'ok');
   } catch(e){ toast('Error: '+e.message,'err'); }
 }
 
