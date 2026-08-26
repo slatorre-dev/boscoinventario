@@ -417,6 +417,7 @@ body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 .scard-icon{font-size:22px;flex-shrink:0;opacity:.9}
 .scard-num{font-size:20px;font-weight:800;line-height:1}
 .scard-lbl{font-size:11px;color:var(--muted);margin-top:3px;font-weight:600}
+.scard-lbl-sub{font-weight:400;text-transform:none;letter-spacing:0;opacity:.75}
 .scard-alert{border-color:var(--red);border-width:2px;background:var(--red-l);box-shadow:0 2px 12px rgba(220,38,38,.12);position:relative}
 .scard-alert:hover{border-color:var(--red);box-shadow:0 6px 20px rgba(220,38,38,.22)}
 .scard-alert .scard-lbl{color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.4px}

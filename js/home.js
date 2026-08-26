@@ -7,14 +7,35 @@ function renderHome(){
   renderFavoritos();
 
   const loading = !itemsLoaded;
+  const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';
+  const tieneMisAulas = esProfesor && Array.isArray(MIS_AULAS) && MIS_AULAS.length > 0;
+  const verTodasAulas = localStorage.getItem('home_ver_todas_aulas') === '1';
+  const filtrarPorMisAulas = tieneMisAulas && !verTodasAulas;
+
+  // Aviso descartable: sin esto, quien no abre nunca "📌 Mis Cursos/Aulas"
+  // no descubre que puede elegir sus módulos/aulas — y las dos
+  // personalizaciones de arriba (Inicio filtrado, aviso "también lo
+  // imparte") se quedan sin usar. Se oculta explícitamente si ya no aplica
+  // (no es profesor, o ya eligió ambas cosas), no solo se omite mostrarlo,
+  // porque showFeatureHintOnce() no oculta un hint que ya estaba visible.
+  const hintMisCursos = document.getElementById('hintMisCursosAulas');
+  if(hintMisCursos){
+    const necesitaConfigurar = esProfesor && (!Array.isArray(MIS_MODULOS) || !MIS_MODULOS.length || !Array.isArray(MIS_AULAS) || !MIS_AULAS.length);
+    if(necesitaConfigurar) showFeatureHintOnce('misCursosAulas', 'hintMisCursosAulas');
+    else hintMisCursos.style.display = 'none';
+  }
+
   const total=items.length;
-  const low=items.filter(isLowStock).length;
-  const mant=items.filter(needsMaintenance).length;
+  const itemsParaAlertas = filtrarPorMisAulas ? items.filter(x=>MIS_AULAS.includes(x.aula)) : items;
+  const low=itemsParaAlertas.filter(isLowStock).length;
+  const mant=itemsParaAlertas.filter(needsMaintenance).length;
   const units=items.reduce((a,x)=>a+(Number(x.qty)||0),0);
   const oc = (typeof can==='function' && can('visibility.manage')) ? items.filter(x=>x.oculto==1).length : 0;
   const ocCard = (typeof can==='function' && can('visibility.manage'))
     ? `<div class="scard" onclick="goOcultos()" style="cursor:pointer"><div class="scard-icon">🙈</div><div class="scard-copy"><div class="scard-num">${oc}</div><div class="scard-lbl">Ocultos</div></div></div>`
     : '';
+  const lblStockBajo = filtrarPorMisAulas ? 'Stock bajo <span class="scard-lbl-sub">(tus aulas)</span>' : 'Stock bajo';
+  const lblMant = filtrarPorMisAulas ? 'Mantenimiento <span class="scard-lbl-sub">(tus aulas)</span>' : 'Mantenimiento';
   document.getElementById('hStats').innerHTML= loading
     ? `<div class="scard scard-loading"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Ítems</div></div></div>
        <div class="scard scard-loading"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Unidades</div></div></div>
@@ -22,13 +43,9 @@ function renderHome(){
        <div class="scard scard-loading"><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Mantenimiento</div></div></div>`
     : `<div class="scard"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num">${total}</div><div class="scard-lbl">Ítems</div></div></div>
     <div class="scard"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num">${units.toLocaleString()}</div><div class="scard-lbl">Unidades</div></div></div>
-    <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">Stock bajo</div></div></div>
-    <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">Mantenimiento</div></div></div>${ocCard}`;
+    <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
+    <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">${lblMant}</div></div></div>${ocCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
-  const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';
-  const tieneMisAulas = esProfesor && Array.isArray(MIS_AULAS) && MIS_AULAS.length > 0;
-  const verTodasAulas = localStorage.getItem('home_ver_todas_aulas') === '1';
-  const filtrarPorMisAulas = tieneMisAulas && !verTodasAulas;
   let aulaEntries = loading ? AULAS : AULAS.filter(a=>items.some(x=>x.aula===a.id));
   if(filtrarPorMisAulas) aulaEntries = aulaEntries.filter(a=>MIS_AULAS.includes(a.id));
   const misAulasToggleWrap = document.getElementById('misAulasToggleWrap');
