@@ -33,6 +33,14 @@ function closeAccesosModal() {
   modal.style.display = 'none';
 }
 
+// Cruce con el Historial de acciones: pinchar un usuario en la tabla de
+// Accesos abre su historial completo (items, préstamos y sus propios
+// accesos, todo en la misma tabla `log`) ya filtrado por ese usuario.
+function verHistorialDeUsuario(usuario) {
+  closeAccesosModal();
+  openHistorialModal(usuario);
+}
+
 async function cargarAccesos() {
   const tbody = document.getElementById('accesosTbody');
   const empty = document.getElementById('accesosEmpty');
@@ -100,7 +108,7 @@ function renderAccesos(data) {
   tbody.innerHTML = data.map(h => `
     <tr>
       <td class="ts">${accesosEsc(h.timestamp)}</td>
-      <td class="usr">${accesosEsc(h.usuario)}</td>
+      <td class="usr"><span class="accesos-usr-link" onclick="verHistorialDeUsuario('${accesosEsc(h.usuario)}')" title="Ver el historial de acciones de ${accesosEsc(h.usuario)}">${accesosEsc(h.usuario)}</span></td>
       <td>${accesosEsc(h.nombre)}</td>
       <td>${accesosEsc(h.rol)}</td>
       <td class="act"><span class="badge ${historialBadgeClass(h.accion)}">${accesosResultadoLabel(h.accion)}</span></td>

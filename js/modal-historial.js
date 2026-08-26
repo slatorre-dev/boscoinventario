@@ -31,7 +31,9 @@ function historialBadgeClass(action) {
   return 'badge-' + String(action || 'accion').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
 }
 
-function openHistorialModal() {
+// presetUsuario: si se pasa (p.ej. desde el panel 🛡️ Accesos, al pinchar un
+// usuario), se precarga el filtro de usuario en cuanto termina de cargar.
+async function openHistorialModal(presetUsuario) {
   if (!canAccessHistorial()) {
     toast('Solo el administrador o jefe de departamento puede acceder al historial', 'err');
     return;
@@ -40,7 +42,11 @@ function openHistorialModal() {
   const modal = document.getElementById('mHistorial');
   modal.style.display = 'flex';
   modal.classList.add('open');
-  cargarHistorial();
+  await cargarHistorial();
+  if (presetUsuario) {
+    document.getElementById('filterUsuario').value = presetUsuario;
+    filtrarHistorial();
+  }
 }
 
 function closeHistorialModal() {
