@@ -3576,4 +3576,66 @@ viendo exactamente el mismo selector de siempre.
 
 ---
 
+### 26/08/2026 — Hints flotantes con flecha + dos hints estáticos nuevos (v626)
+
+El usuario preguntó por el tour de cámara ("¿dónde está la guía de uso?"):
+se le explicó que `js/onboarding-camara.js` es un tour de 4 pantallas
+específico de cámara (localStorage `tour_camara_visto_v1`), no una guía
+general — y que con la cuenta de pruebas usada toda la sesión ya estaba
+descartado de antes. Propuesta y aprobada una mejora: más hints
+descartables, y un nuevo tipo "flotante" con flecha que apunta a un botón
+real en vez de vivir como banner fijo en el flujo.
+
+- **`js/ui-helpers.js`** — `showPointerHintOnce(key, targetGetter, html)`/
+  `dismissPointerHint(key)`/`_positionPointerHint(box, target)`: un único
+  nodo compartido `#floatingHintBox` (creado perezosamente, reutilizado
+  entre llamadas) posicionado con `getBoundingClientRect()` del elemento
+  que devuelve `targetGetter` (una función, no un id fijo — permite
+  recalcular qué botón está realmente visible). Misma clave de
+  `localStorage` (`hint_<key>_visto`) que los banners estáticos de
+  siempre, así que un hint estático puede sustituirse por uno flotante
+  sin que reaparezca para quien ya lo había descartado. Reposiciona en
+  `resize` mientras está visible; `box.dataset.key` guarda qué hint es el
+  que se está mostrando ahora mismo, para poder ocultarlo desde fuera sin
+  pisar un hint distinto que pueda estar activo.
+- **CSS** (`css/styles.css`): `.pointer-hint`/`.pointer-hint-arrow` —
+  burbuja `position:fixed` con flecha CSS (border-trick) apuntando hacia
+  arriba, mismos tokens de color que `.feature-hint` (`--accent`/
+  `--accent-l`) para que ambos estilos de hint se vean coherentes.
+- **Sustituido el banner estático de "Mis Cursos/Aulas" (v624) por uno
+  flotante**: `js/nav.js` gana `_misCursosHintTarget()` — devuelve
+  `#btnMisCursos` si está visible (`offsetParent!==null`) o si no
+  `#mobMenuBtn` (topbar colapsado a menú hamburguesa en móvil). Mismo
+  disparador que antes en `renderHome()` (profesor sin módulos ni aulas
+  elegidos), misma clave `misCursosAulas`. Se retira el `<div
+  class="feature-hint" id="hintMisCursosAulas">` de `index.html` — ya no
+  hace falta un elemento fijo en el DOM para este hint.
+- **Dos hints estáticos nuevos** (mecanismo sin cambios, solo banners
+  nuevos):
+  - Inventario (`#hintInvFijar`, clave `invFijar`): "Abre el menú ⋮ de
+    cualquier ítem para fijarlo en Inicio" — dispara en `renderInv()`
+    (`js/inventory.js`) la primera vez que hay datos cargados. La función
+    "Fijar en Inicio" vive dentro del menú contextual ⋮ de cada fila sin
+    ninguna pista visual previa.
+  - Ficha de ítem (`#hintItemFotos`, clave `itemFotos`): "puedes añadir
+    hasta 3 fotos... y marcar cuál es la principal (★)" — dispara en
+    `openModal()` (`js/modal-item.js`) tras `_setFotosEditingFromMain()`,
+    solo si `!readonly` (no tiene sentido para quien solo puede ver la
+    ficha, ni el botón de añadir/marcar principal aparece para ese rol).
+- Verificado en producción con Playwright: cuenta de prueba
+  `profe1electricidadelectronica` tenía la contraseña cambiada desde una
+  sesión anterior (`password_temporal=0`, ya no era la de la tabla de
+  credenciales) — reseteada temporalmente con `userResetPassword` desde
+  `Seba` (superadmin) para poder volver a entrar. Con eso: el hint
+  flotante apareció exactamente debajo de "📌 Mis Cursos/Aulas" (flecha
+  centrada, posición confirmada por coordenadas — `top`/`left` cuadran
+  con `getBoundingClientRect()` del botón), "Entendido" lo oculta y fija
+  `hint_misCursosAulas_visto=1`; el hint de Inventario apareció en la
+  vista de Aula 35; el hint de la ficha apareció al abrir "＋ Nuevo ítem".
+  Ítem de prueba cerrado sin guardar.
+
+`sw.js` → `v626`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
