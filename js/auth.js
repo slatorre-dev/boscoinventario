@@ -2,6 +2,12 @@
 // LOGIN
 // ═════════════════════════════════════════════════════════
 
+// Flag en memoria (nunca en localStorage): true solo entre guardar el
+// departamento con éxito y el loadData() que sigue justo después. Así el
+// paso de módulos nunca "resucita" en una recarga de página ni en un login
+// futuro — solo en el que sigue justo a elegir departamento por primera vez.
+let _justSelectedDepartamento = false;
+
 // Paso final común a todos los flujos de login (usuario/contraseña, cambio
 // de contraseña obligatorio, Google) — si la cuenta no tiene departamento
 // (típico en cuentas de Google con correo @iesjuanbosco.es no mapeado en
@@ -41,6 +47,7 @@ async function doSelectDepartamento(){
     SESSION.departamentoNombre = res.departamentoNombre;
     SESSION.departamentoIcono = res.departamentoIcono;
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
+    _justSelectedDepartamento = true;
     showUserChip();
     _showOverlay();
     loadData();
@@ -495,6 +502,15 @@ async function loadData(){
     if(Array.isArray(meta.catsCrudo)) catsCrudo = meta.catsCrudo;
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
     if(meta.ciclos && meta.ciclos.length) CICLOS = meta.ciclos;
+    MIS_MODULOS = Array.isArray(meta.misModulos) ? meta.misModulos : [];
+    if(_justSelectedDepartamento){
+      _justSelectedDepartamento = false;
+      if(!MIS_MODULOS.length){
+        _hideOverlay();
+        abrirSeleccionModulosOnboarding();
+        return;
+      }
+    }
     catsPropias = !!meta.catsPropias;
     if(meta.departamentos && meta.departamentos.length) DEPARTAMENTOS = meta.departamentos;
     renderDeptActivoSelector();
