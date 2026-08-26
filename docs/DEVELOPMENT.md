@@ -3217,4 +3217,68 @@ entrado, cuándo, con qué resultado, cuántos intentos.
 
 ---
 
+### 26/08/2026 — Ajustes de Accesos + autoasignación de departamento (v616-v618)
+
+**v616 — fix:** el modal `#mAccesos` reusa las clases `.historial-modal`
+pero el CSS que le da el ancho grande (1120px) estaba atado solo al
+selector `#mHistorial .historial-modal`, así que `#mAccesos` se quedaba
+con el ancho de un modal normal (~520px) y la tabla se veía cortada.
+Selectores extendidos a `#mHistorial,#mAccesos` en `css/styles.css`.
+
+**v617 — cruce Accesos ↔ Historial de acciones**, petición del usuario:
+pinchar el nombre de usuario en la tabla de 🛡️ Accesos (con tooltip "Ver
+el historial de acciones de...") abre 📋 Historial de acciones ya
+filtrado por ese usuario, mostrando tanto sus ítems/préstamos como sus
+propios accesos (misma tabla `log`, sin petición nueva). `openHistorialModal()`
+en `js/modal-historial.js` admite ahora un `presetUsuario` opcional: se
+hizo `async` y espera a `cargarHistorial()` antes de rellenar el filtro
+`filterUsuario` y llamar a `filtrarHistorial()` — antes disparaba la carga
+sin esperarla, lo cual habría dejado el filtro vacío por condición de
+carrera. `js/modal-accesos.js` añade `verHistorialDeUsuario(usuario)`
+(cierra Accesos, abre Historial con ese usuario precargado).
+
+**v618 — autoasignación de departamento en el primer login**, petición
+del usuario: cualquier cuenta de Google con un correo `@iesjuanbosco.es`
+no mapeado en `EMAIL_DEPT_MAP` (`oauth/login-google.js`) entra
+automáticamente sin departamento asignado — hasta ahora se quedaba así
+hasta que el superadmin se lo asignaba a mano desde 🔐 Usuarios. Ahora:
+
+- **`functions/api/perfil.js`**: nueva acción `selectDepartamento` —
+  valida que el departamento elegido exista en la tabla `departamentos`,
+  y **solo deja aplicarlo si el usuario todavía no tiene ninguno**
+  (mismo criterio ya usado en `updateProfile`, que bloquea el cambio de
+  departamento a cualquiera que no sea superadmin); si ya tiene uno,
+  responde pidiendo que se lo cambie su jefe/a de departamento o el
+  administrador — evita que esto se convierta en un cambio de
+  departamento libre para cualquier profesor en cualquier momento.
+- **`js/auth.js`**: nueva pantalla obligatoria `#pSeleccionarDepartamento`
+  (mismo patrón que `#pForcePassword`) — un desplegable con los
+  departamentos (`loadDepartamentosInto()`, ver abajo) y un botón
+  "Continuar" (`doSelectDepartamento()`). Se dispara desde una función
+  común nueva, `_proceedAfterLogin()`, llamada al final de los 3 flujos
+  de login (`doLogin`, `doForcePasswordChange`, `handleGoogleSignIn`) en
+  vez de repetir `showUserChip();_showOverlay();loadData();` en cada uno.
+  **Importante:** el mismo chequeo (`if(!SESSION.departamento)`) se añadió
+  también al principio de `loadData()`, igual que ya existía para
+  `passwordTemporal` — así una sesión que se quedó sin terminar de elegir
+  departamento (cerró la pestaña a medias) lo vuelve a pedir en la
+  siguiente carga de la app, no solo justo después de iniciar sesión.
+  Esto también autocura cuentas ya existentes creadas sin departamento
+  antes de este cambio, sin ninguna migración.
+- **`js/reset.js`**: `loadRegisterDepartments()` (usada por el alta
+  pública de profesor/a) se refactorizó a un helper compartido
+  `loadDepartamentosInto(selectId, placeholder)` sobre el mismo endpoint
+  público `/api/auth?action=departamentos`, reusado ahora también por el
+  selector de `#pSeleccionarDepartamento`.
+- **`js/roles.js`/`js/api.js`**: `selectDepartamento` mapeado a permiso
+  `profile.write` (lo tienen todos los roles autenticados) y a endpoint
+  `perfil`.
+- No se tocó `oauth/login-google.js`: la lógica de creación de usuario
+  (`ensureUser()`) sigue igual, solo cambia lo que pasa después en el
+  cliente cuando `departamento` llega vacío.
+
+`sw.js` → `v618`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

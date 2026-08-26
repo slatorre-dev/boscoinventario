@@ -1,15 +1,20 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v615 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
-fallidos seguidos (solo en la pantalla de login, `POST/GET /api/auth`), con
-aviso desde el 3º intento y desbloqueo manual desde 🔐 Usuarios
-(`userUnlock`) — migración `0031_intentos_login.sql` ya aplicada en remoto.
-Nuevo panel **🛡️ Gestionar accesos** (menú Departamento): historial de
-logins correctos/incorrectos/bloqueos (fecha, usuario, rol, IP, intento
-N/5) + lista de cuentas bloqueadas ahora mismo con botón de desbloqueo —
-reusa la tabla `log` existente (`historial.js` clasifica `loginOk/Fail/
-Blocked` como tipo "Accesos"), sin migración nueva. Multi-departamento
-(Fases 0-3) completo y desplegado. Seguridad: contraseñas
+**Estado:** v618 | 26/08/2026 | Bloqueo de cuenta tras 5 intentos de login
+fallidos seguidos, con aviso desde el 3º intento y desbloqueo manual desde
+🔐 Usuarios (`userUnlock`) — migración `0031_intentos_login.sql` ya
+aplicada en remoto. Panel **🛡️ Gestionar accesos** (menú Departamento):
+historial de logins correctos/incorrectos/bloqueos (fecha, usuario, rol,
+IP, intento N/5, tabla `log` reusada) + cuentas bloqueadas con desbloqueo
+directo + clic en el usuario para saltar a su Historial de acciones ya
+filtrado. **Autoasignación de departamento** (26/08/2026): cualquier
+cuenta sin departamento (típicamente Google con correo @iesjuanbosco.es
+no mapeado en `EMAIL_DEPT_MAP`) ve al entrar una pantalla obligatoria
+`#pSeleccionarDepartamento` para elegir el suyo una sola vez
+(`selectDepartamento` en `perfil.js`) — ya no hace falta que el
+superadmin lo asigne a mano; se autocura también en sesiones ya abiertas
+sin departamento (el check vive en `loadData()`, no solo en el login).
+Multi-departamento (Fases 0-3) completo y desplegado. Seguridad: contraseñas
 ya hasheadas con PBKDF2 (migración perezosa), `backup.js` auditado sin
 fugas. Pedidos (`🛒`) funciona de verdad con email real y sincronización D1.
 Historial completo sesión a sesión, con todo el
@@ -141,7 +146,9 @@ llevan ese flag.
 
 Login con Google (`@iesjuanbosco.es`) también funciona; mapa de 10 correos
 conocidos → departamento en `functions/api/oauth/login-google.js`
-(`EMAIL_DEPT_MAP`). Correos no mapeados se crean sin departamento asignado.
+(`EMAIL_DEPT_MAP`). Correos no mapeados se crean sin departamento asignado
+— el usuario lo elige él mismo en el primer login (`#pSeleccionarDepartamento`,
+ver Estado arriba), ya no requiere intervención del superadmin.
 Botón de Google renderizado por JS (`initGoogleButton()` en `js/auth.js`,
 via `google.accounts.id.renderButton()` en `#googleBtnContainer`, ya no el
 `<div class="g_id_signin">` declarativo) con `disableAutoSelect()` previo —

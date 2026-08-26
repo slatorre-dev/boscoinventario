@@ -1,6 +1,58 @@
 // ═════════════════════════════════════════════════════════
 // LOGIN
 // ═════════════════════════════════════════════════════════
+
+// Paso final común a todos los flujos de login (usuario/contraseña, cambio
+// de contraseña obligatorio, Google) — si la cuenta no tiene departamento
+// (típico en cuentas de Google con correo @iesjuanbosco.es no mapeado en
+// EMAIL_DEPT_MAP, ver oauth/login-google.js), pide que lo elija antes de
+// entrar en vez de dejarla sin inventario visible hasta que el superadmin
+// se lo asigne a mano.
+function _proceedAfterLogin(){
+  if(!SESSION.departamento){
+    document.getElementById('selectDeptError').classList.remove('show');
+    show('pSeleccionarDepartamento');
+    loadDepartamentosInto('selectDeptSelect', 'Selecciona tu departamento');
+    return;
+  }
+  showUserChip();
+  _showOverlay();
+  loadData();
+}
+
+async function doSelectDepartamento(){
+  const sel = document.getElementById('selectDeptSelect');
+  const departamento = sel.value;
+  const errorEl = document.getElementById('selectDeptError');
+  const btn = document.getElementById('selectDeptBtn');
+
+  errorEl.classList.remove('show');
+  if(!departamento){
+    errorEl.textContent = 'Selecciona un departamento';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const res = await apiPost({ action: 'selectDepartamento', departamento });
+    if(!res.ok) throw new Error(res.error || 'Error al guardar el departamento');
+    SESSION.departamento = res.departamento;
+    SESSION.departamentoNombre = res.departamentoNombre;
+    SESSION.departamentoIcono = res.departamentoIcono;
+    localStorage.setItem('inv_session', JSON.stringify(SESSION));
+    showUserChip();
+    _showOverlay();
+    loadData();
+  } catch(err) {
+    console.error(err);
+    errorEl.textContent = err.message || 'Error de conexión';
+    errorEl.classList.add('show');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Continuar';
+  }
+}
+
 async function doLogin(){
   const usuario = document.getElementById('loginUser').value.trim();
   const password = document.getElementById('loginPass').value;
@@ -47,9 +99,7 @@ async function doLogin(){
       return;
     }
 
-    showUserChip();
-    _showOverlay();
-    loadData();
+    _proceedAfterLogin();
   } catch(err) {
     console.error(err);
     errorEl.textContent = err.message || 'Error de conexión';
@@ -97,9 +147,7 @@ async function doForcePasswordChange(){
     SESSION.password = n1;
     SESSION.passwordTemporal = false;
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
-    showUserChip();
-    _showOverlay();
-    loadData();
+    _proceedAfterLogin();
   } catch(err) {
     console.error(err);
     errorEl.textContent = err.message || 'Error de conexión';
@@ -219,10 +267,8 @@ async function handleGoogleSignIn(response) {
     okEl.textContent = `✓ ¡Bienvenido ${loginData.user.nombre}!`;
     okEl.classList.add('show');
 
-    // Cargar datos del usuario
-    showUserChip();
-    _showOverlay();
-    loadData();
+    // Cargar datos del usuario (o pedir departamento si la cuenta no tiene)
+    _proceedAfterLogin();
 
   } catch(err) {
     console.error('Error en Google Sign-In:', err);
@@ -407,6 +453,12 @@ function _hideOverlay(){
 async function loadData(){
   if(!SESSION){ _hideOverlay(); show('pLogin'); setConn('','Sin sesión'); return; }
   if(SESSION.passwordTemporal){ _hideOverlay(); show('pForcePassword'); return; }
+  if(!SESSION.departamento){
+    _hideOverlay();
+    show('pSeleccionarDepartamento');
+    loadDepartamentosInto('selectDeptSelect', 'Selecciona tu departamento');
+    return;
+  }
   itemsLoaded = false;
   showUserChip();
   show('pH');

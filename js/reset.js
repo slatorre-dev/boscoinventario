@@ -50,18 +50,28 @@ function _updateRegisterUserHint() {
   }
 }
 
-async function loadRegisterDepartments() {
-  const sel = document.getElementById('registerDept');
+// Helper compartido: carga el desplegable público de departamentos
+// (/api/auth?action=departamentos, sin sesión) en cualquier <select> —
+// usado por el alta de profesor/a (registerDept) y por la selección de
+// departamento en el primer login sin departamento (selectDeptSelect en
+// js/auth.js).
+async function loadDepartamentosInto(selectId, placeholder) {
+  const sel = document.getElementById(selectId);
   try {
     const r = await fetch('/api/auth?action=departamentos');
     const res = await r.json();
     if (!res.ok) throw new Error(res.error || 'Error al cargar departamentos');
-    _registerDeptsLoaded = true;
-    sel.innerHTML = '<option value="">Selecciona tu departamento</option>' +
+    sel.innerHTML = `<option value="">${placeholder}</option>` +
       res.departamentos.map(d => `<option value="${escHtml(d.slug)}">${escHtml(d.icono || '')} ${escHtml(d.nombre)}</option>`).join('');
+    return true;
   } catch (err) {
     sel.innerHTML = '<option value="">Error al cargar — recarga la página</option>';
+    return false;
   }
+}
+
+async function loadRegisterDepartments() {
+  _registerDeptsLoaded = await loadDepartamentosInto('registerDept', 'Selecciona tu departamento');
 }
 
 async function submitRegister() {

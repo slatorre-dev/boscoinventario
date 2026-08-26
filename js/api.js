@@ -8,7 +8,7 @@ const ENDPOINT_MAP = {
   reservaCrear:'prestar', reservaConfirmar:'prestar', reservaCancelar:'prestar',
   profAdd:'profesores', profUpdate:'profesores', profDelete:'profesores',
   aulasSync:'config', catsSync:'config', normalizeCategoriesTags:'config', normalizeTagsCanonical:'config', renameTag:'config', deleteTag:'config', ciclosSync:'config', ubicacionesSync:'config',
-  updateProfile:'perfil', changePassword:'perfil',
+  updateProfile:'perfil', changePassword:'perfil', selectDepartamento:'perfil',
   getUsers:'usuarios', userAdd:'usuarios', userUpdate:'usuarios',
   userDelete:'usuarios', userResetPassword:'usuarios', userAssignModulos:'usuarios', userUnlock:'usuarios',
   getDocs:'docs', uploadDoc:'docs', deleteDoc:'docs',

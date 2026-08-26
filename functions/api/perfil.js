@@ -57,6 +57,30 @@ export async function onRequestPost({ request, env, data }) {
       return Response.json({ ok: true });
     }
 
+    if (action === 'selectDepartamento') {
+      // Autoasignación de departamento en el primer login sin departamento
+      // (típicamente cuentas de Google con un correo @iesjuanbosco.es no
+      // mapeado en EMAIL_DEPT_MAP, ver oauth/login-google.js) — evita que
+      // el superadmin tenga que asignarlo a mano. Solo funciona una vez:
+      // si el usuario ya tiene departamento, hay que pedírselo a su jefe/a
+      // de departamento o al administrador (mismo criterio que
+      // updateProfile, que solo deja tocar el departamento a superadmin).
+      const slug = String(body.departamento || '').trim();
+      if (!slug) return Response.json({ ok: false, error: 'Selecciona un departamento' });
+
+      const current = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(user.usuario).first();
+      if (current?.departamento) {
+        return Response.json({ ok: false, error: 'Ya tienes un departamento asignado. Pide a tu jefe/a de departamento o al administrador que lo cambie.' });
+      }
+
+      const dept = await env.DB.prepare('SELECT slug, nombre, icono FROM departamentos WHERE slug=?').bind(slug).first();
+      if (!dept) return Response.json({ ok: false, error: 'Departamento no válido' });
+
+      await env.DB.prepare('UPDATE usuarios SET departamento=? WHERE usuario=?').bind(dept.slug, user.usuario).run();
+      await auditLog(env.DB, user, 'selectDepartamento', `Departamento seleccionado: ${dept.nombre}`);
+      return Response.json({ ok: true, departamento: dept.slug, departamentoNombre: dept.nombre, departamentoIcono: dept.icono });
+    }
+
     if (action === 'changePassword') {
       if (!body.oldPassword) {
         return Response.json({ ok: false, error: 'Contraseña actual requerida' });

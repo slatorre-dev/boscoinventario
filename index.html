@@ -302,6 +302,23 @@
   </div>
 </div>
 
+<!-- ══ SELECCIÓN DE DEPARTAMENTO (primer login sin departamento asignado) ══ -->
+<div class="page" id="pSeleccionarDepartamento">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-icon" style="font-size:30px">🏫</div>
+      <h1>Selecciona tu departamento</h1>
+      <p class="login-sub">Tu cuenta todavía no tiene un departamento asignado. Elige el tuyo para poder ver y gestionar su inventario — solo hace falta hacerlo una vez.</p>
+      <div class="login-error" id="selectDeptError"></div>
+      <div class="login-field">
+        <label>Departamento</label>
+        <select id="selectDeptSelect"><option value="">Cargando...</option></select>
+      </div>
+      <button class="login-btn" id="selectDeptBtn" onclick="doSelectDepartamento()">Continuar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ HOME ══ -->
 <div class="page" id="pH">
   <div class="home-hero">
