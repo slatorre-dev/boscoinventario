@@ -87,6 +87,10 @@ function _renderReservaWizard(){
   document.getElementById('btnResWizardBack').style.display = (_reservaWizardMode && _reservaWizardStep > 1) ? '' : 'none';
   document.getElementById('btnResWizardNext').style.display = (_reservaWizardMode && _reservaWizardStep < RESERVA_WIZARD_STEPS) ? '' : 'none';
   document.getElementById('btnReservaGuardar').style.display = (!_reservaWizardMode || _reservaWizardStep === RESERVA_WIZARD_STEPS) ? '' : 'none';
+  // "Guardar como plantilla" exige al menos un ítem — ocultarlo antes del paso de material
+  // evita el error "Añade al menos un ítem" al pulsarlo antes de tiempo.
+  const plantillaBtnWrap = document.getElementById('resPlantillaGuardarBtnWrap');
+  if(plantillaBtnWrap) plantillaBtnWrap.style.display = (_reservaWizardMode && _reservaWizardStep < 4) ? 'none' : '';
 
   const resumenEl = document.getElementById('resWizardResumen');
   const enResumen = _reservaWizardMode && _reservaWizardStep === RESERVA_WIZARD_STEPS;
