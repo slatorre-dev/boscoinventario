@@ -141,7 +141,7 @@ function applyRoleUI(){
     ['btnN',   'items.write',  'flex'],
     ['btnDeptGame', null,      'flex'],
     ['btnPres','loans.write',  'flex'],
-    ['btnPed', 'orders.write', 'flex'],
+    ['btnStock', 'orders.write', 'flex'],
     ['btnPrint', null,         'flex'],
     ['misCursosMenuWrap', null, 'flex'],
     ['gsCamara', null,         'inline-flex']

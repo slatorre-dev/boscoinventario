@@ -33,13 +33,18 @@ function _misSolicitudesRecientes(){
     .sort((a,b) => new Date(b.fecha||0) - new Date(a.fecha||0));
 }
 
-function updateSolBadge(){
-  const badge = document.getElementById('solBadge');
-  if(!badge) return;
+function solBadgeCount(){
   const esJefe = _esJefeSolicitudes();
   const lista = typeof solicitudes !== 'undefined' ? solicitudes : [];
   const relevantes = esJefe ? lista : lista.filter(s => s.creadoPor === SESSION?.usuario);
-  const n = relevantes.filter(s => s.estado === 'pendiente').length;
+  return relevantes.filter(s => s.estado === 'pendiente').length;
+}
+
+function updateSolBadge(){
+  const badge = document.getElementById('solBadge');
+  if(typeof updateStockBadge === 'function') updateStockBadge();
+  if(!badge) return;
+  const n = solBadgeCount();
   badge.textContent = n;
   badge.style.display = n > 0 ? 'inline' : 'none';
 }

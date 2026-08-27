@@ -517,7 +517,7 @@ async function loadData(){
     renderDeptActivoSelector();
     document.getElementById('btnN').style.display='flex';
     document.getElementById('btnPres').style.display='flex';
-    document.getElementById('btnPed').style.display='flex';
+    document.getElementById('btnStock').style.display='flex';
     if(typeof applyRoleUI === 'function') applyRoleUI();
     updatePedBadge();
     _startInactivityWatch();

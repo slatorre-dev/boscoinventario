@@ -1559,6 +1559,13 @@ function closePrintChoiceModal(){
   document.getElementById('mPrintChoice').classList.remove('open');
 }
 
+function openStockChoiceModal(){
+  document.getElementById('mStockChoice').classList.add('open');
+}
+function closeStockChoiceModal(){
+  document.getElementById('mStockChoice').classList.remove('open');
+}
+
 function printColSelectAll(){
   PRINT_COLS.forEach(c=>{ document.getElementById('prcol_'+c.key).checked = true; });
 }

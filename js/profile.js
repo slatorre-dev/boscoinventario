@@ -10,7 +10,7 @@ function goProfile() {
   document.getElementById('btnE').style.display = 'none';
   document.getElementById('btnImp').style.display = 'none';
   document.getElementById('btnPres').style.display = 'none';
-  document.getElementById('btnPed').style.display = 'none';
+  document.getElementById('btnStock').style.display = 'none';
   document.getElementById('btnInstall').style.display = 'none';
 
   const nombre = SESSION.nombre || SESSION.usuario;

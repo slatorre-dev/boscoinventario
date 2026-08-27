@@ -1,6 +1,13 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v637 | 27/08/2026 | Migración `0037`: un ítem representativo +
+**Estado:** v638 | 27/08/2026 | Toolbar más corta: "🎒 Modo clase" fuera
+(ya está en Acciones rápidas de Inicio) y "🛒 Reponer stock" +
+"🧰 Pedir algo nuevo" fusionados en un botón "📦 Stock" que abre un modal
+de elección (`mStockChoice` en `index.html`, `openStockChoiceModal()` en
+`js/inventory.js`) — mismo patrón que el selector de tipo de impresión ya
+existente. Mismo cambio en la tarjeta de Acciones rápidas de Inicio.
+Badge combinado (`updateStockBadge()` en `js/modal-item.js`, enganchado a
+`updatePedBadge()`/`updateSolBadge()`). v637 | 27/08/2026 | Migración `0037`: un ítem representativo +
 categoría "Material de oficina" por departamento administrativo, para que
 aparezcan en la rejilla de aulas de Inicio (`js/home.js` solo muestra
 aulas con ≥1 ítem). v636 | 27/08/2026 |

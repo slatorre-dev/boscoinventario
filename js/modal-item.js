@@ -1478,9 +1478,18 @@ let pedidos = {};
 
 function isPedido(id){ return !!pedidos[id]; }
 
+function updateStockBadge(){
+  const n = Object.keys(pedidos).length + (typeof solBadgeCount === 'function' ? solBadgeCount() : 0);
+  const el = document.getElementById('stockBadge');
+  if(!el) return;
+  el.textContent = n;
+  el.style.display = n > 0 ? 'inline' : 'none';
+}
+
 function updatePedBadge(){
   const n = Object.keys(pedidos).length;
   const badge = document.getElementById('pedBadge');
+  updateStockBadge();
   if(!badge) return;
   badge.textContent = n;
   badge.style.display = n > 0 ? 'inline' : 'none';
