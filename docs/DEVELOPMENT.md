@@ -4160,4 +4160,54 @@ tocados (`js/nav.js`, `js/ui-helpers.js`). `sw.js` → `v633`.
 
 ---
 
-**Última actualización:** 27/08/2026 — v633 (fix hint flotante sobre modales)
+### 27/08/2026 (v633→v634): recorrido guiado con flecha para "Acciones rápidas" (sin ocupar espacio permanente)
+
+Cierre del "queda abierto" de la entrada anterior: el usuario pidió una
+idea para que los 10 iconos de "Acciones rápidas" (con texto oculto en
+móvil vía `.home-quick-btn span:not(.home-quick-ico){display:none}`, para
+no empujar la rejilla de aulas hacia abajo) se pudieran identificar sin
+añadir leyenda fija. Propuesta aceptada: generalizar el hint flotante con
+flecha (ya arreglado en v633) a un **recorrido secuencial** — apunta a
+cada icono uno detrás de otro con Saltar/Siguiente, se ve una sola vez por
+navegador y no vuelve a ocupar espacio después. Mismo espíritu que el tour
+de cámara de 4 pantallas (`onboarding-camara.js`), pero anclado a los
+botones reales en vez de a una ilustración aparte.
+
+- `js/ui-helpers.js`: `showPointerTourOnce(key, steps)` +
+  `_renderPointerTourStep()`/`_pointerTourNext()`/`dismissPointerTour()` —
+  motor genérico sobre el mismo `#floatingHintBox`/`_positionPointerHint()`
+  que ya usaba `showPointerHintOnce`, así que hereda gratis el fix de v633
+  (se oculta solo al navegar o al abrir un modal). Un solo recorrido puede
+  estar activo a la vez — no se pisan porque nunca se llaman en el mismo
+  render (ver siguiente punto).
+- `js/home.js`: `_showAccionesRapidasTourIfNarrow()` construye los pasos
+  leyendo el propio DOM de `.home-quick-grid` (icono/`<strong>`/`<small>`
+  de cada `.home-quick-btn` ya visible) — sin duplicar copy a mano, y sin
+  incluir botones ocultos por rol (`data-perm`) o por `display:none`
+  explícito (`#btnGoHistorial`). Se comprueba en vivo si el texto está
+  realmente oculto (`getComputedStyle` sobre el span, no un breakpoint
+  hardcodeado) antes de lanzar el recorrido — en tablet/desktop, donde el
+  texto ya se ve, no se muestra nada. Se llama solo en el `else` de
+  `necesitaConfigurarCursos` (donde ya se ocultaba el hint de "Mis
+  Cursos/Aulas") para que los dos flujos, que comparten el mismo
+  `#floatingHintBox`, no compitan nunca en el mismo render: primero
+  configurar cursos/aulas si hace falta, y solo cuando eso ya no aplica se
+  ofrece el recorrido de iconos.
+- `css/styles.css`: `.pointer-hint>button` (antes `.pointer-hint button`)
+  para que la regla genérica del botón único no se cuele en el nuevo
+  `.pointer-hint-tour-nav` (Saltar + contador + Siguiente, reutilizando las
+  clases `.btn`/`.btn-p` ya globales en vez de inventar un estilo nuevo).
+
+Verificado en vivo con Playwright simulando `MIS_MODULOS`/`MIS_AULAS` ya
+configurados (sin poder escribir en la D1 local por bloqueo del archivo
+mientras `wrangler pages dev` la tenía abierta — se mutó la variable en
+memoria del propio JS de la página, mismo efecto observable): paso 1/10
+correcto con captura, `Siguiente` avanza, `Terminar` oculta y marca
+`hint_accionesRapidasTour_visto`, no reaparece en un `renderHome()`
+posterior, y en viewport de escritorio (1280px, texto ya visible) no se
+muestra nada en absoluto. Sin errores nuevos en consola. `node --check`
+sin errores en `js/home.js`/`js/ui-helpers.js`. `sw.js` → `v634`.
+
+---
+
+**Última actualización:** 27/08/2026 — v634 (recorrido guiado "Acciones rápidas")

@@ -1,6 +1,33 @@
 // ═════════════════════════════════════════════════════════
 // HOME RENDER
 // ═════════════════════════════════════════════════════════
+
+// La rejilla de "Acciones rápidas" ya lleva título+subtítulo en el propio
+// botón (ver index.html) — en móvil el CSS los oculta para no empujar la
+// rejilla de aulas más abajo (.home-quick-btn span:not(.home-quick-ico)).
+// En vez de reintroducir texto fijo, se enseña una vez con flecha apuntando
+// a cada icono real (mismo mecanismo que "Mis Cursos/Aulas", generalizado
+// en showPointerTourOnce) y no vuelve a ocupar espacio después.
+function _showAccionesRapidasTourIfNarrow(){
+  if(typeof showPointerTourOnce !== 'function') return;
+  const grid = document.querySelector('.home-quick-grid');
+  if(!grid) return;
+  const botones = [...grid.querySelectorAll('.home-quick-btn')].filter(b => getComputedStyle(b).display !== 'none');
+  if(!botones.length) return;
+  const etiquetaOculta = botones.some(b => {
+    const span = b.querySelector('span:not(.home-quick-ico)');
+    return span && getComputedStyle(span).display === 'none';
+  });
+  if(!etiquetaOculta) return; // pantalla ancha: el texto ya se ve, no hace falta recorrido
+  const steps = botones.map(b => {
+    const ico = b.querySelector('.home-quick-ico')?.textContent || '';
+    const titulo = b.querySelector('strong')?.textContent || '';
+    const sub = b.querySelector('small')?.textContent || '';
+    return { targetGetter: () => b, html: `${ico} <strong>${titulo}</strong><br>${sub}` };
+  });
+  showPointerTourOnce('accionesRapidasTour', steps);
+}
+
 function renderHome(){
   // Banner de préstamos
   renderLoanBanner();
@@ -25,6 +52,10 @@ function renderHome(){
   } else {
     const box = document.getElementById('floatingHintBox');
     if(box && box.dataset.key === 'misCursosAulas') box.style.display = 'none';
+    // Recorrido de "Acciones rápidas" solo cuando ya no compite por el
+    // mismo hint flotante con el aviso de arriba (prioridad: primero
+    // configurar cursos/aulas, luego descubrir los iconos de Inicio).
+    _showAccionesRapidasTourIfNarrow();
   }
 
   const total=items.length;

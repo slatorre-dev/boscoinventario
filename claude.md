@@ -1,15 +1,21 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v633 | 27/08/2026 | Fix de un bug real de UI: el hint
-flotante "📌 Mis Cursos/Aulas" tapaba contenido (título de la vista de
-aula, e incluso el modal "Nuevo ítem" por encima) porque no se ocultaba
-al navegar ni al abrir un modal — arreglado con dos hooks genéricos en
-`_push()` (`js/nav.js`) y un `MutationObserver` en `js/ui-helpers.js`, sin
-tocar los ~30 sitios que abren modales (detalle y verificación con
-Playwright en `docs/DEVELOPMENT.md` v633). Surgió de un spike "profesor
-de taller/ESO": necesidades ya cubiertas o ya en el backlog, decisión
-explícita de no tocar los iconos sin texto de Inicio/vista de aula (en
-móvil, texto obligaría a scroll para llegar a la rejilla de aulas).
+**Estado:** v634 | 27/08/2026 | Recorrido guiado con flecha para los 10
+iconos sin texto de "Acciones rápidas" de Inicio (`showPointerTourOnce()`
+en `js/ui-helpers.js`, generaliza el hint flotante de "Mis Cursos/Aulas"):
+se ve una sola vez por navegador, apunta a cada botón real con
+Saltar/Siguiente, y no se muestra en absoluto si el texto ya es visible
+(tablet/desktop) — así no hizo falta ocupar altura de pantalla ni empujar
+la rejilla de aulas, la pega que descartó tocar el layout directamente
+(detalle en `docs/DEVELOPMENT.md` v634). v633 | 27/08/2026 | Fix de un bug
+real de UI: el mismo hint flotante tapaba contenido (título de la vista
+de aula, e incluso el modal "Nuevo ítem" por encima) porque no se
+ocultaba al navegar ni al abrir un modal — arreglado con dos hooks
+genéricos en `_push()` (`js/nav.js`) y un `MutationObserver` en
+`js/ui-helpers.js`, sin tocar los ~30 sitios que abren modales (detalle en
+`docs/DEVELOPMENT.md` v633). Ambos surgieron de un spike "profesor de
+taller/ESO" pedido por el usuario: necesidades ya cubiertas o ya en el
+backlog, y estos dos hallazgos de frontend confirmados con Playwright.
 v632 | 27/08/2026 | Renombradas las etiquetas de 🛒 Pedidos →
 "Reponer stock" y 🧰 Solicitudes → "Pedir algo nuevo" (mismo backend y
 datos, solo texto en botones/títulos/impresión) — cerraba una ambigüedad

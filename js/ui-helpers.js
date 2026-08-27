@@ -85,6 +85,64 @@ function dismissPointerHint(key) {
   try { localStorage.setItem('hint_' + key + '_visto', '1'); } catch (e) {}
 }
 
+// Versión "recorrido" de showPointerHintOnce: en vez de un botón real,
+// apunta en secuencia a varios (ej. iconos sin texto visible en móvil) con
+// Saltar/Siguiente, uno detrás de otro, hasta terminar. Pensada para no
+// tener que añadir leyenda permanente a una fila de iconos ya apretada —
+// se enseña una vez y no vuelve a ocupar espacio. Comparte '#floatingHintBox'
+// con showPointerHintOnce (uno solo puede estar visible a la vez, no se
+// llaman nunca desde el mismo render).
+let _pointerTour = null; // {key, steps, index}
+function showPointerTourOnce(key, steps) {
+  try { if (localStorage.getItem('hint_' + key + '_visto')) return; } catch (e) { return; }
+  const visibles = steps.filter(s => typeof s.targetGetter === 'function' ? s.targetGetter() : document.getElementById(s.targetGetter));
+  if (!visibles.length) return;
+  _pointerTour = { key, steps: visibles, index: 0 };
+  _renderPointerTourStep();
+  _watchModalsForPointerHint();
+}
+
+function _renderPointerTourStep() {
+  if (!_pointerTour) return;
+  const { steps, index } = _pointerTour;
+  const step = steps[index];
+  const target = typeof step.targetGetter === 'function' ? step.targetGetter() : document.getElementById(step.targetGetter);
+  if (!target) { _pointerTourNext(); return; }
+  let box = document.getElementById('floatingHintBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'floatingHintBox';
+    box.className = 'pointer-hint';
+    document.body.appendChild(box);
+  }
+  const esUltimo = index === steps.length - 1;
+  box.innerHTML = `<div class="pointer-hint-arrow"></div><span>${step.html}</span>
+    <div class="pointer-hint-tour-nav">
+      <button class="btn" onclick="dismissPointerTour()">Saltar</button>
+      <span class="pointer-hint-count">${index + 1}/${steps.length}</span>
+      <button class="btn btn-p" onclick="_pointerTourNext()">${esUltimo ? 'Terminar' : 'Siguiente'}</button>
+    </div>`;
+  box.dataset.key = _pointerTour.key;
+  box.style.display = 'block';
+  const reposition = () => _positionPointerHint(box, typeof step.targetGetter === 'function' ? step.targetGetter() : target);
+  reposition();
+  window.addEventListener('resize', reposition);
+  box._pointerHintReposition = reposition;
+}
+
+function _pointerTourNext() {
+  if (!_pointerTour) return;
+  if (_pointerTour.index >= _pointerTour.steps.length - 1) { dismissPointerTour(); return; }
+  _pointerTour.index++;
+  _renderPointerTourStep();
+}
+
+function dismissPointerTour() {
+  if (!_pointerTour) return;
+  dismissPointerHint(_pointerTour.key);
+  _pointerTour = null;
+}
+
 function _positionPointerHint(box, target) {
   if (!target) { box.style.display = 'none'; return; }
   const r = target.getBoundingClientRect();
