@@ -4210,4 +4210,86 @@ sin errores en `js/home.js`/`js/ui-helpers.js`. `sw.js` → `v634`.
 
 ---
 
+### 27/08/2026 (v641-v642) — Modal "Requiere tu atención" para jefe/a departamento y superadmin
+
+Brainstorming previo (`superpowers:brainstorming`, path bounded) sobre la
+utilidad de un dashboard de Inicio diferenciado para jefe/a departamento y
+superadmin. Conclusión: no hacía falta un dashboard nuevo — las señales de
+gestión (Pedidos/Solicitudes, Mantenimiento, Préstamos vencidos, Accesos
+bloqueados/contraseña temporal) ya existían, solo estaban dispersas en
+vistas separadas que hay que recordar visitar una a una. La idea 18 de
+"Pendiente" (`CLAUDE.md`) ya apuntaba a esto sin haberse construido nunca.
+
+**v641 — primera versión (sección inline en Inicio):**
+- `renderAtencionHoy()` (`js/home.js`), llamada desde `renderHome()`,
+  gateada por `can('config.manage')` (jefe/a departamento + superadmin,
+  vía el comodín `_PERMS_JEFE=['*']`). Se oculta entera si los 4
+  contadores dan 0.
+- 3 de las 4 señales no necesitaron ningún fetch nuevo — ya vivían en
+  memoria desde `loadData()` (`js/auth.js`): `pedidos`/`solicitudes`
+  (`Object.keys(pedidos).length` + `solBadgeCount()`), `mantenimiento`
+  (`items.filter(needsMaintenance)`, que ya refleja los 5 estados de
+  v591-592 vía `item.mantEstado`), `vencidos` (`getVencidos()` de
+  `prestamos.js`). Solo Accesos necesitó una petición nueva
+  (`apiPost({action:'getUsers'})`).
+- Único cambio de backend: `functions/api/usuarios.js` `getUsers` no
+  seleccionaba `password_temporal` (columna ya existente desde la
+  migración `0014`, solo faltaba exponerla) — añadida a las dos variantes
+  de la consulta (superadmin/scoped). Sin migración nueva.
+- Desglose por departamento para superadmin: 100% agregación en cliente
+  (`_atencionAgrupar`/`_atencionMerge` en `js/home.js`), sin endpoint
+  nuevo — para superadmin, `items`/`prestamos`/`pedidos`/`solicitudes`/
+  `usuarios` ya llegan de todos los departamentos sin scoping, cada fila
+  con su `.departamento`; para jefe/a llegan pre-filtrados por el
+  backend. Nombres de departamento vía `deptNombre()` (`js/config.js`),
+  mismo patrón que la vista global agrupada de Aulas/Categorías/Ciclos
+  (v593).
+- CSS: reuso casi total de `.scard-compact`/`.sec-label`/`.dept-group-
+  header` ya existentes — solo se añadió el envoltorio
+  `.atencion-strip`/`.atencion-item`/`.atencion-breakdown`.
+- Verificado desplegado en producción por API (no por navegador — ver
+  v642 abajo): `getUsers` como `Seba` devolvió 59 usuarios, 45 con
+  `password_temporal=1` (las cuentas genéricas) y 0 bloqueados.
+
+**v642 — pasó de sección inline a modal cerrable**, a petición explícita
+del usuario tras ver v641 en producción: quería que apareciera "al
+iniciar sesión en una ventana aparte, que se pueda cerrar y no molestar
+más", no una sección fija siempre visible en Inicio.
+- Nuevo modal `#mAtencionHoy` (`index.html`), mismo patrón `.mbg`/
+  `.modal`/`.mh`/`.mx` que el resto de modales de la app (ej.
+  `mStockChoice`).
+- `checkAtencionHoy()` (`js/home.js`, async) sustituye a
+  `renderAtencionHoy()`: calcula las 4 señales, **espera** (`await`) la
+  respuesta de Accesos antes de decidir si abre el modal — evita que el
+  modal aparezca sin ese chip y luego "salte" al llegar el fetch.
+  `closeAtencionHoyModal()` marca `sessionStorage.atencion_hoy_cerrado=1`
+  — se olvida al cerrar la pestaña/navegador, así que la próxima sesión
+  vuelve a evaluarse desde cero. Clic en un chip cierra el modal y
+  además navega (`closeAtencionHoyModal();openStockChoiceModal()` etc.).
+- **Bug real encontrado y corregido antes de desplegar** (no llegó a
+  producción): el primer intento enganchó `checkAtencionHoy()` dentro de
+  `renderHome()` con una guarda `_atencionHoyChecked` para que solo
+  corriera una vez. Pero `renderHome()` se dispara dos veces por login:
+  una primera vez vía `goHome()` al terminar la fase 1 de `loadData()`
+  (`js/auth.js:528`, solo metadatos — `items`/`pedidos`/`solicitudes`/
+  `prestamos` **aún vacíos**) y una segunda vez al terminar la fase 2
+  (`auth.js:584`, datos ya completos). Con la guarda por variable, la
+  primera pasada (datos vacíos → 0 chips → sin abrir modal) consumía el
+  único disparo permitido, y la segunda pasada (con datos reales) nunca
+  llegaba a ejecutarse — el modal jamás habría aparecido en el flujo
+  normal de login. Solución: mover la llamada fuera de `renderHome()`, a
+  `loadData()` mismo, justo después de `itemsLoaded=true` en la fase 2
+  (`auth.js`), cuando los 4 arrays ya están poblados.
+- `sw.js` → `v642`. Sin cambios de CSS ni de backend en este paso.
+
+**Verificación:** `node --check` sin errores en los 3 JS tocados en
+cada iteración. Desplegado y comprobado contra producción por HTTP/API
+en ambos pasos (contenido estático servido + `getUsers` real) — sin
+acceso a Playwright en esta sesión porque el perfil de Chrome
+compartido (`ms-playwright-mcp`) estaba en uso por otra sesión de
+Claude Code concurrente en la misma máquina; el usuario confirmó
+manualmente que el comportamiento final era el esperado.
+
+---
+
 **Última actualización:** 27/08/2026 — v634 (recorrido guiado "Acciones rápidas")
