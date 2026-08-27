@@ -3903,4 +3903,149 @@ credenciales `CLOUDFLARE_API_TOKEN` en este sandbox).
 
 ---
 
+### 27/08/2026 — Usabilidad para profesorado: buscador de material, plantillas desde Modo clase, franja normalizada, sin `prompt()` (v631)
+
+Sesión de seguimiento a una revisión de usabilidad "puesto en el papel de
+profesor/a" (sin código, solo análisis) — cinco mejoras concretas sobre
+funciones ya existentes del profesorado, todas en frontend, sin cambios de
+esquema D1:
+
+1. **Guardar plantilla sin `prompt()` nativo** (`js/reservas-practica.js`):
+   `guardarPlantillaActual()` usaba `prompt()` del navegador, rompiendo el
+   estilo del resto de la app y sin validar en el sitio. Ahora es una fila
+   inline en el propio panel de "Planificar práctica"
+   (`resPlantillaGuardarInputWrap` en `index.html`, toggle con
+   `toggleGuardarPlantillaInput()`), con `markFieldError()` si se intenta
+   guardar sin nombre — mismo helper que ya usa el resto de formularios
+   (`js/ui-helpers.js`).
+2. **Buscador de ítems en "Añadir material" en vez de `<select>`+botón**:
+   `res_itemSelect` sustituido por `res_itemResults`, una lista de
+   resultados clicables (mismo patrón que `delPickerList` en
+   `js/inventory.js`, ya usado en el picker de "Baja/Eliminar") — clic
+   directo añade la línea, sin paso intermedio de seleccionar en un
+   desplegable largo. Los ítems ya añadidos aparecen marcados y
+   deshabilitados (`_renderReservaItemResults()`, refrescado también tras
+   quitar una línea, aplicar plantilla o duplicar una reserva).
+3. **Plantillas accesibles desde 🎒 Modo clase** (`js/modo-clase.js`):
+   nueva tarjeta "📋 Tus plantillas de práctica" en el resumen de Modo
+   clase con un chip por plantilla — `mcUsarPlantilla(id)` abre
+   "Planificar práctica" y aplica la plantilla en un solo toque, en vez de
+   tener que entrar primero al modal completo a buscarla.
+4. **Solicitudes de material recientes visibles en Modo clase**
+   (`js/solicitudes.js`, `_misSolicitudesRecientes()`): antes Modo clase
+   solo miraba `_misSolicitudesPendientes()`, así que una solicitud recién
+   aceptada/descartada por jefatura desaparecía del resumen sin que el
+   profesor llegara a ver la respuesta. Ahora se incluyen también las
+   resueltas en los últimos 7 días (por `actualizadoEn`), mostrando estado
+   y la `respuesta` de jefatura si la hay. Tarjeta renombrada "🧰 Tus
+   solicitudes" (ya no solo "pendientes").
+5. **Franja horaria como desplegable en vez de texto libre**
+   (`res_franja` en `index.html` + `onFranjaChange()`/`getFranjaValue()`
+   en `js/reservas-practica.js`): opciones fijas (1ª-6ª hora, Recreo) +
+   "Otra…" que revela un campo de texto (`res_franja_otra`) para casos no
+   cubiertos. El backend (`functions/api/prestar.js:247-262`) ya comparaba
+   `fecha`+`franja` exactos para evitar que dos profesores planifiquen la
+   misma franja con el mismo material sin avisar — con texto libre ("1ª
+   hora" vs. "9-10h" para el mismo hueco real) ese chequeo podía fallar en
+   silencio; con vocabulario fijo compartido, dos profesores que eligen la
+   misma opción siempre chocan correctamente. Sin cambio de backend: sigue
+   viajando como el mismo string `franja`.
+
+Explícitamente **no se tocó**: "Historial de cambios en modal de edición"
+(pedido pendiente en `docs/IDEAS.md`) resultó ya estar implementado desde
+antes — `openHistorial()`/`btnHistorial` en `js/modal-item.js` +
+`GET /api/historial?itemId=` en `functions/api/historial.js` (accesible a
+cualquier usuario del departamento del ítem, no solo jefatura/superadmin).
+`docs/IDEAS.md` actualizado para reflejarlo.
+
+Verificado con `node --check` sobre los tres archivos JS tocados. No
+probado en navegador real en esta sesión (sandbox sin servidor Cloudflare
+Pages disponible).
+
+`sw.js` → `v631`.
+
+---
+
+### 27/08/2026 — Verificación en navegador real de v631 + cómo levantar el stack completo en sandbox sin credenciales Cloudflare
+
+Sesión de seguimiento a la anterior (v631): la vez pasada no se pudo
+probar en navegador por falta de servidor. Esta sesión sí lo consiguió,
+contra la app real (frontend + `functions/api/` + D1), sin tocar la base
+remota de producción ni necesitar `wrangler login`. Queda documentado el
+método porque no es obvio y probablemente haga falta repetirlo:
+
+**1. D1 local sembrada con las migraciones reales del proyecto** (no una
+base de pega con 3 tablas): aplicar `migrations/0001_*.sql` en adelante,
+en orden, con `npx wrangler d1 execute boscoinventario --local
+--file=migrations/00XX_....sql`. Dos migraciones fallan en un replay
+desde cero por asumir estado de una migración anterior no presente tal
+cual en el historial real (`0019_pantallas_pizarras_inventariable.sql`:
+columna `tipo_material` que en producción ya existía por otra vía;
+`0021_restaurar_ciclos_electricidad.sql`: constraint UNIQUE porque
+`0009`/`0010` ya habían sembrado esas filas) — son fallos esperados de
+replay histórico, no bugs; se ignoran y se sigue con la siguiente
+migración. El resto (hasta `0034`) aplica limpio y deja usuarios de
+prueba ya sembrados (`Seba`/`Seba` superadmin, `profe1tecnologia` con la
+misma contraseña, etc. — ver tabla de credenciales en este mismo
+archivo) más aulas/ítems de ejemplo, sin tener que inventar datos a mano.
+
+**2. `wrangler pages dev` — el binding D1 hay que dejar que lo lea de
+`wrangler.toml`, NO pasarlo por `--d1=DB` en la CLI.** Con
+`--d1=DB` (solo el nombre del binding, sin id), Pages crea una D1 local
+**distinta y vacía** — un sqlite nuevo bajo un hash distinto en
+`.wrangler/state/v3/d1/`, no el mismo que sembró el paso 1 — y todas las
+peticiones fallan con `no such table: usuarios`. La solución es arrancar
+sin ese flag: `npx wrangler pages dev . --port=8788 --local
+--compatibility-date=2024-01-01` — al no pasarlo por CLI, wrangler sí lee
+el `[[d1_databases]]` de `wrangler.toml` (mismo `database_id`) y reutiliza
+el sqlite ya sembrado.
+
+**3. El binding `[ai]` de `wrangler.toml` bloquea el arranque en
+`--local`.** Cloudflare Workers AI no tiene emulación local — incluso en
+modo `--local`, Miniflare intenta abrir una "remote proxy session" para
+ese binding, y sin `CLOUDFLARE_API_TOKEN` (no disponible en este sandbox,
+`wrangler login` es interactivo) el servidor entero no arranca. Solución
+para pruebas locales: comentar temporalmente `[ai]`/`binding = "AI"` en
+`wrangler.toml`, probar, y **revertir con `git checkout -- wrangler.toml`
+al terminar** — ninguna de las funciones probadas en esta sesión
+(Planificar práctica, Modo clase, Solicitudes) depende de IA.
+
+**4. Cuentas `profe1<slug>` sembradas tienen `password_temporal=1`** —
+fuerzan la pantalla de cambio de contraseña obligatorio en el primer
+login. Para probar como "profesor" sin ese paso de por medio:
+`UPDATE usuarios SET password_temporal=0 WHERE usuario='profe1tecnologia'`
+contra la D1 **local** (jamás contra la remota).
+
+**5. Chromium headless sin Playwright como dependencia del proyecto**:
+el paquete `playwright` (no solo el CLI) está instalado global en
+`/opt/node22/lib/node_modules` — un script Node suelto necesita
+`NODE_PATH="$(npm root -g)" node script.js` para encontrarlo vía
+`require('playwright')`. El binario real de Chromium pre-instalado vive
+en `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` (con el sufijo de
+build `-1194`, que falta en la ruta "obvia" `.../chromium/...`). Lanzar
+con `args:['--no-sandbox','--no-proxy-server']` — el proxy HTTPS del
+sandbox intenta interceptar también las peticiones a `localhost` y las
+tira con `ERR_TUNNEL_CONNECTION_FAILED`/`ERR_CERT_AUTHORITY_INVALID`;
+esos errores de consola son ruido esperado (Google Fonts/Sign-In
+externos, no alcanzables ni falta que hace) y no indican un fallo real
+mientras no haya `PAGEERROR` de la propia app.
+
+**Verificado con éxito, con capturas de pantalla, contra la app real:**
+buscador de ítems en "Planificar práctica" (clic añade, ítem ya añadido
+sale marcado "✓"), guardado de plantilla sin `prompt()` nativo (fila
+inline, toast de confirmación), desplegable de franja con "Otra…"
+revelando el campo de texto, plantilla usable en un toque desde 🎒 Modo
+clase (`mcUsarPlantilla()`, abre y aplica en un solo paso), y solicitud
+de material marcada "descartada" por jefatura (vía API, simulando el
+flujo real) que sigue visible en Modo clase con el motivo — el caso
+exacto que antes desaparecía. Cero `pageerror` de JS en consola en
+cualquiera de los pasos.
+
+Al terminar: servidor de `wrangler pages dev` detenido, `wrangler.toml`
+revertido a como estaba (`git checkout --`), `.wrangler/` no se toca en
+git (ya está en `.gitignore`) — ningún archivo quedó modificado por las
+pruebas, el repo sigue exactamente en el commit ya pusheado de v631.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

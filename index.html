@@ -1091,7 +1091,20 @@
       <div><label class="fl">Ciclo/Asignatura</label><select class="fi-w" id="res_ciclo"></select></div>
       <div><label class="fl">Aula destino</label><select class="fi-w" id="res_aula"></select></div>
       <div><label class="fl">Fecha de la práctica *</label><input class="fi-w" id="res_fecha" type="date"></div>
-      <div><label class="fl">Franja horaria (opcional)</label><input class="fi-w" id="res_franja" type="text" placeholder='Ej. "10:00-11:00" o "3ª hora"'></div>
+      <div><label class="fl">Franja horaria (opcional)</label>
+        <select class="fi-w" id="res_franja" onchange="onFranjaChange()">
+          <option value="">Sin especificar</option>
+          <option value="1ª hora">1ª hora</option>
+          <option value="2ª hora">2ª hora</option>
+          <option value="3ª hora">3ª hora</option>
+          <option value="4ª hora">4ª hora</option>
+          <option value="Recreo">Recreo</option>
+          <option value="5ª hora">5ª hora</option>
+          <option value="6ª hora">6ª hora</option>
+          <option value="__otra">Otra…</option>
+        </select>
+        <input class="fi-w" id="res_franja_otra" type="text" placeholder='Especifica la franja, ej. "10:00-11:00"' style="display:none;margin-top:6px">
+      </div>
       <div class="full"><label class="fl">Profesor/a *</label>
         <input type="text" class="fi-w" id="res_profFiltQ" placeholder="Buscar por nombre…" autocomplete="off" oninput="filterProfSelect('_reservaProfOptions','res_profFiltQ','res_prof')" style="margin-bottom:6px">
         <select class="fi-w" id="res_prof"></select>
@@ -1105,10 +1118,7 @@
         <select class="fi-w" id="res_itemFiltAula" onchange="filterReservaItems()" style="flex:1;min-width:0"></select>
         <div class="sbox" style="flex:2;min-width:0"><span class="si">🔍</span><input type="text" id="res_itemFiltQ" placeholder="Buscar..." oninput="filterReservaItems()" autocomplete="off"></div>
       </div>
-      <div style="display:flex;gap:8px">
-        <select class="fi-w" id="res_itemSelect" style="flex:1"></select>
-        <button class="btn btn-p" onclick="anadirLineaReserva()">➕ Añadir</button>
-      </div>
+      <div id="res_itemResults" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:8px;padding:6px"></div>
     </div>
 
     <div id="resLineasWrap" style="display:none;margin-top:12px">
@@ -1120,8 +1130,15 @@
       </table>
     </div>
 
-    <div class="mf">
-      <button class="btn" onclick="guardarPlantillaActual()" title="Guarda el material y cantidades actuales como plantilla reutilizable">💾 Guardar como plantilla</button>
+    <div class="mf" style="flex-wrap:wrap">
+      <div id="resPlantillaGuardarBtnWrap">
+        <button class="btn" onclick="toggleGuardarPlantillaInput(true)" title="Guarda el material y cantidades actuales como plantilla reutilizable">💾 Guardar como plantilla</button>
+      </div>
+      <div id="resPlantillaGuardarInputWrap" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="text" class="fi-w" id="resPlantillaNombreInput" placeholder='Nombre, ej. "Práctica Arduino básica"' style="min-width:200px" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarPlantillaActual();}if(event.key==='Escape')toggleGuardarPlantillaInput(false)">
+        <button class="btn btn-p" onclick="guardarPlantillaActual()">Guardar</button>
+        <button class="btn" onclick="toggleGuardarPlantillaInput(false)">Cancelar</button>
+      </div>
       <div class="mf-right">
         <button class="btn" onclick="closeReservaPractica()">Cancelar</button>
         <button class="btn btn-loan" id="btnReservaGuardar" disabled onclick="guardarReservaPractica()">📅 Guardar reserva</button>

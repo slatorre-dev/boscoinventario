@@ -28,6 +28,8 @@ function openReservaPractica(){
   resFechaInput.value = '';
   resFechaInput.min = new Date().toISOString().slice(0,10);
   document.getElementById('res_franja').value = '';
+  document.getElementById('res_franja_otra').value = '';
+  document.getElementById('res_franja_otra').style.display = 'none';
   document.getElementById('res_obs').value = '';
 
   document.getElementById('res_profFiltQ').value = '';
@@ -43,6 +45,7 @@ function openReservaPractica(){
 
   _renderReservaLineas();
   _renderPlantillasList();
+  toggleGuardarPlantillaInput(false);
   document.getElementById('mReservaPractica').classList.add('open');
 }
 
@@ -58,16 +61,31 @@ function filterReservaItems(){
   if(q) filtered = filtered.filter(x => normalize(x.item + ' ' + (x.ref||'')).includes(q));
   filtered.sort((a,b) => a.item.localeCompare(b.item));
   _reservaItemsDisponibles = filtered;
-  document.getElementById('res_itemSelect').innerHTML = '<option value="">— Seleccionar ítem —</option>' +
-    filtered.map(x => {
-      const aulaNombre = AULAS.find(a=>a.id===x.aula)?.name || x.aula || '—';
-      return `<option value="${x.id}">${escHtml(x.item)}${x.ref?' ['+escHtml(x.ref)+']':''} · ${escHtml(aulaNombre)} · ${x.qty} uds.</option>`;
-    }).join('');
+  _renderReservaItemResults();
 }
 
-function anadirLineaReserva(){
-  const itemId = document.getElementById('res_itemSelect').value;
-  if(!itemId){ toast('Selecciona un ítem','err'); return; }
+// Lista de resultados con clic directo (mismo patrón que delPickerList en
+// inventory.js) en vez de <select>+botón "Añadir" — más rápido de usar con
+// un inventario de taller de cientos de referencias.
+function _renderReservaItemResults(){
+  const list = document.getElementById('res_itemResults');
+  if(!list) return;
+  if(!_reservaItemsDisponibles.length){
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:10px">Sin resultados</div>';
+    return;
+  }
+  const yaAnadidos = new Set(_reservaLineas.map(l => String(l.itemId)));
+  list.innerHTML = _reservaItemsDisponibles.slice(0,30).map(x => {
+    const aulaNombre = AULAS.find(a=>a.id===x.aula)?.name || x.aula || '—';
+    const anadido = yaAnadidos.has(String(x.id));
+    return `<button type="button" class="btn" ${anadido?'disabled':''} style="width:100%;justify-content:space-between;text-align:left;padding:8px 10px;font-size:13px" onclick="anadirLineaReserva(${x.id})">
+      <span>${anadido?'✓ ':''}${escHtml(x.item)}${x.ref?' <small style="color:var(--muted)">['+escHtml(x.ref)+']</small>':''}</span>
+      <span style="font-size:11px;color:var(--muted);white-space:nowrap;margin-left:8px">${escHtml(aulaNombre)} · ${x.qty} uds.</span>
+    </button>`;
+  }).join('');
+}
+
+function anadirLineaReserva(itemId){
   const item = _reservaItemsDisponibles.find(x => String(x.id) === String(itemId));
   if(!item) return;
   if(_reservaLineas.some(l => String(l.itemId) === String(itemId))){
@@ -76,6 +94,7 @@ function anadirLineaReserva(){
   }
   _reservaLineas.push({ _rowId: _reservaLineaRowId++, itemId: item.id, itemNombre: item.item, cantidad: 1, maxQty: Number(item.qty) });
   _renderReservaLineas();
+  _renderReservaItemResults();
 }
 
 function _renderReservaLineas(){
@@ -106,6 +125,7 @@ function _reservaActualizarCant(rowId, valor){
 function _reservaEliminarLinea(rowId){
   _reservaLineas = _reservaLineas.filter(l => l._rowId !== rowId);
   _renderReservaLineas();
+  _renderReservaItemResults();
 }
 
 // ─── PLANTILLAS DE PRÁCTICA ───────────────────────────────
@@ -141,10 +161,26 @@ function _renderPlantillasList(){
     </div>`).join('');
 }
 
+// Fila de guardado inline en el propio panel, en vez de prompt() nativo del
+// navegador (rompía el estilo del resto de la app y no validaba en el sitio).
+function toggleGuardarPlantillaInput(show){
+  if(show && !_reservaLineas.length){ toast('Añade al menos un ítem antes de guardar la plantilla','err'); return; }
+  document.getElementById('resPlantillaGuardarBtnWrap').style.display = show ? 'none' : '';
+  document.getElementById('resPlantillaGuardarInputWrap').style.display = show ? 'flex' : 'none';
+  const input = document.getElementById('resPlantillaNombreInput');
+  input.classList.remove('field-error');
+  input.parentElement.querySelector('.field-error-msg')?.remove();
+  if(show){
+    input.value = '';
+    input.focus();
+  }
+}
+
 function guardarPlantillaActual(){
   if(!_reservaLineas.length){ toast('Añade al menos un ítem antes de guardar la plantilla','err'); return; }
-  const nombre = (prompt('Nombre de la plantilla (ej. "Práctica Arduino básica"):') || '').trim();
-  if(!nombre) return;
+  const input = document.getElementById('resPlantillaNombreInput');
+  const nombre = (input.value || '').trim();
+  if(!nombre){ markFieldError('resPlantillaNombreInput', 'Escribe un nombre'); input.focus(); return; }
 
   const cicloVal = document.getElementById('res_ciclo').value;
   const [cicloId, moduloCod] = cicloVal ? cicloVal.split('__') : ['', ''];
@@ -165,6 +201,7 @@ function guardarPlantillaActual(){
   lista.push(plantilla);
   savePlantillas(lista);
   _renderPlantillasList();
+  toggleGuardarPlantillaInput(false);
   toast(`Plantilla "${escHtml(nombre)}" guardada`,'ok');
 }
 
@@ -187,6 +224,7 @@ function aplicarPlantilla(id){
     return { _rowId: _reservaLineaRowId++, itemId: l.itemId, itemNombre: l.itemNombre, cantidad: Math.min(l.cantidad, maxQty), maxQty };
   }).filter(l => l.maxQty > 0);
   _renderReservaLineas();
+  _renderReservaItemResults();
 
   const descartadas = lineasOriginales.length - _reservaLineas.length;
   toast(descartadas > 0
@@ -203,9 +241,25 @@ async function eliminarPlantilla(id){
   _renderPlantillasList();
 }
 
+// Desplegable con las franjas habituales del centro (con "Otra…" como
+// escape hatch) en vez de texto libre — normaliza el valor para que el
+// chequeo de choque de reservas (mismo día+franja) del backend compare
+// exactamente lo mismo entre dos profesores, en vez de depender de que
+// ambos tecleen la franja igual.
+function onFranjaChange(){
+  const esOtra = document.getElementById('res_franja').value === '__otra';
+  document.getElementById('res_franja_otra').style.display = esOtra ? '' : 'none';
+  if(esOtra) document.getElementById('res_franja_otra').focus();
+}
+
+function getFranjaValue(){
+  const sel = document.getElementById('res_franja').value;
+  return sel === '__otra' ? document.getElementById('res_franja_otra').value.trim() : sel;
+}
+
 async function guardarReservaPractica(){
   const fecha = document.getElementById('res_fecha').value;
-  const franja = document.getElementById('res_franja').value.trim();
+  const franja = getFranjaValue();
   const profId = document.getElementById('res_prof').value;
   if(!fecha){ toast('Indica la fecha de la práctica','err'); return; }
   if(!profId){ toast('Selecciona un/a profesor/a','err'); return; }
@@ -343,6 +397,7 @@ function duplicarReservaPractica(reservaId){
     return { _rowId: _reservaLineaRowId++, itemId: l.itemId, itemNombre: l.itemNombre, cantidad: Math.min(l.cantidad, maxQty), maxQty };
   }).filter(l => l.maxQty > 0);
   _renderReservaLineas();
+  _renderReservaItemResults();
 
   const descartadas = lineasOriginales.length - _reservaLineas.length;
   toast(descartadas > 0
