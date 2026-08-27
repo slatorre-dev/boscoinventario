@@ -6,11 +6,17 @@ let _reservaLineas = [];
 let _reservaLineaRowId = 0;
 let _reservaItemsDisponibles = [];
 let _reservaConfirmSubmitting = false;
+const RESERVA_WIZARD_STEPS = 5;
+const RESERVA_WIZARD_NOMBRES = ['Ciclo y aula','Fecha y franja','Profesor/a','Material','Revisar y confirmar'];
+let _reservaWizardMode = false;
+let _reservaWizardStep = 1;
 
 function openReservaPractica(){
   if(!requirePerm('loans.write')) return;
   _reservaLineas = [];
   _reservaLineaRowId = 0;
+  _reservaWizardMode = (localStorage.getItem(_reservaWizardStorageKey()) === '1');
+  _reservaWizardStep = 1;
 
   const cicloSel = document.getElementById('res_ciclo');
   const ownCiclos = (typeof CICLOS !== 'undefined' ? CICLOS : []).filter(c => c.id !== 'iesjuanbosco');
@@ -46,7 +52,104 @@ function openReservaPractica(){
   _renderReservaLineas();
   _renderPlantillasList();
   toggleGuardarPlantillaInput(false);
+  _renderReservaWizard();
   document.getElementById('mReservaPractica').classList.add('open');
+}
+
+// ─── MODO GUIADO (WIZARD) ─────────────────────────────────
+// Capa de presentación por pasos sobre el mismo formulario/estado de
+// siempre — no duplica campos ni lógica de guardado, solo muestra/oculta
+// los data-restep del DOM y valida antes de avanzar. El modo clásico (todo
+// en una pantalla) sigue siendo el de por defecto.
+function _reservaWizardStorageKey(){
+  return 'reservas_wizard_mode_' + (SESSION?.usuario || 'anon');
+}
+
+function toggleReservaWizardMode(){
+  _reservaWizardMode = !_reservaWizardMode;
+  try { localStorage.setItem(_reservaWizardStorageKey(), _reservaWizardMode ? '1' : '0'); } catch(e){}
+  _reservaWizardStep = 1;
+  _renderReservaWizard();
+}
+
+function _renderReservaWizard(){
+  const btnToggle = document.getElementById('btnResWizardToggle');
+  if(btnToggle) btnToggle.textContent = _reservaWizardMode ? '📝 Formulario completo' : '🧑‍🏫 Modo guiado';
+
+  document.querySelectorAll('[data-restep]').forEach(el => {
+    el.style.display = (!_reservaWizardMode || Number(el.dataset.restep) === _reservaWizardStep) ? '' : 'none';
+  });
+
+  const stepLabel = document.getElementById('resWizardStepLabel');
+  if(stepLabel) stepLabel.textContent = _reservaWizardMode
+    ? `Paso ${_reservaWizardStep}/${RESERVA_WIZARD_STEPS} · ${RESERVA_WIZARD_NOMBRES[_reservaWizardStep-1]}` : '';
+
+  document.getElementById('btnResWizardBack').style.display = (_reservaWizardMode && _reservaWizardStep > 1) ? '' : 'none';
+  document.getElementById('btnResWizardNext').style.display = (_reservaWizardMode && _reservaWizardStep < RESERVA_WIZARD_STEPS) ? '' : 'none';
+  document.getElementById('btnReservaGuardar').style.display = (!_reservaWizardMode || _reservaWizardStep === RESERVA_WIZARD_STEPS) ? '' : 'none';
+
+  const resumenEl = document.getElementById('resWizardResumen');
+  const enResumen = _reservaWizardMode && _reservaWizardStep === RESERVA_WIZARD_STEPS;
+  if(resumenEl) resumenEl.style.display = enResumen ? 'block' : 'none';
+  if(enResumen) _renderReservaResumen();
+
+  // resPlantillasWrap y resLineasWrap se autogestionan (ocultan si no hay
+  // datos) — se refrescan aquí para que también respeten el paso actual.
+  _renderPlantillasList();
+  _renderReservaLineas();
+}
+
+function _reservaWizardValidar(step){
+  if(step === 2 && !document.getElementById('res_fecha').value){
+    markFieldError('res_fecha','Indica la fecha');
+    toast('Indica la fecha de la práctica','err');
+    return false;
+  }
+  if(step === 3 && !document.getElementById('res_prof').value){
+    toast('Selecciona un/a profesor/a','err');
+    return false;
+  }
+  if(step === 4 && !_reservaLineas.length){
+    toast('Añade al menos un ítem','err');
+    return false;
+  }
+  return true;
+}
+
+function _reservaWizardNext(){
+  if(!_reservaWizardValidar(_reservaWizardStep)) return;
+  _reservaWizardStep = Math.min(_reservaWizardStep + 1, RESERVA_WIZARD_STEPS);
+  _renderReservaWizard();
+}
+
+function _reservaWizardBack(){
+  _reservaWizardStep = Math.max(_reservaWizardStep - 1, 1);
+  _renderReservaWizard();
+}
+
+function _renderReservaResumen(){
+  const el = document.getElementById('resWizardResumen');
+  if(!el) return;
+  const cicloSel = document.getElementById('res_ciclo');
+  const cicloTxt = cicloSel.options[cicloSel.selectedIndex]?.textContent || 'Sin asignar';
+  const aulaSel = document.getElementById('res_aula');
+  const aulaTxt = aulaSel.options[aulaSel.selectedIndex]?.textContent || '— Sin especificar —';
+  const profSel = document.getElementById('res_prof');
+  const profTxt = profSel.options[profSel.selectedIndex]?.textContent || '—';
+  const fecha = document.getElementById('res_fecha').value;
+  const franja = getFranjaValue();
+  const lineasHtml = _reservaLineas.length
+    ? _reservaLineas.map(l => `<div style="font-size:13px;padding:2px 0">• ${escHtml(l.itemNombre)} — ${l.cantidad} ud.</div>`).join('')
+    : '<div style="font-size:13px;color:var(--muted)">Sin material añadido</div>';
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px">Resumen</div>
+    <div style="font-size:13px;line-height:1.7">
+      <div>📚 ${escHtml(cicloTxt)}</div>
+      <div>🏫 ${escHtml(aulaTxt)}</div>
+      <div>📅 ${escHtml(fecha)}${franja ? ' · ' + escHtml(franja) : ''}</div>
+      <div>👤 ${escHtml(profTxt)}</div>
+    </div>
+    <div style="margin-top:8px">${lineasHtml}</div>`;
 }
 
 function closeReservaPractica(){
@@ -101,13 +204,13 @@ function _renderReservaLineas(){
   const body = document.getElementById('resLineasBody');
   const wrap = document.getElementById('resLineasWrap');
   const btnGuardar = document.getElementById('btnReservaGuardar');
-  if(!_reservaLineas.length){
+  btnGuardar.disabled = !_reservaLineas.length;
+  const visiblePorPaso = !_reservaWizardMode || _reservaWizardStep === 4;
+  if(!_reservaLineas.length || !visiblePorPaso){
     wrap.style.display = 'none';
-    btnGuardar.disabled = true;
     return;
   }
   wrap.style.display = 'block';
-  btnGuardar.disabled = false;
   body.innerHTML = _reservaLineas.map(l => `
     <tr data-row-id="${l._rowId}">
       <td style="padding:4px">${escHtml(l.itemNombre)}</td>
@@ -152,7 +255,8 @@ function _renderPlantillasList(){
   const list = document.getElementById('resPlantillasList');
   if(!wrap || !list) return;
   const plantillas = getPlantillas();
-  if(!plantillas.length){ wrap.style.display = 'none'; return; }
+  const visiblePorPaso = !_reservaWizardMode || _reservaWizardStep === 1;
+  if(!plantillas.length || !visiblePorPaso){ wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
   list.innerHTML = plantillas.map(p => `
     <div class="res-plant-chip">
@@ -223,7 +327,8 @@ function aplicarPlantilla(id){
     const maxQty = itemActual ? Number(itemActual.qty) : 0;
     return { _rowId: _reservaLineaRowId++, itemId: l.itemId, itemNombre: l.itemNombre, cantidad: Math.min(l.cantidad, maxQty), maxQty };
   }).filter(l => l.maxQty > 0);
-  _renderReservaLineas();
+  if(_reservaWizardMode){ _reservaWizardStep = RESERVA_WIZARD_STEPS; }
+  _renderReservaWizard();
   _renderReservaItemResults();
 
   const descartadas = lineasOriginales.length - _reservaLineas.length;
@@ -396,7 +501,8 @@ function duplicarReservaPractica(reservaId){
     const maxQty = itemActual ? Number(itemActual.qty) : 0;
     return { _rowId: _reservaLineaRowId++, itemId: l.itemId, itemNombre: l.itemNombre, cantidad: Math.min(l.cantidad, maxQty), maxQty };
   }).filter(l => l.maxQty > 0);
-  _renderReservaLineas();
+  if(_reservaWizardMode){ _reservaWizardStep = RESERVA_WIZARD_STEPS; }
+  _renderReservaWizard();
   _renderReservaItemResults();
 
   const descartadas = lineasOriginales.length - _reservaLineas.length;

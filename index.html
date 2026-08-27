@@ -1083,15 +1083,19 @@
 <div class="mbg" id="mReservaPractica" onclick="if(event.target===this)closeReservaPractica()">
   <div class="modal">
     <div class="mh"><span class="mt">📅 Planificar práctica</span><button class="mx" onclick="closeReservaPractica()">✕</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 0 10px;flex-wrap:wrap;gap:6px">
+      <div id="resWizardStepLabel" style="font-size:12px;color:var(--muted);font-weight:600"></div>
+      <button type="button" class="btn btn-sm" id="btnResWizardToggle" onclick="toggleReservaWizardMode()" style="margin-left:auto">🧑‍🏫 Modo guiado</button>
+    </div>
     <div class="res-plantillas" id="resPlantillasWrap" style="display:none">
       <div class="res-plantillas-label">📋 Plantillas guardadas</div>
       <div class="res-plantillas-list" id="resPlantillasList"></div>
     </div>
     <div class="fg">
-      <div><label class="fl">Ciclo/Asignatura</label><select class="fi-w" id="res_ciclo"></select></div>
-      <div><label class="fl">Aula destino</label><select class="fi-w" id="res_aula"></select></div>
-      <div><label class="fl">Fecha de la práctica *</label><input class="fi-w" id="res_fecha" type="date"></div>
-      <div><label class="fl">Franja horaria (opcional)</label>
+      <div data-restep="1"><label class="fl">Ciclo/Asignatura</label><select class="fi-w" id="res_ciclo"></select></div>
+      <div data-restep="1"><label class="fl">Aula destino</label><select class="fi-w" id="res_aula"></select></div>
+      <div data-restep="2"><label class="fl">Fecha de la práctica *</label><input class="fi-w" id="res_fecha" type="date"></div>
+      <div data-restep="2"><label class="fl">Franja horaria (opcional)</label>
         <select class="fi-w" id="res_franja" onchange="onFranjaChange()">
           <option value="">Sin especificar</option>
           <option value="1ª hora">1ª hora</option>
@@ -1105,14 +1109,14 @@
         </select>
         <input class="fi-w" id="res_franja_otra" type="text" placeholder='Especifica la franja, ej. "10:00-11:00"' style="display:none;margin-top:6px">
       </div>
-      <div class="full"><label class="fl">Profesor/a *</label>
+      <div class="full" data-restep="3"><label class="fl">Profesor/a *</label>
         <input type="text" class="fi-w" id="res_profFiltQ" placeholder="Buscar por nombre…" autocomplete="off" oninput="filterProfSelect('_reservaProfOptions','res_profFiltQ','res_prof')" style="margin-bottom:6px">
         <select class="fi-w" id="res_prof"></select>
       </div>
-      <div class="full"><label class="fl">Observaciones</label><textarea class="fi-w" id="res_obs" placeholder="Para qué se necesita, etc."></textarea></div>
+      <div class="full" data-restep="5"><label class="fl">Observaciones</label><textarea class="fi-w" id="res_obs" placeholder="Para qué se necesita, etc."></textarea></div>
     </div>
 
-    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+    <div data-restep="4" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
       <label class="fl">Añadir material *</label>
       <div style="display:flex;gap:8px;margin-bottom:6px">
         <select class="fi-w" id="res_itemFiltAula" onchange="filterReservaItems()" style="flex:1;min-width:0"></select>
@@ -1130,6 +1134,8 @@
       </table>
     </div>
 
+    <div id="resWizardResumen" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px"></div>
+
     <div class="mf" style="flex-wrap:wrap">
       <div id="resPlantillaGuardarBtnWrap">
         <button class="btn" onclick="toggleGuardarPlantillaInput(true)" title="Guarda el material y cantidades actuales como plantilla reutilizable">💾 Guardar como plantilla</button>
@@ -1141,6 +1147,8 @@
       </div>
       <div class="mf-right">
         <button class="btn" onclick="closeReservaPractica()">Cancelar</button>
+        <button class="btn" id="btnResWizardBack" onclick="_reservaWizardBack()" style="display:none">← Atrás</button>
+        <button class="btn btn-p" id="btnResWizardNext" onclick="_reservaWizardNext()" style="display:none">Siguiente →</button>
         <button class="btn btn-loan" id="btnReservaGuardar" disabled onclick="guardarReservaPractica()">📅 Guardar reserva</button>
       </div>
     </div>

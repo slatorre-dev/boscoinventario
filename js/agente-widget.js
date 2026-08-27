@@ -1934,6 +1934,332 @@
   }
 
   // ══════════════════════════════════════════════════════════════════
+  // ASISTENTE DE PLANIFICACIÓN DE PRÁCTICA (flujo conversacional)
+  // ══════════════════════════════════════════════════════════════════
+  // A diferencia del resto de acciones de Volt (un solo turno + mini-
+  // formulario inline), esto es una conversación real de varios turnos:
+  // mientras _practicaFlow no sea null, sendChat() enruta TODO lo que se
+  // escriba aquí (ver el hook al principio de sendChat), en vez de pasar
+  // por el parser central de intenciones. Reutiliza reservaCrear/
+  // reservaConfirmar (mismos endpoints que el modal "📅 Planificar
+  // práctica" de reservas-practica.js) — no hay lógica de negocio nueva
+  // en el backend.
+  var _practicaFlow = null;
+
+  // "reservar" ya dispara el préstamo inmediato normal (detectarIntencionPrestamo),
+  // así que este flujo solo se activa con frases explícitas de planificación, o con
+  // "reservar/necesito material" cuando además hay una referencia a fecha futura —
+  // si no, "reservar el multímetro" sigue siendo un préstamo ahora mismo.
+  function detectarIntencionPlanificarPractica(query) {
+    if (_practicaFlow) return true;
+    var q = normalize(normalizarEntradaUsuario(query || ''));
+    var explicitas = ['planificar practica', 'planificar una practica', 'planifica una practica',
+      'programar practica', 'programar una practica', 'preparar practica', 'preparar una practica',
+      'preparar clase', 'preparar la clase', 'preparar mi clase', 'organizar practica', 'organizar una practica',
+      'quiero planificar', 'asistente de practica', 'asistente de practicas', 'asistente de planificacion',
+      'ayudame a planificar', 'guiame para planificar', 'planificar una clase'];
+    if (matchAny(q, explicitas)) return true;
+    var mencionaMaterial = /\b(material|equipo|practica|clase)\b/.test(q);
+    var mencionaReserva = /\b(reservar|reserva|necesito|hace falta|nos hace falta)\b/.test(q);
+    if (mencionaMaterial && mencionaReserva && extraerFechaDevolucion(query)) return true;
+    return false;
+  }
+
+  function _practicaFlowNuevo() {
+    return {
+      step: 'material',
+      lineas: [],
+      fecha: '', franja: '',
+      cicloId: '', moduloCod: '', moduloNombre: '',
+      profesorId: 0, profesorNombre: '',
+    };
+  }
+
+  function _iniciarFlujoPracticaChat() {
+    _practicaFlow = _practicaFlowNuevo();
+    // Ciclo/módulo por defecto igual que el modal: si solo hay una combinación
+    // propia se usa sin preguntar; si hay varias o ninguna, se deja sin asignar
+    // (editable luego desde el modal si hiciera falta).
+    var ownCiclos = (typeof CICLOS !== 'undefined' ? CICLOS : []).filter(function(c) { return c.id !== 'iesjuanbosco'; });
+    var combos = [];
+    ownCiclos.forEach(function(c) { (c.modulos || []).forEach(function(m) { combos.push({ cicloId: c.id, moduloCod: m.cod, moduloNombre: m.name }); }); });
+    if (combos.length === 1) {
+      _practicaFlow.cicloId = combos[0].cicloId;
+      _practicaFlow.moduloCod = combos[0].moduloCod;
+      _practicaFlow.moduloNombre = combos[0].moduloNombre;
+    }
+    appendMsg('ai', '📅 Vamos a planificar una práctica. Escribe "cancelar" en cualquier momento para salir.');
+    _preguntarPasoActual();
+  }
+
+  function _preguntarPasoActual() {
+    if (!_practicaFlow) return;
+    if (_practicaFlow.step === 'material') {
+      var extra = _practicaFlow.lineas.length
+        ? '<br><small style="color:#64748b">Añadido hasta ahora: ' + _practicaFlow.lineas.map(function(l) { return esc(l.itemNombre) + ' (' + l.cantidad + ')'; }).join(', ') + '</small>'
+        : '';
+      appendMsgHtml('¿Qué material necesitas? Escribe un ítem cada vez (ej. "3 multímetros") y "listo" cuando termines.' + extra);
+    } else if (_practicaFlow.step === 'fecha') {
+      appendMsg('ai', '¿Para qué fecha es la práctica? (ej. "mañana", "el jueves", o una fecha)');
+    } else if (_practicaFlow.step === 'franja') {
+      _mostrarChipsFranja();
+    } else if (_practicaFlow.step === 'profesor') {
+      appendMsg('ai', '¿Para qué profesor o profesora es esta práctica?');
+    } else if (_practicaFlow.step === 'resumen') {
+      _mostrarResumenFlujoPractica();
+    }
+  }
+
+  function _procesarPasoFlujoPractica(q) {
+    var n = normalize(q);
+    if (matchAny(n, ['cancelar', 'cancela', 'salir', 'anular', 'olvidalo', 'dejalo'])) {
+      _practicaFlow = null;
+      appendMsg('ai', 'Planificación cancelada.');
+      return;
+    }
+    if (_practicaFlow.step === 'material') { _procesarPasoMaterial(q); return; }
+    if (_practicaFlow.step === 'fecha') { _procesarPasoFecha(q); return; }
+    if (_practicaFlow.step === 'franja') { _resolverFranja(q); return; }
+    if (_practicaFlow.step === 'profesor') { _procesarPasoProfesor(q); return; }
+    if (_practicaFlow.step === 'resumen') { _procesarPasoResumenTexto(q); return; }
+  }
+
+  function _procesarPasoMaterial(q) {
+    var n = normalize(q);
+    if (matchAny(n, ['listo', 'ya esta', 'nada mas', 'eso es todo', 'continuar', 'siguiente', 'vale ya', 'es todo'])) {
+      if (!_practicaFlow.lineas.length) { appendMsg('ai', 'Añade al menos un ítem antes de continuar.'); return; }
+      _practicaFlow.step = 'fecha';
+      _preguntarPasoActual();
+      return;
+    }
+    var cantidad = extraerCantidadDeFrase(q) || 1;
+    var candidatos = searchInventoryCandidates(q, 5);
+    if (!candidatos.length) {
+      appendMsg('ai', 'No encuentro ningún ítem que coincida con "' + esc(q) + '". Prueba con otro nombre, o escribe "listo" para continuar.');
+      return;
+    }
+    if (candidatos.length === 1 || candidatos[0].score >= candidatos[1].score + 6) {
+      _agregarLineaFlujoPractica(candidatos[0].item, cantidad);
+      return;
+    }
+    _mostrarCandidatosMaterial(candidatos, cantidad);
+  }
+
+  function _agregarLineaFlujoPractica(item, cantidad) {
+    var qtyDisp = item.qty != null ? Number(item.qty) : Number(item.cantidad || 0);
+    var nombre = item.item || item.nombre || item.name || '(sin nombre)';
+    var existente = _practicaFlow.lineas.find(function(l) { return String(l.itemId) === String(item.id); });
+    if (existente) {
+      existente.cantidad = Math.min(existente.cantidad + cantidad, existente.maxQty || qtyDisp);
+      appendMsg('ai', '✏️ ' + esc(nombre) + ': ahora ' + existente.cantidad + ' ud. Sigue añadiendo material o escribe "listo".');
+    } else {
+      var cantFinal = Math.max(1, Math.min(cantidad, qtyDisp || cantidad));
+      _practicaFlow.lineas.push({ itemId: item.id, itemNombre: nombre, cantidad: cantFinal, maxQty: qtyDisp });
+      appendMsg('ai', '✅ Añadido: ' + esc(nombre) + ' × ' + cantFinal + '. Sigue añadiendo material o escribe "listo".');
+    }
+  }
+
+  function _mostrarCandidatosMaterial(candidatos, cantidad) {
+    var div = document.createElement('div');
+    div.className = 'ag-msg ag-msg-ai';
+    div.innerHTML = '<div style="margin-bottom:6px">Encontré varios, ¿cuál añado?</div>';
+    candidatos.slice(0, 5).forEach(function(c) {
+      var item = c.item;
+      var nombre = item.item || item.nombre || item.name || '(sin nombre)';
+      var btn = document.createElement('button');
+      btn.className = 'ag-quick-btn';
+      btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
+      btn.innerHTML = '📦 ' + esc(nombre) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ')</small>';
+      btn.addEventListener('click', function() { div.remove(); _agregarLineaFlujoPractica(item, cantidad); });
+      div.appendChild(btn);
+    });
+    el.messages.appendChild(div);
+    el.messages.scrollTop = el.messages.scrollHeight;
+  }
+
+  function _procesarPasoFecha(q) {
+    var texto = q.trim();
+    var iso = /^\d{4}-\d{2}-\d{2}$/.test(texto) ? texto : extraerFechaDevolucion(q);
+    if (!iso) {
+      appendMsg('ai', 'No entendí la fecha. Prueba con "mañana", "el jueves" o escríbela como AAAA-MM-DD.');
+      return;
+    }
+    var hoyIso = new Date().toISOString().slice(0, 10);
+    if (iso < hoyIso) {
+      appendMsg('ai', 'Esa fecha ya pasó. Indica una fecha de hoy en adelante.');
+      return;
+    }
+    _practicaFlow.fecha = iso;
+    _practicaFlow.step = 'franja';
+    _preguntarPasoActual();
+  }
+
+  function _mostrarChipsFranja() {
+    var opciones = ['1ª hora', '2ª hora', '3ª hora', '4ª hora', 'Recreo', '5ª hora', '6ª hora', 'Sin especificar'];
+    var div = document.createElement('div');
+    div.className = 'ag-msg ag-msg-ai';
+    div.innerHTML = '<div style="margin-bottom:6px">¿A qué hora o franja? También puedes escribirla tú.</div>';
+    opciones.forEach(function(op) {
+      var btn = document.createElement('button');
+      btn.className = 'ag-quick-btn';
+      btn.style.cssText = 'display:inline-block;margin:2px';
+      btn.textContent = op;
+      btn.addEventListener('click', function() { div.remove(); _resolverFranja(op === 'Sin especificar' ? '' : op); });
+      div.appendChild(btn);
+    });
+    el.messages.appendChild(div);
+    el.messages.scrollTop = el.messages.scrollHeight;
+  }
+
+  function _resolverFranja(valorRaw) {
+    var n = normalize(valorRaw || '');
+    var valor = matchAny(n, ['sin especificar', 'da igual', 'cualquiera', 'no importa', 'ninguna']) ? '' : (valorRaw || '').trim();
+    _practicaFlow.franja = valor;
+    _avanzarAProfesorOResumen();
+  }
+
+  function _avanzarAProfesorOResumen() {
+    var profOptions = (typeof loanTeacherOptions === 'function') ? loanTeacherOptions() : [];
+    var nombrePropio = normalize((typeof SESSION !== 'undefined' && SESSION && SESSION.nombre) || '');
+    var propio = profOptions.find(function(p) { return normalize(p.nombre || '') === nombrePropio; });
+    if (propio) {
+      _practicaFlow.profesorId = propio.id;
+      _practicaFlow.profesorNombre = propio.nombre;
+      _practicaFlow.step = 'resumen';
+      _preguntarPasoActual();
+      return;
+    }
+    _practicaFlow.step = 'profesor';
+    _preguntarPasoActual();
+  }
+
+  function _procesarPasoProfesor(q) {
+    var texto = q.trim();
+    if (!texto) { appendMsg('ai', 'Indica el nombre del profesor o profesora.'); return; }
+    var profOptions = (typeof loanTeacherOptions === 'function') ? loanTeacherOptions() : [];
+    var nq = normalize(texto);
+    var match = profOptions.find(function(p) { return normalize(p.nombre) === nq; }) ||
+      profOptions.find(function(p) { return normalize(p.nombre).indexOf(nq) !== -1; });
+    _practicaFlow.profesorId = match ? match.id : 0;
+    _practicaFlow.profesorNombre = match ? match.nombre : texto;
+    _practicaFlow.step = 'resumen';
+    _preguntarPasoActual();
+  }
+
+  function _mostrarResumenFlujoPractica() {
+    var f = _practicaFlow;
+    var lineasHtml = f.lineas.map(function(l) { return '• ' + esc(l.itemNombre) + ' — ' + l.cantidad + ' ud.'; }).join('<br>');
+    var hoyIso = new Date().toISOString().slice(0, 10);
+    var esHoy = f.fecha === hoyIso;
+    var div = document.createElement('div');
+    div.className = 'ag-msg ag-msg-ai';
+    div.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #38bdf8';
+    div.innerHTML =
+      '<div style="margin-bottom:8px"><strong style="color:#7dd3fc">📋 Resumen de la práctica</strong></div>' +
+      '<div style="font-size:13px;line-height:1.7;color:#e2e8f0">' +
+        '📅 ' + esc(f.fecha) + (f.franja ? ' · ' + esc(f.franja) : '') + '<br>' +
+        '👤 ' + esc(f.profesorNombre || '—') +
+        (f.moduloNombre ? '<br>📚 ' + esc(f.moduloNombre) : '') +
+      '</div>' +
+      '<div style="margin:8px 0;font-size:13px;color:#e2e8f0">' + lineasHtml + '</div>' +
+      (esHoy
+        ? '<small style="color:#fbbf24">Es hoy: al confirmar se creará la reserva y se registrará el préstamo automáticamente.</small>'
+        : '<small style="color:#64748b">Quedará como reserva pendiente hasta el día de recogida (Préstamos → Ver reservas).</small>') +
+      '<div style="display:flex;gap:6px;margin-top:10px">' +
+        '<button class="ag-btn ag-btn-blue ag-practica-confirm" style="flex:1">✅ Confirmar</button>' +
+        '<button class="ag-btn ag-practica-cancel">Cancelar</button>' +
+      '</div>' +
+      '<div class="ag-practica-result" style="margin-top:8px;font-size:11px"></div>';
+    el.messages.appendChild(div);
+    el.messages.scrollTop = el.messages.scrollHeight;
+
+    div.querySelector('.ag-practica-cancel').addEventListener('click', function() {
+      _practicaFlow = null;
+      div.remove();
+      appendMsg('ai', 'Planificación cancelada.');
+    });
+    div.querySelector('.ag-practica-confirm').addEventListener('click', function() {
+      _confirmarFlujoPractica(div);
+    });
+  }
+
+  function _procesarPasoResumenTexto(q) {
+    var n = normalize(q);
+    if (matchAny(n, ['confirmar', 'confirmo', 'si', 'vale', 'adelante', 'dale'])) {
+      _confirmarFlujoPractica(null);
+      return;
+    }
+    appendMsg('ai', 'Pulsa "✅ Confirmar" (o escribe "confirmar") para guardar, o "cancelar" para salir.');
+  }
+
+  function _refrescarVistaReservasSiActiva() {
+    var pPres = document.getElementById('pPres');
+    if (pPres && pPres.classList.contains('active') && typeof renderReservasPendientes === 'function') renderReservasPendientes();
+  }
+
+  function _confirmarFlujoPractica(div) {
+    if (!_practicaFlow) return;
+    var f = _practicaFlow;
+    var resultEl = div ? div.querySelector('.ag-practica-result') : null;
+    var confirmBtn = div ? div.querySelector('.ag-practica-confirm') : null;
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '⏳ Guardando...'; }
+    if (resultEl) { resultEl.style.color = '#94a3b8'; resultEl.innerHTML = '⏳ Creando reserva...'; }
+
+    var hoyIso = new Date().toISOString().slice(0, 10);
+    var esHoy = f.fecha === hoyIso;
+
+    apiPost('/api/prestar', {
+      action: 'reservaCrear',
+      cicloId: f.cicloId || '', moduloCod: f.moduloCod || '', moduloNombre: f.moduloNombre || '',
+      aulaDestino: '', profesorId: f.profesorId || 0, profesorNombre: f.profesorNombre || '',
+      fecha: f.fecha, franja: f.franja || '', obs: '',
+      lineas: f.lineas.map(function(l) { return { itemId: l.itemId, itemNombre: l.itemNombre, cantidad: l.cantidad }; }),
+    }).then(function(res) {
+      if (!res.ok) { throw new Error(res.error || 'No se pudo crear la reserva'); }
+      if (typeof reservas !== 'undefined' && Array.isArray(reservas)) reservas.push(Object.assign({}, res.reserva, { lineas: res.lineas }));
+
+      if (!esHoy) {
+        if (confirmBtn) confirmBtn.textContent = '✅ Guardado';
+        if (resultEl) { resultEl.style.color = '#34d399'; resultEl.innerHTML = '✅ Práctica planificada'; }
+        appendMsg('ai', '📅 Reserva creada para el ' + esc(f.fecha) + '. La verás en Préstamos → Ver reservas.');
+        _practicaFlow = null;
+        _refrescarVistaReservasSiActiva();
+        return null;
+      }
+      // Fecha de hoy: encadena reservaConfirmar automáticamente (reserva + préstamo real en un solo paso)
+      return apiPost('/api/prestar', { action: 'reservaConfirmar', reservaId: res.reserva.id }).then(function(res2) {
+        if (!res2.ok) { throw new Error(res2.error || 'La reserva se creó pero no se pudo confirmar la recogida'); }
+        (res2.prestamos || []).forEach(function(p) {
+          if (typeof prestamos !== 'undefined' && Array.isArray(prestamos)) prestamos.push(p);
+          if (typeof items !== 'undefined' && Array.isArray(items)) {
+            var idx = items.findIndex(function(x) { return Number(x.id) === Number(p.itemId); });
+            if (idx >= 0) items[idx].qty = Number(items[idx].qty) - Number(p.cantidad);
+          }
+        });
+        if (typeof reservas !== 'undefined' && Array.isArray(reservas)) {
+          var rIdx = reservas.findIndex(function(r) { return Number(r.id) === Number(res.reserva.id); });
+          if (rIdx >= 0 && res2.estado) reservas[rIdx].estado = res2.estado;
+        }
+        if (confirmBtn) confirmBtn.textContent = '✅ Guardado';
+        if (res2.fallos && res2.fallos.length) {
+          var nombresFallo = res2.fallos.map(function(x) { return x.itemNombre || '?'; }).join(', ');
+          if (resultEl) { resultEl.style.color = '#fbbf24'; resultEl.innerHTML = '⚠ Reserva creada, préstamo parcial'; }
+          appendMsg('ai', '⚠ Reserva creada. Sin stock suficiente para: ' + esc(nombresFallo) + '.');
+        } else {
+          if (resultEl) { resultEl.style.color = '#34d399'; resultEl.innerHTML = '✅ Reserva y préstamo registrados'; }
+          appendMsg('ai', '✅ Listo — reserva creada y préstamo registrado para hoy.');
+        }
+        _practicaFlow = null;
+        _refrescarVistaReservasSiActiva();
+      });
+    }).catch(function(e) {
+      if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.innerHTML = '❌ Error: ' + esc(e.message); }
+      else appendMsg('ai', '❌ Error: ' + e.message);
+      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ Confirmar'; }
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
   // PARSER CENTRAL DE INTENCIONES
   // ══════════════════════════════════════════════════════════════════
   function normalize(s) {
@@ -3444,6 +3770,13 @@
     // Añadir mensaje usuario
     state.messages.push({ role: 'user', content: q });
     appendMsg('user', q);
+
+    // ── ASISTENTE DE PLANIFICACIÓN DE PRÁCTICA (flujo conversacional) ──
+    // Si ya hay un flujo en curso, TODO lo que se escriba se enruta ahí
+    // (evita que otros detectores de intención interpreten mal una
+    // respuesta como "el jueves" o el nombre de un ítem a medio flujo).
+    if (_practicaFlow) { _procesarPasoFlujoPractica(q); return; }
+    if (detectarIntencionPlanificarPractica(q)) { _iniciarFlujoPracticaChat(); return; }
 
     if (gestionarComandoRapido(q)) return;
 
