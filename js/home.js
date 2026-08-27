@@ -28,10 +28,108 @@ function _showAccionesRapidasTourIfNarrow(){
   showPointerTourOnce('accionesRapidasTour', steps);
 }
 
+// Panel "Requiere tu atención" — solo jefe/a departamento y superadmin
+// (mismo permiso config.manage que ya gatea Aulas/Categorías/Ciclos y
+// Accesos). Agrupa 4 señales que ya existen dispersas en otras vistas
+// (Pedidos+Solicitudes, Mantenimiento, Préstamos vencidos, Accesos) para
+// que no haga falta visitarlas una a una para saber si hay algo pendiente.
+// 3 de las 4 señales ya viven en memoria desde loadData() (pedidos,
+// solicitudes, items, prestamos) — solo Accesos pide datos nuevos, una
+// sola vez por sesión de página (cacheados en _atencionAccesosCache).
+let _atencionAccesosCache = null;
+let _atencionAccesosLoading = false;
+
+function _atencionAgrupar(lista, getDept){
+  const porDepto = {};
+  for(const x of lista){
+    const d = getDept(x);
+    if(!d) continue;
+    porDepto[d] = (porDepto[d]||0) + 1;
+  }
+  return porDepto;
+}
+
+function _atencionMerge(...maps){
+  const out = {};
+  for(const m of maps) for(const k in m) out[k] = (out[k]||0) + m[k];
+  return out;
+}
+
+function _atencionChip(icon, count, porDepto, label, onclick, cls){
+  if(!count) return '';
+  let detalle = '';
+  if(porDepto){
+    const entries = Object.entries(porDepto).sort((a,b)=>b[1]-a[1]);
+    if(entries.length > 1){
+      detalle = `<details class="atencion-breakdown"><summary>por departamento</summary>${
+        entries.map(([slug,n])=>`<div class="atencion-breakdown-row"><span>${escHtml(deptNombre(slug))}</span><b>${n}</b></div>`).join('')
+      }</details>`;
+    }
+  }
+  return `<div class="atencion-item">
+    <div class="scard-compact ${cls}" onclick="${onclick}" title="${escHtml(label)}: ${count}"><span class="icon">${icon}</span><span class="num">${count}</span><span class="lbl">${escHtml(label)}</span></div>
+    ${detalle}
+  </div>`;
+}
+
+async function _cargarAtencionAccesos(){
+  if(_atencionAccesosLoading || _atencionAccesosCache) return;
+  _atencionAccesosLoading = true;
+  try{
+    const res = await apiPost({action:'getUsers'});
+    const usuarios = (res && res.ok && Array.isArray(res.usuarios)) ? res.usuarios : [];
+    const relevantes = usuarios.filter(u => u.bloqueado || u.password_temporal);
+    _atencionAccesosCache = { count: relevantes.length, porDepto: _atencionAgrupar(relevantes, u=>u.departamento) };
+  } catch(e){
+    _atencionAccesosCache = { count: 0, porDepto: {} };
+  }
+  _atencionAccesosLoading = false;
+  renderAtencionHoy();
+}
+
+function renderAtencionHoy(){
+  const box = document.getElementById('homeAtencion');
+  if(!box) return;
+  if(typeof can !== 'function' || !can('config.manage')){ box.style.display='none'; box.innerHTML=''; return; }
+
+  const isSuperAdmin = typeof userRole === 'function' && userRole() === 'superadmin';
+  const deptOfItem = id => items.find(x => String(x.id) === String(id))?.departamento || '';
+
+  const solicitudesPendientes = (typeof solicitudes !== 'undefined' ? solicitudes : []).filter(s => s.estado === 'pendiente');
+  const stockCount = Object.keys(pedidos).length + (typeof solBadgeCount === 'function' ? solBadgeCount() : 0);
+  const stockPorDepto = isSuperAdmin ? _atencionMerge(
+    _atencionAgrupar(Object.keys(pedidos), deptOfItem),
+    _atencionAgrupar(solicitudesPendientes, s => s.departamento)
+  ) : null;
+
+  const mantLista = items.filter(needsMaintenance);
+  const mantPorDepto = isSuperAdmin ? _atencionAgrupar(mantLista, x => x.departamento) : null;
+
+  const vencLista = typeof getVencidos === 'function' ? getVencidos() : [];
+  const vencPorDepto = isSuperAdmin ? _atencionAgrupar(vencLista, p => deptOfItem(p.itemId)) : null;
+
+  const chips = [
+    _atencionChip('📦', stockCount, stockPorDepto, 'Pedidos/Solicitudes', 'openStockChoiceModal()', 'warn'),
+    _atencionChip('🛠️', mantLista.length, mantPorDepto, 'Mantenimiento', 'goMaintenance()', 'warn'),
+    _atencionChip('🔴', vencLista.length, vencPorDepto, 'Préstamos vencidos', "goPrestamos('activos')", 'alert'),
+  ];
+  if(_atencionAccesosCache){
+    chips.push(_atencionChip('🔒', _atencionAccesosCache.count, isSuperAdmin ? _atencionAccesosCache.porDepto : null, 'Accesos', 'openAccesosModal()', 'alert'));
+  } else if(!_atencionAccesosLoading){
+    _cargarAtencionAccesos();
+  }
+
+  const html = chips.filter(Boolean).join('');
+  if(!html){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='';
+  box.innerHTML = `<div class="sec-label">🔔 Requiere tu atención</div><div class="atencion-strip">${html}</div>`;
+}
+
 function renderHome(){
   // Banner de préstamos
   renderLoanBanner();
   renderFavoritos();
+  renderAtencionHoy();
 
   const loading = !itemsLoaded;
   const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';

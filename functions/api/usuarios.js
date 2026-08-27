@@ -149,8 +149,8 @@ export async function onRequestPost({ request, env, data }) {
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS aula_profesores (aula TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (aula, usuario))').run().catch(() => {});
     const [usuariosRows, ciclosRows, profesRows, aulasProfesRows] = await Promise.all([
       superadmin
-        ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios ORDER BY usuario').all()
-        : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
+        ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado, password_temporal FROM usuarios ORDER BY usuario').all()
+        : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado, password_temporal FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
       superadmin
         ? env.DB.prepare('SELECT cicloId, modCod, modNombre FROM ciclos WHERE modCod IS NOT NULL').all()
         : env.DB.prepare('SELECT cicloId, modCod, modNombre FROM ciclos WHERE modCod IS NOT NULL AND departamento=?').bind(dept).all(),

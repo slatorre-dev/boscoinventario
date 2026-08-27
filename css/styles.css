@@ -621,6 +621,11 @@ body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 .scard-compact.warn .num{color:var(--amber)}
 .scard-compact.warn .lbl{color:var(--amber);font-weight:700}
 .scard-compact.warn .icon{opacity:1}
+.atencion-strip{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-bottom:22px}
+.atencion-item{display:flex;flex-direction:column;gap:4px}
+.atencion-breakdown{font-size:11px;color:var(--muted)}
+.atencion-breakdown summary{cursor:pointer;padding:2px 6px;user-select:none}
+.atencion-breakdown-row{display:flex;justify-content:space-between;gap:16px;padding:2px 10px}
 .sub-meta{font-size:13px;color:var(--muted);font-weight:500;text-align:center}
 .sub-body{max-width:1600px;margin:0 auto;padding:26px 28px}
 .action-strip{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
