@@ -1,6 +1,14 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v634 | 27/08/2026 | Recorrido guiado con flecha para los 10
+**Estado:** v635 | 27/08/2026 | Migración `0035`: 4 departamentos
+administrativos nuevos (`direccion`, `secretaria`, `conserjeria`,
+`administracionoficina`), aislados entre sí igual que los 24 académicos —
+`administracionoficina` para no chocar con el departamento FP existente
+`administracion`. Cada uno con su aula `dept-<slug>` y cuentas
+`jefe/a departamento`: `direccion`/`jefatura` (comparten el departamento
+`direccion`), `secretaria`, `conserjeria` — todas con
+`password_temporal=1`. `administracionoficina` quedó sin cuenta (el
+usuario no dio correo para ella). v634 | 27/08/2026 | Recorrido guiado con flecha para los 10
 iconos sin texto de "Acciones rápidas" de Inicio (`showPointerTourOnce()`
 en `js/ui-helpers.js`, generaliza el hint flotante de "Mis Cursos/Aulas"):
 se ve una sola vez por navegador, apunta a cada botón real con
@@ -187,6 +195,9 @@ contraseña obligatorio](#cambio-de-contraseña-obligatorio-cuentas-genéricas))
 | `jillescas` | `jillescas` | `superadmin` | `tecnologia` | jillescas@iesjuanbosco.es |
 | `departamento<slug>` (×24) | = usuario | `jefe/a departamento` | `<slug>` propio | `<usuario>@iesjuanbosco.es` |
 | `profe1<slug>` (×24) | = usuario | `profesor` | `<slug>` propio | `<usuario>@iesjuanbosco.es` |
+| `direccion` / `jefatura` | = usuario | `jefe/a departamento` | `direccion` (compartido entre ambas) | `<usuario>@iesjuanbosco.es` |
+| `secretaria` | = usuario | `jefe/a departamento` | `secretaria` | secretaria@iesjuanbosco.es |
+| `conserjeria` | = usuario | `jefe/a departamento` | `conserjeria` | conserjeria@iesjuanbosco.es |
 
 `<slug>` de cada departamento (24 en total, tabla `departamentos`):
 `artesplasticas, cienciasnaturales, economia, educacionfisicadeportiva,
