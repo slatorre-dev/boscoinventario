@@ -3852,4 +3852,55 @@ jefe/a de departamento al crearse, igual que ya hace 🛒 Pedidos.
 
 ---
 
+### 27/08/2026 — Fix: aulas numeradas duplicadas quedaban varadas al final del listado (v630)
+
+El usuario reportó que las aulas 35, 36, 38, 39, 40, 41 y 44 aparecían
+**después** de todas las demás aulas ordenadas por número, justo tras
+importar ítems que antes vivían en esas aulas.
+
+Causa: el `ORDER BY` de `aulas` en `meta.js`/`list.js` (`CASE WHEN id GLOB
+'aula[0-9]*' THEN CAST(SUBSTR(id,5) AS INTEGER) ELSE orden END, orden,
+id`) solo reconoce como "numerada" una fila cuyo **id** tiene la forma
+exacta `aulaN` (las 70 globales sembradas en
+`migrations/0008_aulas_seed.sql`). Cualquier fila que represente la misma
+aula pero con otro id — una fila propia de departamento creada a mano con
+"+ Añadir aula" y renombrada "Aula 35" (id `aula_<timestamp>` o, tras el
+slug de `saveAulas()`, `aula_35` — no cumple el GLOB porque el carácter
+tras "aula" no es un dígito), importada por CSV de aulas
+(`js/modal-aulas.js` línea ~169, id `aula_<timestamp>_<índice>`), o creada
+por una restauración de backup que prefija el id con el departamento
+(`functions/api/item.js`, sección `aulas` del restore) — cae en la rama
+`ELSE orden`, y las aulas propias usan `orden` 101+ **a propósito** (ver
+entrada v593→v594 más arriba) para ir después de las 70 globales. Cada
+departamento con una fila propia "Aula N" duplicando el nombre de una
+global termina con esa fila varada al final, sin importar el número que
+lleve en el nombre.
+
+Fix en `functions/api/meta.js` y `functions/api/list.js`: la consulta SQL
+se simplifica a `ORDER BY orden, id` y el orden numérico real se calcula
+ahora en JS, tras leer las filas — `aulaNum(row)` prueba primero el id
+(`^aula(\d+)$`) y si no matchea busca un número en el **nombre**
+(`/(\d+)/`). `sortAulas(rows)` ordena por ese número cuando existe en
+cualquiera de las dos filas comparadas (con `orden`/`id` como desempate
+para duplicados del mismo número), y deja las aulas sin número (talleres
+de departamento tipo "Tecnología") al final, ordenadas por `orden`/`id`
+como antes. Duplicado en ambos archivos siguiendo el patrón ya existente
+del proyecto (sin módulo compartido entre `functions/api/*.js`).
+
+Nota: esto corrige el **orden de lectura** para cualquier fila mal
+etiquetada ya existente en producción, sin tocar los datos — no fusiona ni
+borra los duplicados "Aula 35" que puedan haber quedado en el
+departamento del usuario (una fila global sin dueño y otra propia con el
+mismo nombre), que seguirán existiendo como dos entradas separadas
+adyacentes en el listado. Verificado con un test aislado en Node
+reproduciendo el escenario exacto reportado (35, 36, 38, 39, 40, 41, 44
+como filas con id no-`aulaN`) — el resultado ordena 1..45 correctamente,
+con el taller de departamento al final. `node --check` sobre los dos
+archivos tocados, sin errores. No verificado contra D1 real (sin
+credenciales `CLOUDFLARE_API_TOKEN` en este sandbox).
+
+`sw.js` → `v630`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)
