@@ -1,6 +1,17 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v640 | 27/08/2026 | En Inicio (`>1200px`), el buscador y su
+**Estado:** v642 | 27/08/2026 | Modal "🔔 Requiere tu atención" para
+jefe/a departamento y superadmin (`can('config.manage')`): agrupa
+Pedidos/Solicitudes, Mantenimiento, Préstamos vencidos y Accesos
+bloqueados/contraseña temporal — señales que ya existían dispersas en
+otras vistas — en un solo sitio, con desglose por departamento para
+superadmin. Se abre sola una vez por sesión de navegador al terminar de
+cargar datos (`checkAtencionHoy()` en `js/home.js`, llamada desde
+`loadData()` en `js/auth.js`, no desde `renderHome()` — ver detalle del
+bug de orden evitado en `docs/DEVELOPMENT.md` v641-v642) y no vuelve a
+molestar tras cerrarla (`sessionStorage`). Único cambio de backend:
+`getUsers` (`functions/api/usuarios.js`) ya expone `password_temporal`
+(columna existente, no se seleccionaba). v640 | 27/08/2026 | En Inicio (`>1200px`), el buscador y su
 texto dejan de estar centrados a `max-width:620px` y pasan a pegarse al
 borde izquierdo de su columna (`css/styles.css`, `.gsearch-wrap`/
 `.gsearch-extra-btns`/`.camara-hint` sin `margin auto`) — libera ancho
