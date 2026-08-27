@@ -1952,13 +1952,15 @@
   // si no, "reservar el multímetro" sigue siendo un préstamo ahora mismo.
   function detectarIntencionPlanificarPractica(query) {
     if (_practicaFlow) return true;
+    // normalizarEntradaUsuario convierte números en palabras a dígitos ("una" → "1",
+    // ver textToNumber()), así que las frases explícitas NO pueden depender de
+    // palabras como "una"/"un" — se usan verbo+sustantivo sueltos por regex en vez
+    // de frases literales, para no romperse con esa transformación.
     var q = normalize(normalizarEntradaUsuario(query || ''));
-    var explicitas = ['planificar practica', 'planificar una practica', 'planifica una practica',
-      'programar practica', 'programar una practica', 'preparar practica', 'preparar una practica',
-      'preparar clase', 'preparar la clase', 'preparar mi clase', 'organizar practica', 'organizar una practica',
-      'quiero planificar', 'asistente de practica', 'asistente de practicas', 'asistente de planificacion',
-      'ayudame a planificar', 'guiame para planificar', 'planificar una clase'];
-    if (matchAny(q, explicitas)) return true;
+    var verbosPlanificacion = /\b(planificar|planifica|programar|programa|preparar|prepara|organizar|organiza|guiame|ayudame)\b/;
+    var sustantivosSesion = /\b(practica|practicas|clase|clases|planificacion)\b/;
+    if (verbosPlanificacion.test(q) && sustantivosSesion.test(q)) return true;
+    if (matchAny(q, ['quiero planificar', 'asistente de practica', 'asistente de practicas'])) return true;
     var mencionaMaterial = /\b(material|equipo|practica|clase)\b/.test(q);
     var mencionaReserva = /\b(reservar|reserva|necesito|hace falta|nos hace falta)\b/.test(q);
     if (mencionaMaterial && mencionaReserva && extraerFechaDevolucion(query)) return true;
