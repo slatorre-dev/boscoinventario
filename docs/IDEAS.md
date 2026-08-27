@@ -356,10 +356,13 @@ Ver QR del ítem sin necesidad de abrir el modal de edición.
 
 **Prioridad:** Baja
 
-### Historial de Cambios en Modal Edición
-Ver el log de cambios de un ítem directamente desde el modal de edición.
-
-**Prioridad:** Media
+### Historial de Cambios en Modal Edición — ✅ ya implementado (detectado 27/08/2026)
+Resultó ya estar hecho: botón "📋 Historial" (`#btnHistorial`, visible para
+cualquier ítem existente) dentro del modal de edición abre `openHistorial()`
+(`js/modal-item.js`), que consulta `GET /api/historial?itemId=` — endpoint
+que ya permite ver el log de un ítem concreto a cualquier usuario de su
+departamento, no solo a jefatura/superadmin (a diferencia del historial
+completo). Esta entrada quedaba desactualizada en el roadmap.
 
 ---
 

@@ -3903,4 +3903,67 @@ credenciales `CLOUDFLARE_API_TOKEN` en este sandbox).
 
 ---
 
+### 27/08/2026 — Usabilidad para profesorado: buscador de material, plantillas desde Modo clase, franja normalizada, sin `prompt()` (v631)
+
+Sesión de seguimiento a una revisión de usabilidad "puesto en el papel de
+profesor/a" (sin código, solo análisis) — cinco mejoras concretas sobre
+funciones ya existentes del profesorado, todas en frontend, sin cambios de
+esquema D1:
+
+1. **Guardar plantilla sin `prompt()` nativo** (`js/reservas-practica.js`):
+   `guardarPlantillaActual()` usaba `prompt()` del navegador, rompiendo el
+   estilo del resto de la app y sin validar en el sitio. Ahora es una fila
+   inline en el propio panel de "Planificar práctica"
+   (`resPlantillaGuardarInputWrap` en `index.html`, toggle con
+   `toggleGuardarPlantillaInput()`), con `markFieldError()` si se intenta
+   guardar sin nombre — mismo helper que ya usa el resto de formularios
+   (`js/ui-helpers.js`).
+2. **Buscador de ítems en "Añadir material" en vez de `<select>`+botón**:
+   `res_itemSelect` sustituido por `res_itemResults`, una lista de
+   resultados clicables (mismo patrón que `delPickerList` en
+   `js/inventory.js`, ya usado en el picker de "Baja/Eliminar") — clic
+   directo añade la línea, sin paso intermedio de seleccionar en un
+   desplegable largo. Los ítems ya añadidos aparecen marcados y
+   deshabilitados (`_renderReservaItemResults()`, refrescado también tras
+   quitar una línea, aplicar plantilla o duplicar una reserva).
+3. **Plantillas accesibles desde 🎒 Modo clase** (`js/modo-clase.js`):
+   nueva tarjeta "📋 Tus plantillas de práctica" en el resumen de Modo
+   clase con un chip por plantilla — `mcUsarPlantilla(id)` abre
+   "Planificar práctica" y aplica la plantilla en un solo toque, en vez de
+   tener que entrar primero al modal completo a buscarla.
+4. **Solicitudes de material recientes visibles en Modo clase**
+   (`js/solicitudes.js`, `_misSolicitudesRecientes()`): antes Modo clase
+   solo miraba `_misSolicitudesPendientes()`, así que una solicitud recién
+   aceptada/descartada por jefatura desaparecía del resumen sin que el
+   profesor llegara a ver la respuesta. Ahora se incluyen también las
+   resueltas en los últimos 7 días (por `actualizadoEn`), mostrando estado
+   y la `respuesta` de jefatura si la hay. Tarjeta renombrada "🧰 Tus
+   solicitudes" (ya no solo "pendientes").
+5. **Franja horaria como desplegable en vez de texto libre**
+   (`res_franja` en `index.html` + `onFranjaChange()`/`getFranjaValue()`
+   en `js/reservas-practica.js`): opciones fijas (1ª-6ª hora, Recreo) +
+   "Otra…" que revela un campo de texto (`res_franja_otra`) para casos no
+   cubiertos. El backend (`functions/api/prestar.js:247-262`) ya comparaba
+   `fecha`+`franja` exactos para evitar que dos profesores planifiquen la
+   misma franja con el mismo material sin avisar — con texto libre ("1ª
+   hora" vs. "9-10h" para el mismo hueco real) ese chequeo podía fallar en
+   silencio; con vocabulario fijo compartido, dos profesores que eligen la
+   misma opción siempre chocan correctamente. Sin cambio de backend: sigue
+   viajando como el mismo string `franja`.
+
+Explícitamente **no se tocó**: "Historial de cambios en modal de edición"
+(pedido pendiente en `docs/IDEAS.md`) resultó ya estar implementado desde
+antes — `openHistorial()`/`btnHistorial` en `js/modal-item.js` +
+`GET /api/historial?itemId=` en `functions/api/historial.js` (accesible a
+cualquier usuario del departamento del ítem, no solo jefatura/superadmin).
+`docs/IDEAS.md` actualizado para reflejarlo.
+
+Verificado con `node --check` sobre los tres archivos JS tocados. No
+probado en navegador real en esta sesión (sandbox sin servidor Cloudflare
+Pages disponible).
+
+`sw.js` → `v631`.
+
+---
+
 **Última actualización:** 17/05/2026 — Sesión 5 (v166)

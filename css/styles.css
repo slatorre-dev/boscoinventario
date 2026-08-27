@@ -1220,6 +1220,8 @@ textarea.fi-w{resize:vertical;min-height:60px}
 .res-plant-count{color:var(--muted);font-weight:400}
 .res-plant-del{background:none;border:none;color:var(--muted);font-size:12px;padding:6px 10px 6px 4px;cursor:pointer}
 .res-plant-del:hover{color:var(--red)}
+.mc-plant-list{display:flex;flex-wrap:wrap;gap:8px}
+.mc-plant-chip{background:var(--accent-l);border:1px solid var(--accent);border-radius:999px;color:var(--accent);font-size:12px;font-weight:600;padding:8px 14px;cursor:pointer}
 
 /* ── Modo clase (js/modo-clase.js) ── */
 .mc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}

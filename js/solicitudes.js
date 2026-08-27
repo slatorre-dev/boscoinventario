@@ -18,9 +18,19 @@ function _esJefeSolicitudes(){
   return typeof can === 'function' && can('solicitudes.manage');
 }
 
-function _misSolicitudesPendientes(){
+// Pendientes + resueltas en los últimos 7 días — para Modo clase (js/modo-
+// clase.js), que antes solo miraba las pendientes y por tanto una
+// solicitud recién aceptada/descartada desaparecía sin que el profesor
+// llegara a ver la respuesta de jefatura, salvo que entrara al modal
+// completo de Solicitudes a buscarla.
+function _misSolicitudesRecientes(){
   const lista = typeof solicitudes !== 'undefined' ? solicitudes : [];
-  return lista.filter(s => s.creadoPor === SESSION?.usuario && s.estado === 'pendiente');
+  const haceUnaSemana = Date.now() - 7*24*60*60*1000;
+  return lista
+    .filter(s => s.creadoPor === SESSION?.usuario && (
+      s.estado === 'pendiente' || new Date(s.actualizadoEn || s.fecha || 0).getTime() >= haceUnaSemana
+    ))
+    .sort((a,b) => new Date(b.fecha||0) - new Date(a.fecha||0));
 }
 
 function updateSolBadge(){

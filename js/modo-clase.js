@@ -38,10 +38,19 @@ function goModoClase(){
   renderModoClase();
 }
 
+// Atajo a las plantillas de práctica (js/reservas-practica.js) desde Modo
+// clase — sin esto solo eran accesibles abriendo primero "Preparar
+// práctica" y buscándolas ahí dentro.
+function mcUsarPlantilla(id){
+  openReservaPractica();
+  aplicarPlantilla(id);
+}
+
 function renderModoClase(){
   const misPrestamos = _misPrestamosActivosModoClase();
   const misReservas = _misReservasProximasModoClase();
-  const misSolicitudes = typeof _misSolicitudesPendientes === 'function' ? _misSolicitudesPendientes() : [];
+  const misSolicitudes = typeof _misSolicitudesRecientes === 'function' ? _misSolicitudesRecientes() : [];
+  const misPlantillas = typeof getPlantillas === 'function' ? getPlantillas() : [];
 
   const prestamosHtml = misPrestamos.length
     ? misPrestamos.map(p => {
@@ -70,14 +79,28 @@ function renderModoClase(){
     : `<div class="mc-empty">Sin prácticas planificadas próximamente.</div>`;
 
   const solicitudesHtml = misSolicitudes.length
-    ? misSolicitudes.map(s => `<div class="mc-row">
-        <div class="mc-row-info"><strong>${escHtml(s.nombre)}</strong><span>🟡 Pendiente de respuesta</span></div>
-      </div>`).join('')
-    : `<div class="mc-empty">Sin solicitudes pendientes.</div>`;
+    ? misSolicitudes.map(s => {
+        const estadoTxt = (typeof SOLICITUD_ESTADO_LABEL !== 'undefined' && SOLICITUD_ESTADO_LABEL[s.estado]) || s.estado;
+        return `<div class="mc-row">
+          <div class="mc-row-info">
+            <strong>${escHtml(s.nombre)}</strong>
+            <span>${estadoTxt}${s.respuesta ? ' · '+escHtml(s.respuesta) : ''}</span>
+          </div>
+        </div>`;
+      }).join('')
+    : `<div class="mc-empty">Sin solicitudes recientes.</div>`;
+
+  const plantillasHtml = misPlantillas.length
+    ? `<div class="mc-plant-list">${misPlantillas.map(p => `<button type="button" class="mc-plant-chip" onclick="mcUsarPlantilla('${p.id}')" title="Preparar práctica con esta plantilla">📋 ${escHtml(p.nombre)} (${(p.lineas||[]).length})</button>`).join('')}</div>`
+    : `<div class="mc-empty">Sin plantillas guardadas — crea una desde "Preparar práctica".</div>`;
 
   const resumenEl = document.getElementById('mcResumen');
   if(!resumenEl) return;
   resumenEl.innerHTML = `
+    <div class="mc-card">
+      <div class="mc-card-title">📋 Tus plantillas de práctica</div>
+      ${plantillasHtml}
+    </div>
     <div class="mc-card">
       <div class="mc-card-title">⌛ Tus préstamos activos</div>
       ${prestamosHtml}
@@ -87,7 +110,7 @@ function renderModoClase(){
       ${reservasHtml}
     </div>
     <div class="mc-card">
-      <div class="mc-card-title">🧰 Tus solicitudes pendientes</div>
+      <div class="mc-card-title">🧰 Tus solicitudes</div>
       ${solicitudesHtml}
     </div>`;
 }

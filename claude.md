@@ -1,6 +1,19 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v630 | 27/08/2026 | Fix: aulas propias con nombre numérico
+**Estado:** v631 | 27/08/2026 | **Cinco mejoras de usabilidad para el
+profesorado** tras una revisión "puesto en el papel de profesor/a"
+(detalle en `docs/DEVELOPMENT.md` v631): guardar plantilla de práctica sin
+`prompt()` nativo (fila inline con validación); buscador de ítems por
+clic directo en "Añadir material" (mismo patrón que el picker de
+Baja/Eliminar) en vez de `<select>` largo; plantillas usables en un toque
+desde 🎒 Modo clase (`mcUsarPlantilla()`); solicitudes de material
+resueltas en los últimos 7 días visibles en Modo clase con la respuesta
+de jefatura (antes desaparecían al salir de "pendiente"); franja horaria
+de "Planificar práctica" como desplegable con opciones fijas + "Otra…",
+para que el chequeo de choque de reservas del backend compare franjas
+iguales de forma fiable. "Historial de cambios en modal de edición"
+resultó ya implementado de antes (`openHistorial()` en `modal-item.js`).
+Fix: aulas propias con nombre numérico
 ("Aula 35" con id distinto de `aulaN`, por duplicado creado a mano/CSV/
 restore) ya no quedan varadas al final del listado — el orden ahora se
 calcula en JS a partir del id o, si no matchea, de un número en el nombre
