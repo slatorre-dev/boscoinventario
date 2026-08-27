@@ -18,9 +18,15 @@ detalle del despliegue.
 
 - Login con usuario y contraseña, o con **Google (OAuth)**
 - Roles: **Consulta** (solo lectura), **Profesor/a** (préstamos y edición
-  básica), **Jefe/a de Departamento** (acceso completo a su departamento)
-- Gestión de usuarios: alta, baja, cambio de rol y asignación de módulos
-  desde la propia app
+  básica), **Jefe/a de Departamento** (acceso completo a su departamento),
+  **Superadmin** (ve y gestiona todos los departamentos del centro)
+- Bloqueo de cuenta tras 5 intentos fallidos de login, con panel de
+  administración para desbloquear y gestionar accesos
+- Gestión de usuarios: alta, baja, cambio de rol y asignación de aulas y
+  módulos/ciclos desde la propia app
+- Autoservicio: cada profesor/a elige sus propios módulos y aulas
+  ("📌 Mis Cursos/Aulas" en la barra superior) y, si su correo de Google no
+  trae uno asignado, su propio departamento
 - Perfil personal: cambiar nombre, email y contraseña
 - Historial de todas las acciones con fecha y usuario responsable
 
@@ -74,6 +80,21 @@ Selecciona varios ítems a la vez y aplica:
   Google Drive
 - Vista ampliada de foto con un toque
 
+### Cámara e identificación por IA
+
+Un único botón de cámara en Inicio cubre todo el escaneo:
+- Detección continua de **código QR** y **código de barras**
+- Identificación por **número de serie o foto del objeto** vía IA
+  (reconocimiento visual + OCR, con aprendizaje por departamento a partir
+  de las correcciones reales de los usuarios)
+- Tras identificar el ítem por cualquiera de las vías: panel de acciones
+  rápido para **préstamo/devolución** ("Me lo llevo" / "Devolver") sin
+  pasar por el formulario completo
+- **Alta masiva** desde una sola foto de una mesa con varios objetos
+- **Revisar aula**: recorre una aula foto a foto confirmando o corrigiendo
+  la ubicación de cada ítem
+- Tour guiado la primera vez tras iniciar sesión + ayuda permanente
+
 ### Agente Volt — IA por chat y voz
 
 Botón flotante que abre un panel de chat para gestionar el inventario en
@@ -82,6 +103,27 @@ devoluciones, consultar o actualizar stock, marcar mantenimiento, resúmenes
 por aula, escanear QR y dictado por voz. Aprende de las correcciones del
 usuario. Detalle técnico completo en
 [docs/BACKEND_APRENDIZAJE_INTENCIONES.md](docs/BACKEND_APRENDIZAJE_INTENCIONES.md).
+
+### Pedidos, solicitudes y planificación de prácticas
+
+- **🛒 Pedidos**: alta de pedidos de material con aviso por email a
+  jefatura y sincronización con la base de datos
+- **Solicitudes de material**: circuito independiente de Pedidos, para
+  peticiones puntuales de profesorado; jefatura cambia el estado y también
+  se avisa por email al crearse
+- **Planificación de prácticas**: reserva de material por ciclo/módulo,
+  fecha y franja horaria libre, con bloqueo si hay conflicto con otra
+  reserva y confirmación de recogida en un clic; plantillas de práctica
+  reutilizables para no repetir la misma reserva cada curso
+- **🎒 Modo clase**: vista móvil simplificada (botones grandes) pensada
+  para llevar al aula, con su propio resumen
+
+### Mantenimiento
+
+- Marcar ítems para mantenimiento (individual o en lote) con estados
+  (pendiente, en curso, resuelto…) y coste asociado
+- Listado de mantenimiento acotado a "tus aulas" para el profesorado en
+  Inicio, con enlace para ver todo el departamento
 
 ### Auditoría y calidad de datos
 
@@ -115,6 +157,16 @@ Gestionable desde la app sin tocar código:
 - **Ubicaciones sugeridas**: lista de sitios frecuentes (armarios,
   estanterías…)
 - **Profesores prestatarios**: gestión del directorio de prestatarios
+- **Aulas asignables por admin**: cualquier usuario o rol puede tener aulas
+  asignadas desde 🔐 Usuarios, igual que ya existía para módulos
+
+### Inicio personalizado
+
+Para el profesorado, Inicio muestra su propio grid de aulas y las
+tarjetas de Stock bajo/Mantenimiento acotadas a "tus aulas" (con enlace
+para ver todas). Jefatura de departamento y superadmin ven siempre todo el
+departamento. Con una sola aula propia elegida, atajos como "Inventariar
+aula" o "＋ Nuevo ítem" saltan directamente el selector de aula.
 
 ### Funciona sin conexión (PWA)
 
