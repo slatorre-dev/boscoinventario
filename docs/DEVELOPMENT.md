@@ -4384,4 +4384,128 @@ observación explicando que era una prueba).
 
 ---
 
-**Última actualización:** 27/08/2026 — v644 (asistente guiado de planificación de prácticas)
+### 27/08/2026 (v645) — fix de móvil encontrado al probar el wizard con Playwright
+
+Al verificar v643-v644 en un viewport de 390×844 (móvil real, no solo
+escritorio) aparecieron dos fallos del modo guiado recién construido:
+
+- **Desbordamiento horizontal del modal.** `.mf-right{display:flex;
+  gap:10px}` (`css/styles.css:1272`) no tiene `flex-wrap`, y con 3
+  botones simultáneos (Cancelar/Atrás/Siguiente o Cancelar/Atrás/
+  Guardar) en 390px de ancho el footer no cabía — `modal.scrollWidth`
+  336px vs `clientWidth` 334px, aparecía una barra de scroll horizontal
+  fea dentro del modal. Fix: `style="flex-wrap:wrap;justify-content:
+  flex-end"` inline en el `.mf-right` de `#mReservaPractica`
+  (`index.html`) — scoped a este modal, no se tocó la regla global
+  (otros modales con menos botones no lo necesitan, y no se auditaron
+  todos — ver Pendiente).
+- **"Guardar como plantilla" pulsable antes de tener material.** El
+  botón vivía fuera de los `data-restep`, visible en cualquier paso;
+  pulsarlo en el paso 1-3 disparaba el toast de error "Añade al menos
+  un ítem". Fix: se oculta en `_renderReservaWizard()`
+  (`js/reservas-practica.js`) cuando `_reservaWizardStep < 4`.
+
+**Lección:** el bug de desbordamiento no se veía en el desktop donde se
+construyó e implementó — solo apareció al forzar un viewport estrecho
+de verdad con Playwright. Motivó la auditoría de más abajo (¿cuántos de
+los otros 48 modales tienen el mismo problema sin detectar?).
+
+**Verificación:** `node --check` limpio, redeploy a producción,
+confirmado sin overflow (`scrollWidth === clientWidth`) en el mismo
+viewport tras el fix.
+
+---
+
+### 27/08/2026 — Auditoría de código, diseño y usabilidad (a petición del usuario)
+
+El usuario pidió, tras cerrar el asistente de prácticas: *"piensa como
+programador, diseñador y profesor"* y propón mejoras — **sin
+implementar nada todavía**, solo diagnóstico para retomar en la
+siguiente sesión ("guárdalo para mañana"). Metodología: lectura de
+código (Grep/wc por todo `js/`+`functions/api/`+`css/`) + sesión real
+en producción con Playwright (escritorio como `Seba` y móvil 390×844 —
+**no se probó con una cuenta `profesor` real**: dos intentos de login
+con `profe1electricidadelectronica/profe1electricidadelectronica`
+fallaron con "Credenciales incorrectas" — no se insistió por riesgo de
+disparar el bloqueo de cuenta a los 5 intentos sobre una credencial que
+podría ya estar en uso real; **queda sin verificar si esa cuenta de
+ejemplo del propio `CLAUDE.md` sigue siendo válida** — comprobarlo es
+en sí mismo un primer paso útil de la próxima sesión). Dos bugs reales
+salieron de esta pasada y ya están corregidos (ver entrada v645
+arriba).
+
+**Código / arquitectura:**
+- **Cero automatización de pruebas en todo el repo** — sin
+  `package.json`, sin lint/prettier, sin ningún test (`find` no
+  encontró ni un `.test.js`). Todo el QA es manual contra producción.
+  A esta escala (18.4k líneas JS + 4.6k backend) ya se nota: el bug de
+  v645 no se detectó hasta buscarlo activamente. Propuesta barata: unos
+  pocos tests Playwright de los flujos críticos (login, préstamo,
+  planificar práctica, alta de ítem), no una suite completa.
+- **Archivos gigantes en scope global** (sin módulos):
+  `js/agente-widget.js` 4383 líneas, `js/modal-item.js` 1900,
+  `js/inventory.js` 1818, `js/prestamos.js` 1372. Cloudflare Pages
+  Functions ya soporta `import`/`export` de ES modules entre archivos
+  de `functions/api/` — no se ha comprobado si el frontend podría
+  usar `<script type="module">` para partir los más grandes sin montar
+  un bundler.
+- **`GENERIC_DEPT = 'iesjuanbosco'` duplicado literal en 6 archivos**
+  backend (`docs.js:205`, `historial.js:9`, `item.js:5`, `list.js:27`,
+  `meta.js:121`, `prestar.js:9`) + `HEADERS_INV` en 2
+  (`item.js`/`list.js`) — ya documentado como deuda conocida, sigue
+  creciendo con cada archivo nuevo que lo necesita.
+- **Seguridad** — reitera lo ya crítico en `docs/SECURITY.md`
+  (credenciales en `?u=&p=`, permisos solo revalidados en frontend) +
+  dos hallazgos nuevos: `auth.js:216` hace `console.log('Google
+  Sign-In response:', response)` con la respuesta OAuth completa (sin
+  confirmar si lleva algo sensible); `agente-widget.js:1027,1037`
+  tienen `console.log('[Volt DEBUG] ...')` de depuración olvidados en
+  producción.
+- 369 `onclick=` + 520 `style=` inline en `index.html` — cierra la
+  puerta a una CSP real, encarece cualquier refactor de estilos.
+
+**Diseño / estética:**
+- **Volt no respeta el tema claro/oscuro de la app.** `agente-widget.js`
+  tiene 36 colores hex hardcodeados y **cero** usos de `var(--...)` —
+  la app por defecto es clara (`:root` claro, `body.dark` la oscurece,
+  `css/styles.css:18`), Volt siempre oscuro. Confirmado visualmente en
+  captura móvil (fondo blanco de la app vs panel de Volt negro). Más
+  visible ahora que aloja el asistente de prácticas.
+- **Accesibilidad débil**: solo 11 atributos `aria-*` en 2351 líneas de
+  `index.html` con 49 modales y decenas de botones solo-icono sin
+  `aria-label`.
+- **49 modales (`.mbg`) sin patrón compartido** — cada `.mf-right` es
+  un caso aparte; el fix de v645 fue scoped a un solo modal, **no se
+  auditaron los otros 48** por el mismo problema de desbordamiento en
+  móvil.
+- **FAB de Volt: umbral de arrastre de 3px demasiado sensible al
+  tacto** (`agente-widget.js:470`, función `makeFabDraggable`/`onMove`)
+  — descubierto porque el primer clic real de Playwright no abrió el
+  panel (se interpretó como arrastre). En dedo, 3px se supera con
+  facilidad sin intención de arrastrar.
+
+**Usabilidad para profesorado:**
+- **El panel "🔔 Requiere tu atención" (v641-642) no incluye reservas
+  de práctica de hoy pendientes de "Confirmar recogida"** — comprobado
+  en `js/home.js`, `reservas` no aparece en `checkAtencionHoy()`. Encaja
+  como quinta señal con el mismo patrón ya construido.
+- Tour guiado de 11 pasos en el primer login — fricción real para
+  quien tiene 2 minutos antes de clase.
+- Pestañas "Auditoría"/"CSV" de Volt visibles para cualquier rol
+  (incluida `Consulta`, solo lectura) — no hay `data-perm`/`can()`
+  detrás en `roles.js`, son funciones de jefatura/superadmin mostradas
+  a todo el mundo.
+- Asistente de prácticas por chat: solo admite un ítem por mensaje (no
+  parsea "2 multímetros y 3 polímetros" de un tirón); no pregunta aula
+  (trade-off consciente para no alargar la conversación, a revisar si
+  el uso real lo echa en falta).
+
+**Estado:** solo diagnóstico, nada implementado — decisión explícita
+del usuario ("guárdalo para mañana"). Retomar priorizando (por impacto):
+1) credenciales en query string, 2) tests E2E mínimos de los flujos
+críticos, 3) Volt heredando el tema de la app (autocontenido, impacto
+visual inmediato, sin tocar backend).
+
+---
+
+**Última actualización:** 27/08/2026 — v645 (fix móvil del modo guiado + auditoría código/diseño/usabilidad pendiente de implementar)
