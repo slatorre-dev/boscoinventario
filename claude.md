@@ -1,6 +1,14 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v639 | 27/08/2026 | El chip de usuario seguía cayendo a una
+**Estado:** v640 | 27/08/2026 | En Inicio (`>1200px`), el buscador y su
+texto dejan de estar centrados a `max-width:620px` y pasan a pegarse al
+borde izquierdo de su columna (`css/styles.css`, `.gsearch-wrap`/
+`.gsearch-extra-btns`/`.camara-hint` sin `margin auto`) — libera ancho
+para que "Acciones rápidas" pase de 2 a 4 columnas
+(`.home-quick-grid`) y el panel crezca (`.home-hero-shell` de
+`1.45fr/.95fr` a `1fr/1.6fr`, `max-width` 1240→1520px), así se ve todo
+sin scroll en escritorio ancho. Por debajo de 1200px vuelve al layout
+centrado/2 columnas de siempre (mismo umbral que v639). v639 | 27/08/2026 | El chip de usuario seguía cayendo a una
 segunda fila del topbar en escritorio ancho pese a v638 — `.brand-wrap`
 pasa a layout en columna (`css/styles.css`): nombre arriba, y debajo
 (`.brand-meta`, nueva clase) el badge de departamento, versión, 🌙 tema y

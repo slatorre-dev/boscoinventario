@@ -349,7 +349,7 @@ body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 
 /* HOME */
 .home-hero{padding:34px 24px 28px;background:radial-gradient(circle at top left,rgba(255,255,255,.9),transparent 35%),linear-gradient(135deg,#eaf4ff 0%,#eef6ff 32%,#f7f4ff 100%);border-bottom:1px solid var(--border)}
-.home-hero-shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.95fr);gap:22px;align-items:stretch}
+.home-hero-shell{max-width:1520px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(600px,1.6fr);gap:26px;align-items:stretch}
 .home-hero-main{text-align:left;padding:6px 0}
 .home-hero-kicker{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid rgba(37,99,235,.12);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);box-shadow:0 4px 18px rgba(37,99,235,.08);margin-bottom:14px}
 .home-hero h1{font-size:38px;font-weight:900;letter-spacing:-1px;line-height:1.05;margin-bottom:10px;max-width:12ch;background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 55%,#4f46e5 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -364,7 +364,7 @@ body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 .home-quick-head{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;padding-bottom:12px;text-align:left;border-bottom:1px solid rgba(15,23,42,.08)}
 .home-quick-kicker{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .home-quick-head strong{font-size:18px;letter-spacing:-.3px;color:var(--text)}
-.home-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.home-quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .home-quick-btn{display:flex;align-items:flex-start;gap:10px;width:100%;min-width:0;padding:14px 12px;border-radius:16px;border:1px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;text-align:left;text-decoration:none;box-shadow:0 4px 14px rgba(15,23,42,.05);transition:transform .18s,box-shadow .18s,border-color .18s,background .18s;position:relative;overflow:hidden;isolation:isolate}
 .home-quick-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.36),transparent 55%);opacity:.65;pointer-events:none}
 .home-quick-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(15,23,42,.12)}
@@ -391,6 +391,14 @@ body.dark .theme-toggle-btn .theme-icon-dark{display:inline}
 .home-quick-btn.rose{border-color:rgba(225,29,72,.22);background:linear-gradient(135deg,#fff1f2,#ffffff);color:#9f1239}
 .home-quick-btn.rose .home-quick-ico{background:linear-gradient(135deg,#fb7185,#e11d48);color:#fff}
 .home-quick-btn[style*="display:none"]{display:none!important}
+
+/* Por debajo de 1200px no cabe cómodo el buscador desplazado a la
+   izquierda + 4 columnas de acciones rápidas (mismo umbral que el
+   topbar, ver v639) — vuelve al layout centrado de 2 columnas. */
+@media (max-width:1200px){
+  .home-hero-shell{max-width:1240px;grid-template-columns:minmax(0,1.45fr) minmax(320px,.95fr);gap:22px}
+  .home-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 
 @media (max-width: 1024px){
   .home-quick-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
@@ -1381,7 +1389,7 @@ textarea.fi-w{resize:vertical;min-height:60px}
 @keyframes ti{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
 
 /* GLOBAL SEARCH */
-.gsearch-wrap{position:relative;max-width:620px;margin:26px auto 0;box-shadow:0 4px 20px rgba(37,99,235,.12);border-radius:18px}
+.gsearch-wrap{position:relative;max-width:620px;margin:26px 0 0;box-shadow:0 4px 20px rgba(37,99,235,.12);border-radius:18px}
 .gsearch-wrap:focus-within{box-shadow:0 0 0 5px #2563eb14,0 8px 24px rgba(37,99,235,.16)}
 .gsearch{width:100%;background:var(--white);border:2px solid var(--border);border-radius:18px;padding:14px 18px 14px 52px;font-family:var(--font);font-size:16px;color:var(--text);outline:none;transition:border-color .25s,box-shadow .25s;box-shadow:inset 0 1px 2px rgba(0,0,0,.02)}
 .gsearch:focus{border-color:var(--accent);box-shadow:inset 0 1px 2px rgba(0,0,0,.02),0 0 0 4px #2563eb1a}
@@ -1389,11 +1397,17 @@ textarea.fi-w{resize:vertical;min-height:60px}
 .gsearch-ico{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none;line-height:1}
 .gsearch-clear{position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:17px;padding:4px 8px;border-radius:8px;display:none;transition:all .15s}
 .gsearch-clear:hover{background:var(--surface2);color:var(--text)}
-.gsearch-extra-btns{display:flex;justify-content:center;gap:10px;margin:10px auto 0;max-width:620px;flex-wrap:wrap}
+.gsearch-extra-btns{display:flex;justify-content:flex-start;gap:10px;margin:10px 0 0;max-width:620px;flex-wrap:wrap}
 .gsearch-extra-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:2px solid var(--accent);color:var(--accent);cursor:pointer;padding:8px 16px;border-radius:10px;font-family:var(--font);font-size:13px;font-weight:600;transition:all .2s}
 .gsearch-extra-btn:hover{background:var(--accent);color:var(--white);border-color:var(--accent)}
 .gsearch-extra-btn svg{width:18px;height:18px;display:block}
-.camara-hint{margin:10px auto 0;max-width:620px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid #bfdbfe;color:#1e3a8a;border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.camara-hint{margin:10px 0 0;max-width:620px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid #bfdbfe;color:#1e3a8a;border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+
+@media (max-width:1200px){
+  .gsearch-wrap{margin:26px auto 0}
+  .gsearch-extra-btns{justify-content:center;margin:10px auto 0}
+  .camara-hint{margin:10px auto 0}
+}
 .camera-options{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center}
 .camera-options label{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .camera-help-tip{cursor:help;text-decoration:underline dotted;text-underline-offset:2px}
