@@ -231,6 +231,7 @@ sigue estas reglas de estilo para no gastar tokens de más:
 - **D1 backup:** `npx wrangler d1 export boscoinventario --remote --output backup_FECHA.sql`
 - **Cuenta Cloudflare:** el D1 `boscoinventario` vive en la cuenta de `slatorre@iesjuanbosco.es`. Si `wrangler` da error de autenticación de cuenta al ejecutar comandos D1, borrar `.wrangler/cache/wrangler-account.json` (cachea la cuenta de una sesión anterior) y reintentar.
 - **⚠️ Repo dentro de Google Drive** ("Mi unidad"): Drive puede reinyectar archivos `desktop.ini` dentro de `.git/` (incluido `.git/refs/`), rompiendo `git fetch`/`push` con errores tipo "bad object". Si pasa: `find .git -iname "desktop.ini" -type f -delete` y reintentar. Ideal a medio plazo: excluir `.git` de la sincronización de Drive, o mover el repo fuera de la carpeta sincronizada.
+- **Este archivo está trackeado en git como `claude.md` (minúsculas)**, aunque se edite/mencione como `CLAUDE.md`. En este filesystem (Windows, insensible a mayúsculas) `git add CLAUDE.md` a veces no detecta el cambio y lo deja fuera del commit sin avisar — comprobar siempre `git status` después de un commit que debía incluirlo, y si falta, `git add claude.md` (minúsculas) a parte.
 - **Disco `C:` puede llenarse** (pasó una vez en esta sesión, bloqueó todas las escrituras de archivo con `ENOSPC`): comprobar espacio libre si las ediciones empiezan a fallar sin motivo aparente.
 
 ---
