@@ -572,6 +572,7 @@ async function loadData(){
     if(typeof updatePedBadge === 'function') updatePedBadge();
     if(typeof updateSolBadge === 'function') updateSolBadge();
     itemsLoaded = true;
+    if(typeof checkAtencionHoy === 'function') checkAtencionHoy();
     if(typeof updatePresVencBadge === 'function') updatePresVencBadge();
     if(typeof getVencidosParaUsuario==='function'&&typeof toast==='function'){
       const venc=getVencidosParaUsuario();

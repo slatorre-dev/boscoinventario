@@ -28,17 +28,17 @@ function _showAccionesRapidasTourIfNarrow(){
   showPointerTourOnce('accionesRapidasTour', steps);
 }
 
-// Panel "Requiere tu atención" — solo jefe/a departamento y superadmin
+// Modal "Requiere tu atención" — solo jefe/a departamento y superadmin
 // (mismo permiso config.manage que ya gatea Aulas/Categorías/Ciclos y
 // Accesos). Agrupa 4 señales que ya existen dispersas en otras vistas
 // (Pedidos+Solicitudes, Mantenimiento, Préstamos vencidos, Accesos) para
 // que no haga falta visitarlas una a una para saber si hay algo pendiente.
-// 3 de las 4 señales ya viven en memoria desde loadData() (pedidos,
-// solicitudes, items, prestamos) — solo Accesos pide datos nuevos, una
-// sola vez por sesión de página (cacheados en _atencionAccesosCache).
-let _atencionAccesosCache = null;
-let _atencionAccesosLoading = false;
-
+// Se abre sola una vez por sesión de navegador (sessionStorage, se olvida
+// al cerrar la pestaña/navegador) — la llama loadData() (js/auth.js) en
+// cuanto terminan de cargar items/pedidos/solicitudes/prestamos, no
+// renderHome() (que se dispara antes, vía goHome(), con esos datos aún
+// vacíos). Cerrarla (✕, clic fuera, o clic en un chip) no vuelve a
+// abrirla en lo que dure esa sesión, aunque se vuelva a Inicio.
 function _atencionAgrupar(lista, getDept){
   const porDepto = {};
   for(const x of lista){
@@ -67,30 +67,23 @@ function _atencionChip(icon, count, porDepto, label, onclick, cls){
     }
   }
   return `<div class="atencion-item">
-    <div class="scard-compact ${cls}" onclick="${onclick}" title="${escHtml(label)}: ${count}"><span class="icon">${icon}</span><span class="num">${count}</span><span class="lbl">${escHtml(label)}</span></div>
+    <div class="scard-compact ${cls}" onclick="closeAtencionHoyModal();${onclick}" title="${escHtml(label)}: ${count}"><span class="icon">${icon}</span><span class="num">${count}</span><span class="lbl">${escHtml(label)}</span></div>
     ${detalle}
   </div>`;
 }
 
-async function _cargarAtencionAccesos(){
-  if(_atencionAccesosLoading || _atencionAccesosCache) return;
-  _atencionAccesosLoading = true;
-  try{
-    const res = await apiPost({action:'getUsers'});
-    const usuarios = (res && res.ok && Array.isArray(res.usuarios)) ? res.usuarios : [];
-    const relevantes = usuarios.filter(u => u.bloqueado || u.password_temporal);
-    _atencionAccesosCache = { count: relevantes.length, porDepto: _atencionAgrupar(relevantes, u=>u.departamento) };
-  } catch(e){
-    _atencionAccesosCache = { count: 0, porDepto: {} };
-  }
-  _atencionAccesosLoading = false;
-  renderAtencionHoy();
+function closeAtencionHoyModal(){
+  sessionStorage.setItem('atencion_hoy_cerrado', '1');
+  const modal = document.getElementById('mAtencionHoy');
+  if(modal) modal.classList.remove('open');
 }
 
-function renderAtencionHoy(){
-  const box = document.getElementById('homeAtencion');
-  if(!box) return;
-  if(typeof can !== 'function' || !can('config.manage')){ box.style.display='none'; box.innerHTML=''; return; }
+// Llamada una sola vez por loadData() (js/auth.js, fase 2, justo tras
+// itemsLoaded=true) — espera a las 4 señales, incluida Accesos (única que
+// pide datos nuevos), antes de decidir si hay algo que mostrar.
+async function checkAtencionHoy(){
+  if(typeof can !== 'function' || !can('config.manage')) return;
+  if(sessionStorage.getItem('atencion_hoy_cerrado') === '1') return;
 
   const isSuperAdmin = typeof userRole === 'function' && userRole() === 'superadmin';
   const deptOfItem = id => items.find(x => String(x.id) === String(id))?.departamento || '';
@@ -108,28 +101,39 @@ function renderAtencionHoy(){
   const vencLista = typeof getVencidos === 'function' ? getVencidos() : [];
   const vencPorDepto = isSuperAdmin ? _atencionAgrupar(vencLista, p => deptOfItem(p.itemId)) : null;
 
+  let accesos = { count: 0, porDepto: {} };
+  try{
+    const res = await apiPost({action:'getUsers'});
+    const usuarios = (res && res.ok && Array.isArray(res.usuarios)) ? res.usuarios : [];
+    const relevantes = usuarios.filter(u => u.bloqueado || u.password_temporal);
+    accesos = { count: relevantes.length, porDepto: _atencionAgrupar(relevantes, u=>u.departamento) };
+  } catch(e){ /* sin accesos si falla la red — no bloquea el resto de señales */ }
+
+  // Puede haberse cerrado (u otra pestaña puede haberlo marcado) mientras
+  // esperábamos la respuesta de Accesos.
+  if(sessionStorage.getItem('atencion_hoy_cerrado') === '1') return;
+
   const chips = [
     _atencionChip('📦', stockCount, stockPorDepto, 'Pedidos/Solicitudes', 'openStockChoiceModal()', 'warn'),
     _atencionChip('🛠️', mantLista.length, mantPorDepto, 'Mantenimiento', 'goMaintenance()', 'warn'),
     _atencionChip('🔴', vencLista.length, vencPorDepto, 'Préstamos vencidos', "goPrestamos('activos')", 'alert'),
+    _atencionChip('🔒', accesos.count, isSuperAdmin ? accesos.porDepto : null, 'Accesos', 'openAccesosModal()', 'alert'),
   ];
-  if(_atencionAccesosCache){
-    chips.push(_atencionChip('🔒', _atencionAccesosCache.count, isSuperAdmin ? _atencionAccesosCache.porDepto : null, 'Accesos', 'openAccesosModal()', 'alert'));
-  } else if(!_atencionAccesosLoading){
-    _cargarAtencionAccesos();
-  }
 
   const html = chips.filter(Boolean).join('');
-  if(!html){ box.style.display='none'; box.innerHTML=''; return; }
-  box.style.display='';
-  box.innerHTML = `<div class="sec-label">🔔 Requiere tu atención</div><div class="atencion-strip">${html}</div>`;
+  if(!html) return; // nada pendiente: no molestar con un modal vacío
+
+  const body = document.getElementById('atencionHoyBody');
+  const modal = document.getElementById('mAtencionHoy');
+  if(!body || !modal) return;
+  body.innerHTML = `<div class="atencion-strip">${html}</div>`;
+  modal.classList.add('open');
 }
 
 function renderHome(){
   // Banner de préstamos
   renderLoanBanner();
   renderFavoritos();
-  renderAtencionHoy();
 
   const loading = !itemsLoaded;
   const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';

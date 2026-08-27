@@ -418,7 +418,6 @@
   </div>
   <div class="home-body">
     <div id="loanBanner"></div>
-    <div id="homeAtencion" style="display:none"></div>
     <div class="stats-strip" id="hStats"></div>
     <div class="sec-label" id="secFavoritos" style="display:none">⭐ Fijados</div>
     <div class="fav-strip" id="gFavoritos"></div>
@@ -1242,6 +1241,16 @@
         <span style="font-size:18px;margin-right:8px">🧰</span>Pedir algo nuevo<span class="pedido-badge" id="solBadge" style="display:none">0</span><br><small style="font-size:11px;color:var(--muted);font-weight:400">Aunque todavía no exista en el inventario</small>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL "REQUIERE TU ATENCIÓN" — jefe/a departamento y superadmin, se
+     abre solo una vez por sesión de navegador al entrar en Inicio si hay
+     algo pendiente (js/home.js:checkAtencionHoy) -->
+<div class="mbg" id="mAtencionHoy" onclick="if(event.target===this)closeAtencionHoyModal()">
+  <div class="modal" style="max-width:460px">
+    <div class="mh"><div class="mt">🔔 Requiere tu atención</div><button class="mx" onclick="closeAtencionHoyModal()">✕</button></div>
+    <div id="atencionHoyBody"></div>
   </div>
 </div>
 
