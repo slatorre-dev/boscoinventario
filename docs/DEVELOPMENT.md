@@ -4292,4 +4292,96 @@ manualmente que el comportamiento final era el esperado.
 
 ---
 
-**Última actualización:** 27/08/2026 — v634 (recorrido guiado "Acciones rápidas")
+### 27/08/2026 (v643-v644) — Asistente guiado para planificar prácticas
+
+Pedido del usuario: el modal "📅 Planificar práctica" (v588,
+`js/reservas-practica.js`) ya reserva material para una sesión futura,
+pero es un formulario de una sola pantalla — quería una guía que fuera
+preguntando material/fecha/profesor uno a uno, disponible tanto desde
+el propio modal como hablando con Volt. Brainstorming clasificó la
+tarea como *bounded* (el flujo de reservas ya existe, esto añade una
+capa de presentación encima) — sin tocar backend: reutiliza
+`reservaCrear`/`reservaConfirmar` (`functions/api/prestar.js`, v588)
+tal cual.
+
+**1) Modo guiado en el modal** (`js/reservas-practica.js`,
+`index.html`) — botón "🧑‍🏫 Modo guiado" que envuelve los campos ya
+existentes en 5 pasos (`data-restep="1..5"` en el HTML: Ciclo/Aula →
+Fecha/Franja → Profesor/a → Material → Resumen) con Atrás/Siguiente y
+validación por paso (`_reservaWizardValidar()`). Es una capa de
+`display:none` por paso sobre el mismo DOM/estado de siempre
+(`_reservaLineas`, mismos `<select>`) — `guardarReservaPractica()` no
+cambió. `_renderReservaLineas()`/`_renderPlantillasList()` ahora
+también ocultan su contenido si el paso actual no es el suyo (antes
+solo dependían de si había datos). Aplicar una plantilla o duplicar una
+reserva ya existente salta directo al paso 5 (resumen), porque esos dos
+flujos ya rellenan todos los campos de golpe. El modo (activado/no) se
+recuerda por usuario en `localStorage`.
+
+**2) Asistente conversacional en Volt** (`js/agente-widget.js`) — a
+diferencia del resto de acciones de Volt (un solo turno + mini-
+formulario inline dentro de la burbuja, ver `mostrarFormularioPrestamo`
+v388), esto es una conversación real de varios turnos: mientras
+`_practicaFlow` no es `null`, el principio de `sendChat()` enruta TODO
+lo que se escriba directamente al paso activo (`_procesarPasoFlujoPractica`),
+antes de que cualquier otro detector de intención pueda malinterpretar
+una respuesta corta como "el jueves" o un nombre de ítem a medio flujo.
+Pasos: material (busca con `searchInventoryCandidates()` ya existente,
+detecta cantidad con `extraerCantidadDeFrase()`, "listo" para
+continuar) → fecha (reutiliza `extraerFechaDevolucion()`, que ya
+entendía "mañana"/"el jueves"/etc. desde v388, sin parser nuevo) →
+franja (chips con las mismas 8 opciones fijas del modal) → profesor/a
+(se salta preguntando si el nombre de sesión coincide con alguien de
+`loanTeacherOptions()`, si no se pregunta y se acepta también texto
+libre sin exigir que exista en la lista — el backend nunca validó ese
+campo). Resumen final con botones Confirmar/Cancelar: al confirmar
+siempre llama a `reservaCrear`; si la fecha resuelta es la de hoy,
+encadena automáticamente `reservaConfirmar` (reserva + préstamo real en
+un solo paso, sin lógica de descuento nueva — son las dos acciones ya
+existentes, una detrás de otra). Ciclo/módulo se autorrellena igual que
+el modal (una sola combinación propia → se usa sin preguntar); aula
+queda deliberadamente sin preguntar en el chat (campo opcional, no
+afecta al bloqueo de conflictos) para no alargar la conversación —
+simplificación consciente frente al modal, que sí la pide.
+
+**Bug real encontrado y corregido en producción (v643→v644):**
+`normalizarEntradaUsuario()` convierte números en palabras a dígitos
+("una" → "1", `textToNumber()`, v388) — la primera versión de
+`detectarIntencionPlanificarPractica()` buscaba frases literales como
+"planificar una practica", que dejaban de matchear en cuanto
+`normalizarEntradaUsuario` transformaba "una" → "1" a mitad de frase.
+"quiero planificar una práctica" funcionaba de casualidad (matcheaba
+por el patrón suelto "quiero planificar"), pero "planificar una
+práctica" sin ese prefijo cayó al parser central en vez de arrancar el
+flujo. Corregido pasando a detección por regex de verbo+sustantivo
+sueltos (`/\b(planificar|programar|preparar|organizar)\b/` +
+`/\b(practica|clase)\b/`, ambos en cualquier posición) en vez de frases
+completas — inmune a esa sustitución. Lección: cualquier detector de
+intención nuevo en Volt debe probarse contra el texto ya pasado por
+`normalizarEntradaUsuario()`, no contra la frase tal cual la escribe el
+usuario.
+
+**Disambiguación con el préstamo inmediato ya existente:** la palabra
+"reservar" ya disparaba `detectarIntencionPrestamo()` (v322). El nuevo
+flujo solo se activa con verbos explícitos de planificación, o con
+"reservar"/"necesito" + "material"/"clase" cuando además hay una
+referencia de fecha detectable — así "reservar el multímetro" (sin
+fecha) sigue yendo al préstamo de siempre. Verificado en producción con
+Playwright: dispara correctamente en ambos casos y no cruza en
+ninguno.
+
+**Verificación:** `node --check` sin errores en los 2 JS tocados.
+Playwright contra producción (`boscoinventario.pages.dev`, usuario
+`Seba`) en ambas iteraciones — sin atajos: wizard del modal completo
+(validación por paso, plantilla salta a resumen, guardado real vía
+`reservaCrear`), flujo de Volt completo con fecha "hoy" (búsqueda
+ambigua → resolución por candidatos → `reservaCrear`+`reservaConfirmar`
+encadenados → préstamo real con stock descontado), cancelar a medio
+flujo, y la disambiguación con "reservar el multímetro". Datos de
+prueba limpiados tras verificar (`reservaCancelar` en la reserva de
+prueba del wizard; `devolver` en el préstamo real creado por Volt, con
+observación explicando que era una prueba).
+
+---
+
+**Última actualización:** 27/08/2026 — v644 (asistente guiado de planificación de prácticas)
