@@ -1,6 +1,15 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v642 | 27/08/2026 | Modal "🔔 Requiere tu atención" para
+**Estado:** v644 | 27/08/2026 | Asistente guiado para planificar
+prácticas: modo paso a paso ("🧑‍🏫 Modo guiado") dentro del modal
+"📅 Planificar práctica" ya existente (v588), y un flujo conversacional
+nuevo en Volt (`js/agente-widget.js`) que pregunta material/fecha/
+franja/profesor uno a uno y al confirmar llama a `reservaCrear` —
+encadenando `reservaConfirmar` automáticamente si la fecha es hoy
+(reserva + préstamo real en un solo paso). Sin backend nuevo, reutiliza
+las acciones de v588. Detalle completo, incluido un bug real de
+detección de intención corregido en producción, en
+`docs/DEVELOPMENT.md` v643-v644. Modal "🔔 Requiere tu atención" para
 jefe/a departamento y superadmin (`can('config.manage')`): agrupa
 Pedidos/Solicitudes, Mantenimiento, Préstamos vencidos y Accesos
 bloqueados/contraseña temporal — señales que ya existían dispersas en
