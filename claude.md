@@ -1,6 +1,10 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v636 | 27/08/2026 | Migraciones `0035`+`0036`: 4 departamentos
+**Estado:** v637 | 27/08/2026 | Migración `0037`: un ítem representativo +
+categoría "Material de oficina" por departamento administrativo, para que
+aparezcan en la rejilla de aulas de Inicio (`js/home.js` solo muestra
+aulas con ≥1 ítem). v636 | 27/08/2026 |
+Migraciones `0035`+`0036`: 4 departamentos
 administrativos nuevos (`direccion`, `secretaria`, `conserjeria`,
 `administracionoficina`), aislados entre sí igual que los 24 académicos —
 `administracionoficina` para no chocar con el departamento FP existente
