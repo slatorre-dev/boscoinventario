@@ -1,15 +1,20 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v644 | 27/08/2026 | Asistente guiado para planificar
+**Estado:** v645 | 27/08/2026 | Asistente guiado para planificar
 prácticas: modo paso a paso ("🧑‍🏫 Modo guiado") dentro del modal
 "📅 Planificar práctica" ya existente (v588), y un flujo conversacional
 nuevo en Volt (`js/agente-widget.js`) que pregunta material/fecha/
 franja/profesor uno a uno y al confirmar llama a `reservaCrear` —
 encadenando `reservaConfirmar` automáticamente si la fecha es hoy
 (reserva + préstamo real en un solo paso). Sin backend nuevo, reutiliza
-las acciones de v588. Detalle completo, incluido un bug real de
-detección de intención corregido en producción, en
-`docs/DEVELOPMENT.md` v643-v644. Modal "🔔 Requiere tu atención" para
+las acciones de v588. v645 corrigió un desbordamiento del modo guiado
+en móvil (390px) encontrado al probar con Playwright en viewport
+estrecho. Detalle completo, incluidos dos bugs reales corregidos en
+producción, en `docs/DEVELOPMENT.md` v643-v645. A continuación, sesión
+de auditoría de código/diseño/usabilidad a petición del usuario ("piensa
+como programador, diseñador y profesor") — **solo diagnóstico, nada
+implementado todavía**, ver Pendiente #21 y `docs/DEVELOPMENT.md`
+27/08/2026 para el detalle completo con archivo:línea. Modal "🔔 Requiere tu atención" para
 jefe/a departamento y superadmin (`can('config.manage')`): agrupa
 Pedidos/Solicitudes, Mantenimiento, Préstamos vencidos y Accesos
 bloqueados/contraseña temporal — señales que ya existían dispersas en
@@ -615,6 +620,25 @@ Workers AI, onboarding de cámara (v543-v557).
     sin acotar — inconsistencia menor, deliberada por ahora (acotar el
     destino tocaría el filtro central de `js/inventory.js`, compartido
     con más vistas).
+21. **Retomar la auditoría de código/diseño/usabilidad del 27/08/2026**
+    (detalle completo con archivo:línea en `docs/DEVELOPMENT.md`, misma
+    fecha) — nada implementado aún, el usuario pidió guardarlo para la
+    siguiente sesión. Prioridad sugerida: 1) credenciales en query
+    string (`?u=&p=`, ya crítico en `docs/SECURITY.md`); 2) cero tests
+    automatizados en todo el repo (18.4k líneas JS + 4.6k backend, todo
+    el QA es manual en producción); 3) Volt (`js/agente-widget.js`, 36
+    hex hardcodeados, 0 `var(--...)`) no hereda el tema claro/oscuro de
+    la app. Otros hallazgos menores ya localizados: umbral de arrastre
+    del FAB de Volt demasiado sensible en táctil (`agente-widget.js:470`);
+    panel "🔔 Requiere tu atención" sin señal de reservas de hoy sin
+    confirmar recogida (`js/home.js:checkAtencionHoy`); pestañas
+    Auditoría/CSV de Volt visibles para cualquier rol sin gating; los
+    otros 48 modales sin auditar por el mismo desbordamiento móvil que
+    v645 corrigió solo en el de prácticas. Primer paso útil antes de
+    nada: la sesión no pudo probar con una cuenta `profesor` real
+    (`profe1electricidadelectronica` dio "Credenciales incorrectas",
+    sin insistir por riesgo de bloqueo) — confirmar si esa credencial de
+    ejemplo del propio archivo sigue siendo válida.
 
 ---
 
