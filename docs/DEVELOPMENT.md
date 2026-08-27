@@ -4048,4 +4048,57 @@ pruebas, el repo sigue exactamente en el commit ya pusheado de v631.
 
 ---
 
-**Última actualización:** 17/05/2026 — Sesión 5 (v166)
+### 27/08/2026 (v631→v632): renombrar 🛒 Pedidos / 🧰 Solicitudes para no confundir al profesorado
+
+El usuario, revisando el README recién actualizado, señaló un problema
+real de UX: 🛒 Pedidos (pide más stock de un ítem **ya dado de alta**,
+requiere `itemId`) y 🧰 Solicitudes de material (pide algo que **no
+existe todavía** en inventario, texto libre, ver v628-v629) son dos
+flujos con datos y backend distintos por una razón válida, pero de cara
+al profesorado son dos botones para "quiero que me deis material" sin
+ninguna pista de cuál usar — sobre todo si el ítem existe pero tiene
+stock 0. Se valoraron dos soluciones: fusionar el punto de entrada (un
+único buscador que cree Pedido o Solicitud según si el ítem existe) o
+solo renombrar las etiquetas. El usuario eligió la segunda, más barata y
+sin tocar lógica ni migraciones — deja la fusión de entrada pendiente si
+el rename no basta (ver `docs/IDEAS.md`/pendientes).
+
+Cambiado **solo texto visible**, mismos IDs/funciones/endpoints/tablas:
+- 🛒 Pedidos → **"🛒 Reponer stock"**: botón de topbar (`#btnPed`,
+  `index.html`), título del modal `#mPedidos` (antes decía literalmente
+  "🛒 Solicitud de compra", que chocaba de frente con el nombre de la otra
+  función), `<title>` e `<h1>` del PDF/impresión (`printPedidos()` en
+  `js/modal-item.js`), mensaje de lista vacía, y los 3 botones por ítem en
+  `js/inventory.js` (menú ⋯ de tabla/tarjetas y botón de lista, antes
+  "🛒 Pedido" → ahora "🛒 Reponer", `title` a "Reponer stock").
+- 🧰 Solicitudes → **"🧰 Pedir algo nuevo"**: botón de topbar
+  (`#btnSolicitudes`), acceso rápido de Inicio (mantiene el subtítulo ya
+  existente "Aunque no exista en el inventario"), botón de 🎒 Modo clase, y
+  título del modal `#mSolicitudes`.
+- Sin tocar: nombres de función (`togglePedido`, `crearSolicitud`...),
+  endpoints, tablas D1, ni las cabeceras internas de la lista dentro del
+  modal de Solicitudes ("Mis solicitudes"/"Todas las solicitudes del
+  departamento") — esas solo se ven **después** de ya haber elegido el
+  modal correcto, no son el punto de la ambigüedad.
+
+Segundo ajuste, mismo hilo: el email de `solicitudCrear` (añadido en v629)
+solo llegaba a jefatura de departamento. Pedido explícito del usuario:
+también a quien hace la solicitud (`user.email`, copia de lo enviado) y
+siempre a `inventarioelec@iesjuanbosco.es` como buzón central — esa
+dirección ya era el `MAIL_FROM` por defecto de los tres módulos que mandan
+correo (`pedidos.js`, `prestar.js`, `solicitudes.js`), así que actuar
+también como destinatario fijo de supervisión es coherente con su rol
+existente de buzón centralizado, no una excepción nueva por departamento.
+Implementado con un `Set` para no duplicar envíos si alguna dirección
+coincide (`functions/api/solicitudes.js:solicitudCrear`). Sin cambios en
+`pedidoAdd` (`functions/api/pedidos.js`) — no se pidió esta vez, sigue
+notificando solo a jefatura.
+
+`sw.js` → `v632`. `node --check` sobre `solicitudes.js` sin errores. No
+verificado en navegador ni contra Gmail real esta sesión (necesita las
+credenciales OAuth de `env.GOOGLE_OAUTH_*`, no disponibles en local).
+
+---
+
+**Última actualización:** 27/08/2026 — v632 (rename Pedidos/Solicitudes +
+email a solicitante y buzón central)

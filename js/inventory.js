@@ -1004,7 +1004,7 @@ function rTable(data,mc){
               <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
               <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
               <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
-              <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
+              <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Reponer stock">🛒 Reponer</button>
               <button class="action-menu-item${isFavorito(x.id)?' activo':''}" onclick="event.stopPropagation();toggleFavorito(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Fijar en Inicio">⭐ ${isFavorito(x.id)?'Quitar de Inicio':'Fijar en Inicio'}</button>
               ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}
             </div>
@@ -1081,7 +1081,7 @@ function rCards(data,mc){
             <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
             <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
             <button class="action-menu-item" onclick="event.stopPropagation();openDocsModal(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Documentación">📌 Documentación</button>
-            <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Pedido">🛒 Pedido</button>
+            <button class="action-menu-item${isPedido(x.id)?' activo':''}" onclick="event.stopPropagation();togglePedido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Reponer stock">🛒 Reponer</button>
             <button class="action-menu-item${isFavorito(x.id)?' activo':''}" onclick="event.stopPropagation();toggleFavorito(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Fijar en Inicio">⭐ ${isFavorito(x.id)?'Quitar de Inicio':'Fijar en Inicio'}</button>
             ${ocultoBtnHtml(x).replace(/class="btn btn-sm"/g,'class="action-menu-item"').replace(/onclick="/g,'onclick="event.stopPropagation();').replace(/">/g,';document.getElementById("am-${x.id}").style.display="none">">')}
           </div>
@@ -1151,7 +1151,7 @@ function rList(data,mc){
         <div class="list-actions">
           <button class="list-action-btn" onclick="openModal(${x.id})" title="Editar">✏️</button>
           <button class="list-action-btn" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
-          <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Pedido">🛒</button>
+          <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Reponer stock">🛒</button>
           ${can('visibility.manage')?`<button class="list-action-btn" onclick="event.stopPropagation();toggleOcultoItem(${x.id})" title="${x.oculto==1?'Oculto al resto':'Ocultar al resto'}">${x.oculto==1?'🙈':'👁️'}</button>`:''}
           <button class="list-action-btn list-delete" onclick="openDelModal(${x.id})" title="Eliminar">🗑️</button>
         </div>

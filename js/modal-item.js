@@ -1524,7 +1524,7 @@ function renderPedidosList(){
   const ids = Object.keys(pedidos);
   const el = document.getElementById('pedList');
   if(!ids.length){
-    el.innerHTML=`<div class="ped-empty">🛒 No hay ítems en la lista de pedido.<br><span style="font-size:12px">Usa el botón 🛒 en cada ítem para añadirlos.</span></div>`;
+    el.innerHTML=`<div class="ped-empty">🛒 No hay ítems en la lista de reposición.<br><span style="font-size:12px">Usa el botón 🛒 en cada ítem para añadirlos.</span></div>`;
     return;
   }
   el.innerHTML = ids.map(id=>{
@@ -1602,7 +1602,7 @@ function printPedidos(){
     </tr>`;
   }).join('');
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-  <title>Solicitud de compra — ${fecha}</title>
+  <title>Reponer stock — ${fecha}</title>
   <style>
     body{font-family:Arial,sans-serif;padding:32px;color:#111;font-size:13px}
     h1{font-size:20px;margin-bottom:4px}
@@ -1613,7 +1613,7 @@ function printPedidos(){
     tr:nth-child(even) td{background:#f9fafb}
     .footer{margin-top:32px;font-size:11px;color:#999}
   </style></head><body>
-  <h1>🛒 Solicitud de compra</h1>
+  <h1>🛒 Reponer stock</h1>
   <div class="sub">IES Juan Bosco · Generado el ${fecha}</div>
   <table>
     <thead><tr><th>Ref.</th><th>Ítem</th><th>Aula</th><th>Stock actual</th><th>Cantidad a pedir</th><th>Nota</th></tr></thead>

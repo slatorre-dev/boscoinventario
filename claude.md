@@ -1,7 +1,15 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v631 | 27/08/2026 | **Cinco mejoras de usabilidad para el
-profesorado** tras una revisión "puesto en el papel de profesor/a"
+**Estado:** v632 | 27/08/2026 | Renombradas las etiquetas de 🛒 Pedidos →
+"Reponer stock" y 🧰 Solicitudes → "Pedir algo nuevo" (mismo backend y
+datos, solo texto en botones/títulos/impresión) — cerraba una ambigüedad
+real: el profesorado no tenía forma de saber cuál de los dos botones usar
+para pedir algo. El email de "Pedir algo nuevo" (`solicitudCrear`) ya no
+avisa solo a jefatura: también a quien hace la solicitud y siempre a
+`inventarioelec@iesjuanbosco.es` como buzón central (detalle en
+`docs/DEVELOPMENT.md` v632). **Cinco mejoras
+de usabilidad para el profesorado** tras una revisión "puesto en el papel
+de profesor/a"
 (detalle en `docs/DEVELOPMENT.md` v631): guardar plantilla de práctica sin
 `prompt()` nativo (fila inline con validación); buscador de ítems por
 clic directo en "Añadir material" (mismo patrón que el picker de

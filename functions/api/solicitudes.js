@@ -110,24 +110,28 @@ export async function onRequestPost({ request, env, data }) {
     const id = ins.meta?.last_row_id;
     await auditLog(env.DB, user, 'solicitudCrear', `Solicitud ${id}: ${nombre} (${cantidad})`);
 
-    // Notificación por email al jefe/a de departamento — silenciosa si falla
-    // o si no hay ninguno con email registrado, mismo criterio que pedidoAdd.
+    // Notificación por email: al jefe/a de departamento, a quien la solicita
+    // y al buzón central de inventario — silenciosa si falla, mismo patrón
+    // que pedidoAdd pero con más destinatarios (pedido explícito del usuario).
     const jefeRow = await env.DB.prepare(
       "SELECT email FROM usuarios WHERE departamento=? AND rol='jefe/a departamento' AND email!='' LIMIT 1"
     ).bind(dept).first();
-    if (jefeRow?.email) {
-      const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-        <h2>Nueva solicitud de material</h2>
-        <p>${escHtml(creadoPorNombre || 'Alguien')} ha solicitado material que no está en el inventario:</p>
-        <table style="border-collapse:collapse">
-          <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(nombre)}</td></tr>
-          <tr><td style="padding:6px;font-weight:bold">Cantidad aproximada:</td><td style="padding:6px">${cantidad}</td></tr>
-          ${nota ? `<tr><td style="padding:6px;font-weight:bold">Comentario:</td><td style="padding:6px">${escHtml(nota)}</td></tr>` : ''}
-        </table>
-        <p style="font-size:12px;color:#6b7280">Puedes aceptarla, marcarla como recibida o descartarla desde 🧰 Solicitudes en la app.</p>
-        <p style="font-size:12px;color:#6b7280">Inventario IES Juan Bosco</p>
-      </div>`;
-      await sendGmail(env, jefeRow.email, `Solicitud de material: ${nombre}`, html);
+    const destinatarios = new Set(['inventarioelec@iesjuanbosco.es']);
+    if (jefeRow?.email) destinatarios.add(jefeRow.email);
+    if (user?.email) destinatarios.add(user.email);
+    const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+      <h2>Nueva solicitud de material</h2>
+      <p>${escHtml(creadoPorNombre || 'Alguien')} ha solicitado material que no está en el inventario:</p>
+      <table style="border-collapse:collapse">
+        <tr><td style="padding:6px;font-weight:bold">Material:</td><td style="padding:6px">${escHtml(nombre)}</td></tr>
+        <tr><td style="padding:6px;font-weight:bold">Cantidad aproximada:</td><td style="padding:6px">${cantidad}</td></tr>
+        ${nota ? `<tr><td style="padding:6px;font-weight:bold">Comentario:</td><td style="padding:6px">${escHtml(nota)}</td></tr>` : ''}
+      </table>
+      <p style="font-size:12px;color:#6b7280">Puedes aceptarla, marcarla como recibida o descartarla desde 🧰 Pedir algo nuevo en la app.</p>
+      <p style="font-size:12px;color:#6b7280">Inventario IES Juan Bosco</p>
+    </div>`;
+    for (const to of destinatarios) {
+      await sendGmail(env, to, `Solicitud de material: ${nombre}`, html);
     }
 
     return Response.json({

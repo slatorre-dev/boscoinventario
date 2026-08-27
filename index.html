@@ -77,8 +77,8 @@
     <div class="topbar-btns" id="topbarBtns" onclick="closeMobMenu()">
       <button class="tbtn" id="btnN" style="display:none" onclick="openModal()">＋ Nuevo ítem</button>
       <button class="tbtn" id="btnPres" style="display:none;position:relative" onclick="goPrestamos()">⌛ Préstamos<span id="presVencBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:800;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px"></span></button>
-      <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 Pedidos<span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
-      <button class="tbtn" id="btnSolicitudes" data-perm="solicitudes.write" style="display:none;position:relative" onclick="openSolicitudesModal()">🧰 Solicitudes<span class="pedido-badge" id="solBadge" style="display:none">0</span></button>
+      <button class="tbtn" id="btnPed" style="display:none" onclick="openPedidos()">🛒 Reponer stock<span class="pedido-badge" id="pedBadge" style="display:none">0</span></button>
+      <button class="tbtn" id="btnSolicitudes" data-perm="solicitudes.write" style="display:none;position:relative" onclick="openSolicitudesModal()">🧰 Pedir algo nuevo<span class="pedido-badge" id="solBadge" style="display:none">0</span></button>
       <button class="tbtn" id="btnModoClase" data-perm="loans.write" style="display:none" onclick="goModoClase()">🎒 Modo clase</button>
       <button class="tbtn" id="btnE" style="display:none" onclick="openExportModal()">📥 Exportar</button>
       <button class="tbtn" id="btnImp" onclick="openImportModal()">📤 Importar</button>
@@ -404,7 +404,7 @@
             <button class="home-quick-btn amber" data-perm="loans.write" onclick="openPrestarPicker()"><span class="home-quick-ico">⌛</span><span><strong>Nuevo préstamo</strong><small>Prestar o devolver</small></span></button>
             <button class="home-quick-btn green" data-perm="loans.write" onclick="openReservaPractica()"><span class="home-quick-ico">📅</span><span><strong>Planificar práctica</strong><small>Reservar material</small></span></button>
             <button class="home-quick-btn violet" data-perm="loans.write" onclick="goModoClase()"><span class="home-quick-ico">🎒</span><span><strong>Modo clase</strong><small>Vista rápida para móvil</small></span></button>
-            <button class="home-quick-btn cyan" data-perm="solicitudes.write" onclick="openSolicitudesModal()"><span class="home-quick-ico">🧰</span><span><strong>Solicitar material</strong><small>Aunque no exista en el inventario</small></span></button>
+            <button class="home-quick-btn cyan" data-perm="solicitudes.write" onclick="openSolicitudesModal()"><span class="home-quick-ico">🧰</span><span><strong>Pedir algo nuevo</strong><small>Aunque no exista en el inventario</small></span></button>
             <button class="home-quick-btn red" data-perm="items.write" onclick="openDelModal()"><span class="home-quick-ico">🗑️</span><span><strong>Dar de baja</strong><small>Eliminar material</small></span></button>
             <a class="home-quick-btn cyan" href="javascript:void(0)" onclick="goDocsDpto()"><span class="home-quick-ico">📂</span><span><strong>Documentación</strong><small>Accesos del departamento</small></span></a>
             <button class="home-quick-btn amber-soft" onclick="goMaintenance()"><span class="home-quick-ico">🛠️</span><span><strong>Mantenimiento</strong><small>Revisiones pendientes</small></span></button>
@@ -551,7 +551,7 @@
       <button class="mc-btn mc-blue" onclick="openQrScanner()"><span class="mc-ico">📷</span><span>Escanear QR</span></button>
       <button class="mc-btn mc-green" onclick="openReservaPractica()"><span class="mc-ico">📅</span><span>Preparar práctica</span></button>
       <button class="mc-btn mc-amber" onclick="mcDevolverFoco()"><span class="mc-ico">📥</span><span>Devolver material</span></button>
-      <button class="mc-btn mc-violet" onclick="openSolicitudesModal()"><span class="mc-ico">🧰</span><span>Solicitar material</span></button>
+      <button class="mc-btn mc-violet" onclick="openSolicitudesModal()"><span class="mc-ico">🧰</span><span>Pedir algo nuevo</span></button>
     </div>
     <div class="sec-label" style="margin-top:22px">Tu resumen</div>
     <div id="mcResumen" class="mc-resumen"></div>
@@ -1831,7 +1831,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <!-- MODAL PEDIDOS -->
 <div class="mbg" id="mPedidos" onclick="if(event.target===this)closePedidos()">
   <div class="modal" style="max-width:540px">
-    <div class="mh"><div class="mt">🛒 Solicitud de compra</div><button class="mx" onclick="closePedidos()">✕</button></div>
+    <div class="mh"><div class="mt">🛒 Reponer stock</div><button class="mx" onclick="closePedidos()">✕</button></div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Marca ítems para pedir. Puedes ajustar la cantidad y añadir una nota antes de imprimir.</div>
     <div class="feature-hint" id="hintPedidos" style="display:none">
       <span>🛒 Al añadir un ítem aquí se avisa por email al jefe/a de departamento — no hace falta avisar aparte.</span>
@@ -1851,7 +1851,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <!-- ══ SOLICITUDES DE MATERIAL ══ -->
 <div class="mbg" id="mSolicitudes" onclick="if(event.target===this)closeSolicitudesModal()">
   <div class="modal" style="max-width:560px">
-    <div class="mh"><div class="mt">🧰 Solicitudes de material</div><button class="mx" onclick="closeSolicitudesModal()">✕</button></div>
+    <div class="mh"><div class="mt">🧰 Pedir algo nuevo</div><button class="mx" onclick="closeSolicitudesModal()">✕</button></div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Pide material aunque todavía no exista como ítem del inventario. Jefatura decide si se acepta y lo convierte en pedido.</div>
     <div class="fg">
       <div class="full"><label class="fl">Material *</label><input class="fi-w" id="sol_nombre" placeholder="Ej. Multímetro digital"></div>
