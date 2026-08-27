@@ -1,6 +1,16 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v632 | 27/08/2026 | Renombradas las etiquetas de 🛒 Pedidos →
+**Estado:** v633 | 27/08/2026 | Fix de un bug real de UI: el hint
+flotante "📌 Mis Cursos/Aulas" tapaba contenido (título de la vista de
+aula, e incluso el modal "Nuevo ítem" por encima) porque no se ocultaba
+al navegar ni al abrir un modal — arreglado con dos hooks genéricos en
+`_push()` (`js/nav.js`) y un `MutationObserver` en `js/ui-helpers.js`, sin
+tocar los ~30 sitios que abren modales (detalle y verificación con
+Playwright en `docs/DEVELOPMENT.md` v633). Surgió de un spike "profesor
+de taller/ESO": necesidades ya cubiertas o ya en el backlog, decisión
+explícita de no tocar los iconos sin texto de Inicio/vista de aula (en
+móvil, texto obligaría a scroll para llegar a la rejilla de aulas).
+v632 | 27/08/2026 | Renombradas las etiquetas de 🛒 Pedidos →
 "Reponer stock" y 🧰 Solicitudes → "Pedir algo nuevo" (mismo backend y
 datos, solo texto en botones/títulos/impresión) — cerraba una ambigüedad
 real: el profesorado no tenía forma de saber cuál de los dos botones usar

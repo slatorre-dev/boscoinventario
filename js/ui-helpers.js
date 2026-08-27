@@ -57,6 +57,23 @@ function showPointerHintOnce(key, targetGetter, html) {
   reposition();
   window.addEventListener('resize', reposition);
   box._pointerHintReposition = reposition;
+  _watchModalsForPointerHint();
+}
+
+// El hint flotante tiene z-index:1000, por encima de cualquier modal (.mbg,
+// z-index:500) — sin esto, un modal abierto mientras el hint está visible
+// queda tapado por él en vez de al revés. Un solo observer genérico en vez
+// de tocar los ~30 sitios que abren un modal (`.classList.add('open')`).
+let _pointerHintModalObserver = null;
+function _watchModalsForPointerHint() {
+  if (_pointerHintModalObserver) return;
+  _pointerHintModalObserver = new MutationObserver(() => {
+    const box = document.getElementById('floatingHintBox');
+    if (box && box.style.display !== 'none' && document.querySelector('.mbg.open')) {
+      box.style.display = 'none';
+    }
+  });
+  _pointerHintModalObserver.observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true });
 }
 
 function dismissPointerHint(key) {

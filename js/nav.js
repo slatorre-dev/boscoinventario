@@ -5,6 +5,14 @@ let _skipHistory = false;
 
 function _push(state, hash){
   if(!_skipHistory) history.pushState(state, '', hash || './');
+  // El hint flotante (#floatingHintBox) se ancla a un botón del topbar y no
+  // sabe que ha cambiado la vista debajo — sin esto se queda tapando el
+  // título de la página nueva hasta que alguien lo cierra a mano. Se oculta
+  // sin marcarlo como visto (mismo criterio que renderHome() en home.js
+  // cuando la condición deja de aplicar): reaparece solo si la vista a la
+  // que se navega vuelve a pedirlo.
+  const hb = document.getElementById('floatingHintBox');
+  if(hb && hb.style.display !== 'none') hb.style.display = 'none';
 }
 
 function _showHomeButtons(){

@@ -4100,5 +4100,64 @@ credenciales OAuth de `env.GOOGLE_OAUTH_*`, no disponibles en local).
 
 ---
 
-**Última actualización:** 27/08/2026 — v632 (rename Pedidos/Solicitudes +
-email a solicitante y buzón central)
+### 27/08/2026 (v632→v633): spike "profesor de taller/ESO" + fix del hint flotante que tapaba contenido
+
+Sesión de brainstorming (spike, sin plan previo) pedida por el usuario:
+ponerse en el papel de un profesor de taller/FP y de ESO para detectar
+necesidades sin cubrir, y analizar el frontend en busca de mejoras de
+usabilidad. Metodología: repaso de `docs/IDEAS.md`/`docs/ROADMAP.md`
+(ambos desactualizados, útiles solo para no repetir ideas ya cerradas) +
+recorrido real con Playwright en viewport móvil (390×844) contra la app
+levantada en local (mismo método de v631: D1 local sembrada con las 34
+migraciones, `wrangler pages dev` sin `--d1`, binding `[ai]` comentado
+temporalmente).
+
+**Necesidades de las personas** (profesor de taller/FP, profesor de ESO):
+sin hallazgos nuevos — lo que se necesitaría ya está implementado
+(préstamo de caja completa, reservas de práctica por franja, cámara+IA,
+plantillas) o ya estaba anotado sin cerrar (`motivoEncuadre` no se
+muestra en "Revisar aula" — pendiente #14 del `claude.md`; mantenimiento
+sin prioridad/fecha prevista — `docs/IDEAS.md`).
+
+**Hallazgo nuevo de frontend, con captura**: el hint flotante
+"📌 Mis Cursos/Aulas" (`showPointerHintOnce()`, anclado a un botón del
+topbar) tapaba contenido real en 3 pantallas — el título de la vista de
+aula y, más grave, el campo "Fecha adquisición" del modal "Nuevo ítem"
+por **encima** del propio modal. Causa raíz: `z-index:1000` del hint
+(`.pointer-hint` en `css/styles.css:460`) contra `z-index:500` de
+cualquier modal (`.mbg`, `css/styles.css:1096`) — nunca se pensó que un
+modal pudiera abrirse mientras el hint estaba visible. Además, el hint
+solo se reposicionaba en `resize`, nunca al navegar (la app usa
+`history.pushState` para las vistas, que no dispara `hashchange`), así
+que se quedaba anclado al mismo punto de pantalla mientras el contenido
+de debajo cambiaba.
+
+Arreglado con dos hooks genéricos, sin tocar los ~30 sitios que abren un
+modal ni la lógica de cada vista:
+1. `_push()` (`js/nav.js:6-15`, punto único por el que pasan `goHome`,
+   `goAula`, `goCat`... antes de cambiar de vista) oculta el hint
+   flotante sin marcarlo como visto — mismo criterio que ya usaba
+   `renderHome()` cuando la condición dejaba de aplicar (comentario en
+   `js/home.js:15-20`), solo que ahora cubre *cualquier* navegación, no
+   solo esa.
+2. `_watchModalsForPointerHint()` (`js/ui-helpers.js`, nuevo): un
+   `MutationObserver` sobre `document.body` que oculta el hint en cuanto
+   detecta un `.mbg.open` en el DOM — un solo observer genérico en vez de
+   enganchar cada `classList.add('open')` existente.
+
+El usuario decidió explícitamente **no** tocar los iconos sin texto de
+"Acciones rápidas"/stats de aula/barra de acciones (otro hallazgo de la
+misma sesión, ya estaba en el backlog como pendiente #18 del `claude.md`)
+— en móvil, añadir texto obligaría a scroll para llegar a la rejilla de
+aulas. Queda abierto para una idea que no cueste esa altura de pantalla.
+
+Verificado en vivo con Playwright: hint visible en Inicio (correcto) →
+`goAula()` → `display:none` sin marcarlo visto → captura confirma el
+título "Tecnología" ya legible; hint visible en Inicio → `openModal()` →
+`display:none` vía el observer → captura confirma el campo "Fecha
+adquisición" ya libre. `node --check` sin errores en los 2 archivos
+tocados (`js/nav.js`, `js/ui-helpers.js`). `sw.js` → `v633`.
+
+---
+
+**Última actualización:** 27/08/2026 — v633 (fix hint flotante sobre modales)
