@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v635 | 27/08/2026 | Migración `0035`: 4 departamentos
+**Estado:** v636 | 27/08/2026 | Migraciones `0035`+`0036`: 4 departamentos
 administrativos nuevos (`direccion`, `secretaria`, `conserjeria`,
 `administracionoficina`), aislados entre sí igual que los 24 académicos —
 `administracionoficina` para no chocar con el departamento FP existente
@@ -8,7 +8,9 @@ administrativos nuevos (`direccion`, `secretaria`, `conserjeria`,
 `jefe/a departamento`: `direccion`/`jefatura` (comparten el departamento
 `direccion`), `secretaria`, `conserjeria` — todas con
 `password_temporal=1`. `administracionoficina` quedó sin cuenta (el
-usuario no dio correo para ella). v634 | 27/08/2026 | Recorrido guiado con flecha para los 10
+usuario no dio correo para ella). Nombre de departamento/aula con prefijo
+"IES Juan Bosco · " (0036) para que se vean como parte de la identidad del
+centro aunque los datos sigan aislados entre sí. v634 | 27/08/2026 | Recorrido guiado con flecha para los 10
 iconos sin texto de "Acciones rápidas" de Inicio (`showPointerTourOnce()`
 en `js/ui-helpers.js`, generaliza el hint flotante de "Mis Cursos/Aulas"):
 se ve una sola vez por navegador, apunta a cada botón real con
