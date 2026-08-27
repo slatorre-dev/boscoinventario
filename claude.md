@@ -112,7 +112,7 @@ sigue estas reglas de estilo para no gastar tokens de más:
 1. `git clone https://github.com/slatorre-dev/boscoinventario.git` (o `git pull` si ya existe)
 2. Leer este archivo entero + [docs/PLAN_MULTIDEPARTAMENTO.md](docs/PLAN_MULTIDEPARTAMENTO.md)
 3. `npx wrangler login` (interactivo, abre navegador) — la cuenta de Cloudflare que tiene acceso al D1 es `slatorre@iesjuanbosco.es`
-4. Todas las migraciones (`migrations/0001` a `0026`) ya están aplicadas en la base remota `boscoinventario` — no hace falta re-ejecutarlas salvo que se recree la base desde cero (ver [Modo de Operación](#modo-de-operación)). Nota: la tabla de aprendizaje IA (`ia_deteccion_ejemplos`) se autocrea en runtime por `functions/api/item.js` (sin migración dedicada)
+4. Todas las migraciones (`migrations/0001` a `0034`) ya están aplicadas en la base remota `boscoinventario` — no hace falta re-ejecutarlas salvo que se recree la base desde cero (ver [Modo de Operación](#modo-de-operación)). Nota: la tabla de aprendizaje IA (`ia_deteccion_ejemplos`) se autocrea en runtime por `functions/api/item.js` (sin migración dedicada)
 5. Credenciales de prueba: ver [Usuarios y credenciales](#usuarios-y-credenciales-actuales)
 6. Antes de cualquier comando de `git`, comprobar que no hay `desktop.ini` corrompiendo `.git/` (ver [Entorno](#entorno)) — riesgo conocido por vivir el repo dentro de una carpeta sincronizada por Google Drive
 
@@ -214,8 +214,8 @@ hace falta tener presentes al tocar código:
   bulkImport, verifica propiedad), `prestar.js`, `historial.js` (filtra
   por depto del **actor**), `config.js` (aulasSync/catsSync/ciclosSync/
   normalizeCategoriesTags/normalizeTagsCanonical/renameTag/deleteTag),
-  `usuarios.js`, `profesores.js`. **Gaps sin scoping:** `docs.js`,
-  `backup.js` — ver Pendiente #1.
+  `usuarios.js`, `profesores.js`, `docs.js` (`canAccessItemDocs()`).
+  **Gap sin scoping (intencional):** `backup.js` — ver Pendiente #1.
 - `GENERIC_DEPT = 'iesjuanbosco'` (constante duplicada en `list.js`,
   `meta.js`, `item.js`, `prestar.js`, `historial.js`): departamento
   compartido — cualquier jefe/a de departamento o profesor (no solo
@@ -407,8 +407,17 @@ Workers AI, onboarding de cámara (v543-v557).
 
 ## Pendiente (próximas sesiones)
 
-1. Scoping por departamento de `docs.js` (documentos adjuntos) y
-   `backup.js` — no filtran por departamento todavía.
+1. ~~Scoping por departamento de `docs.js` (documentos adjuntos)~~ ✅
+   resuelto (detectado ya implementado, 27/08/2026): `getDocs`/`deleteDoc`/
+   `uploadDoc` llaman a `canAccessItemDocs()`, que exige mismo
+   departamento, `iesjuanbosco` compartido, o superadmin — igual criterio
+   que `item.js`. Esta entrada llevaba desactualizada un tiempo (el
+   scoping se añadió sin actualizarla). `backup.js` sigue sin scoping por
+   departamento, pero a diferencia de `docs.js` es intencional: es un
+   volcado completo de la BD para backup/disaster-recovery, gateado por
+   `BACKUP_SECRET` (no por sesión de usuario) — no es una ruta que un
+   profesor o jefe/a de departamento pueda alcanzar desde la app, así que
+   "scoping por departamento" no aplicaría aunque se quisiera.
 2. Repartir credenciales (`departamentoXXX`/`profe1XXX`) a cada jefe/a de
    departamento real y comprobar que ven solo su propio inventario (más
    el compartido `iesjuanbosco`).

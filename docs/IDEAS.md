@@ -6,19 +6,19 @@ Registro de ideas pendientes para futuras sesiones. Las ya implementadas se han 
 
 ## Gestión de Inventario
 
-### Alertas de Stock Bajo
-Banner o notificación más visible cuando hay items por debajo del mínimo.
-- Banner en la parte superior del inventario si hay items con stock bajo
-- Número de items afectados + link para ver lista filtrada
+### Alertas de Stock Bajo — ✅ ya implementado (detectado 27/08/2026)
+Resultó ya estar hecho, de forma equivalente al pedido original aunque no
+como "banner": tarjeta clicable "⚠️ STOCK BAJO" con contador en Inicio
+(lleva a `goLowStock()`, vista filtrada dedicada), aviso por aula en las
+tarjetas de Inicio (`js/home.js`), stat compacto clicable en la toolbar
+del inventario (`js/inventory.js`) y Volt entiende "¿stock bajo?" por voz
+o texto. Esta entrada llevaba desactualizada en el roadmap.
 
-**Prioridad:** Media
-
-### Filtro por Mantenimiento Pendiente
-Botón rápido para ver solo items que necesitan mantenimiento (`mant = '1'`).
-- Botón en toolbar junto a filtros de categoría/estado
-- Contador de items pendientes
-
-**Prioridad:** Media
+### Filtro por Mantenimiento Pendiente — ✅ ya implementado (detectado 27/08/2026)
+Resultó ya estar hecho: botón grande "🛠️ Mantenimiento — Revisiones
+pendientes" en Inicio (`goMaintenance()`), lleva a una vista filtrada
+dedicada con contador propio (tarjeta "Mantenimiento" en el resumen de
+Inicio). Esta entrada llevaba desactualizada en el roadmap.
 
 ### Búsqueda Avanzada
 Filtros combinados: "Consumibles en Aula 35 con stock bajo".
@@ -414,12 +414,18 @@ Filtrado de muchos items, exportación CSV, procesamiento de búsqueda en thread
 
 ## Seguridad (FASE 1) — Pendiente crítico
 
-- Bearer tokens en lugar de `?u=&p=` en query params (visible en logs)
-- Password hashing (bcrypt)
-- Rate-limiting en endpoints críticos
+- Bearer tokens en lugar de `?u=&p=` en query params (visible en logs) —
+  único punto real de esta lista que sigue sin empezar
+- ~~Password hashing~~ ✅ resuelto (25/08/2026): PBKDF2 vía `crypto.subtle`,
+  ver `docs/SECURITY.md` ítem 3
+- ~~Rate-limiting en endpoints críticos~~ ✅ resuelto, con diseño distinto
+  al de "rate-limiting" clásico (25-26/08/2026): bloqueo de cuenta tras 5
+  intentos fallidos (`migrations/0031_intentos_login.sql`), persistente
+  hasta desbloqueo por superadmin — ver `docs/SECURITY.md` ítem 6
 - Branch propuesta: `feature/security-refactor`
 
-**Prioridad:** Alta — bloquea despliegue a más usuarios
+**Prioridad:** Alta — el punto que queda (Bearer tokens) sigue bloqueando
+igual que antes; los otros dos ya no aplican como bloqueante.
 
 ---
 

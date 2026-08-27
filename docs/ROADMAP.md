@@ -59,7 +59,11 @@ Este roadmap detalla las **35+ mejoras** identificadas en el análisis de códig
 **Estimación:** 6 horas
 **Impacto:** 🔒 Seguridad (crítica)
 **Dependencias:** [1.1] Migrar a Bearer Tokens
-**Estado:** ⏳ NO INICIADO
+**Estado:** ✅ RESUELTO (25/08/2026, sin esperar a [1.1]) — no bcrypt
+(no soportado en el runtime de Workers), sino PBKDF2 vía `crypto.subtle`
+nativo, 100.000 iteraciones. Migración perezosa en vez de script aparte:
+cada cuenta se rehashea sola en su próximo login correcto. Detalle en
+`docs/SECURITY.md` (ítem 3) y `docs/DEVELOPMENT.md`.
 
 ---
 
@@ -79,7 +83,12 @@ Este roadmap detalla las **35+ mejoras** identificadas en el análisis de códig
 
 **Estimación:** 4 horas
 **Impacto:** 🔒 Seguridad (crítica)
-**Estado:** ⏳ NO INICIADO
+**Estado:** ✅ RESUELTO, con diseño distinto al propuesto (migración
+`0031_intentos_login.sql`) — no una tabla `login_attempts` con ventana de
+5 minutos, sino columnas `intentos_fallidos`/`bloqueado` en `usuarios`:
+tras 5 intentos fallidos la cuenta se bloquea de forma persistente hasta
+que un superadmin la desbloquea (`userUnlock`, panel "🛡️ Gestionar
+accesos"), en vez de expirar sola. Detalle en `docs/SECURITY.md` (ítem 6).
 
 ---
 
@@ -119,7 +128,10 @@ Este roadmap detalla las **35+ mejoras** identificadas en el análisis de códig
 
 **Estimación:** 3 horas
 **Impacto:** 🔒 Seguridad (media)
-**Estado:** ⏳ NO INICIADO
+**Estado:** ✅ VERIFICADO SIN RIESGO (25/08/2026) — `backup.js` nunca
+seleccionó la columna `password` (`SELECT usuario, nombre, rol, email
+FROM usuarios`), no hizo falta tocar código. Detalle en
+`docs/SECURITY.md` (ítem 5).
 
 ---
 
@@ -446,6 +458,11 @@ Semana 4+ (25h): FASE 3 - Medio
 | 3.2 - A11y | ⏳ TODO | 8h | - |
 | 3.3 - Offline | ⏳ TODO | 10h | - |
 | 3.4 - 2FA | ⏳ TODO | 8h | - |
+
+**Nota (27/08/2026):** esta tabla es un snapshot congelado a propósito
+(no reflejar el estado real la delata como "roadmap base", ver footer del
+documento) — el estado real y actualizado de 1.2, 1.3 y 1.5 (✅ resueltos)
+está en sus secciones respectivas más arriba, no aquí.
 
 ---
 

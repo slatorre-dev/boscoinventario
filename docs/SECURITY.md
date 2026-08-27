@@ -248,42 +248,29 @@ reflejaba el estado real del proyecto en el momento en que se escribió.
 
 ## 🟠 Vulnerabilidades Altas
 
-### 6. Sin Rate-Limiting en Login
+### 6. Sin Rate-Limiting en Login — ✅ MITIGADO (bloqueo por intentos, detectado 27/08/2026)
 
-**Severidad:** ALTA (CVSS 7.5)  
+**Severidad original:** ALTA (CVSS 7.5) — mitigada, ver estado abajo
 **Ataque:** Fuerza bruta
 
-**Vulnerabilidad:**
-```javascript
-// functions/api/auth.js - SIN LIMITE
-export async function onRequestPost({ request, env }) {
-  const { usuario, password } = body;
-  
-  const user = await env.DB.prepare(
-    'SELECT * FROM usuarios WHERE usuario = ? AND password = ?'
-  ).bind(usuario, password).first();
-  
-  // ← Puede intentarse millones de veces sin restricción
-}
-```
+**Estado real del código (`functions/api/auth.js`, migración
+`migrations/0031_intentos_login.sql`):** cada usuario tiene columnas
+`intentos_fallidos`/`bloqueado`. Tras `MAX_INTENTOS_LOGIN` (5) intentos
+fallidos seguidos, la cuenta se bloquea (`bloqueado=1`) y deja de aceptar
+más intentos —aunque la contraseña correcta se escriba después— hasta que
+un superadmin la desbloquea (`userUnlock` en `functions/api/usuarios.js`,
+panel "🛡️ Gestionar accesos"). El aviso de error incluye cuántos intentos
+quedan a partir de 2 restantes, para que el usuario no llegue al bloqueo
+a ciegas. No es exactamente lo que sugería este documento (ventana
+temporal tipo "5 intentos / 5 min" vía Cloudflare WAF) — es más estricto
+(bloqueo persistente, no expira solo) — pero cumple el objetivo de
+impedir fuerza bruta sin límite. Esta entrada llevaba desactualizada
+desde que se implementó (25-26/08/2026, ver `docs/DEVELOPMENT.md`).
 
-**Ataque:**
-```bash
-#!/bin/bash
-# Fuerza bruta
-for i in {1..100000}; do
-  curl "https://inventario.pages.dev/api/auth?action=login&u=admin@school.es&p=pass$i"
-done
-```
-
-**Solución Cloudflare:**
-```
-Dashboard → Security → WAF → Rules
-Add rule: 
-  - If: (http.request.uri.path contains "/api/auth") 
-    AND (cf.threat_score > 50)
-  - Then: Challenge
-```
+**Pendiente real, si se quisiera reforzar más:** WAF de Cloudflare a
+nivel de red (protege contra fuerza bruta distribuida entre muchas
+cuentas distintas, que el bloqueo por cuenta no cubre) — sigue siendo
+una mejora válida, solo que ya no es la única defensa.
 
 ---
 
@@ -395,32 +382,23 @@ const validated = ItemSchema.parse(item);
 
 ---
 
-### 10. Sin Logs de Auditoría
+### 10. Sin Logs de Auditoría — ✅ RESUELTO (ya implementado, entrada desactualizada desde su origen)
 
-**Severidad:** ALTA (CVSS 7.0)
+**Severidad original:** ALTA (CVSS 7.0) — no aplica al estado real del código
 
-**Problema:**
-- No hay traza de quién hizo qué
-- Imposible detectar comportamiento anómalo
-- Incumplimiento regulatorio
-
-**Solución:**
-```javascript
-// Crear tabla de auditoría
-CREATE TABLE audit_log (
-  id INTEGER PRIMARY KEY,
-  usuario TEXT,
-  accion TEXT,  -- 'login', 'delete_item', 'edit_item'
-  recurso TEXT,  -- ID del ítem/usuario modificado
-  detalles JSON,
-  ip TEXT,
-  user_agent TEXT,
-  fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-// En cada endpoint crítico
-await auditLog(env.DB, user, 'delete_item', itemId, { item, reason });
-```
+**Estado real:** el proyecto tiene tabla `log` (`functions/api/*.js`,
+`auditLog()` duplicado en cada endpoint que toca datos, mismo patrón que
+`GENERIC_DEPT`/`escHtml`) desde antes de que este documento se escribiera
+— prácticamente toda acción relevante (alta/edición/baja de ítems,
+préstamos, cambios de usuario, login fallido/bloqueado, solicitudes,
+pedidos, reservas...) queda registrada con usuario, rol, fecha y resumen.
+Expuesto en la app en dos sitios: el modal de historial completo
+(`js/modal-historial.js`, solo jefatura/superadmin) y la página visual de
+historial con timeline agrupado por día (`goHistorialPage()`), además del
+historial por ítem accesible a cualquier usuario del departamento
+(`GET /api/historial?itemId=`, ver `js/modal-item.js:openHistorial()`).
+No había nada que implementar — esta entrada nunca reflejó el estado real
+del proyecto.
 
 ---
 
@@ -511,9 +489,9 @@ jwt.sign({ user }, secret, { expiresIn: '1h' });
   - [ ] X-Content-Type-Options: nosniff
   - [ ] X-Frame-Options: DENY
   - [ ] Content-Security-Policy: restrictivo
-- [ ] Rate-limiting en login (5 intentos / 5 min)
+- [x] Bloqueo de cuenta tras intentos fallidos (5, persistente hasta desbloqueo admin — no es la ventana temporal "5 min" original, ver ítem 6)
 - [ ] Session timeout (1 hora)
-- [ ] Logging de auditoría en acciones críticas
+- [x] Logging de auditoría en acciones críticas (tabla `log`, ver ítem 10)
 - [ ] Backup encriptado
 - [ ] Validación de datos en API (Zod)
 - [ ] Password hashing (bcrypt)
@@ -620,5 +598,8 @@ npm install -D eslint-plugin-security
 
 ---
 
-**Última actualización:** Agosto 2026 (v558)
+**Última actualización:** 27/08/2026 (v631) — revisión rápida de
+consistencia doc↔código: ítems 6 (rate-limiting) y 10 (logs de auditoría)
+corregidos, ambos ya resueltos en el código sin que este documento lo
+reflejara.
 **Próxima auditoría:** Después de implementar cambios críticos
