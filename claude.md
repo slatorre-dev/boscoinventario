@@ -1,6 +1,10 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v629 | 26/08/2026 | **Cuatro mejoras centradas en el
+**Estado:** v630 | 27/08/2026 | Fix: aulas propias con nombre numérico
+("Aula 35" con id distinto de `aulaN`, por duplicado creado a mano/CSV/
+restore) ya no quedan varadas al final del listado — el orden ahora se
+calcula en JS a partir del id o, si no matchea, de un número en el nombre
+(detalle en `docs/DEVELOPMENT.md` v630). **Cuatro mejoras centradas en el
 profesorado** (detalle en `docs/DEVELOPMENT.md` v628-v629): plantillas de
 práctica reutilizables (`localStorage`, sin backend) en "Planificar
 práctica"; préstamo/devolución rápido (Devolver / Me lo llevo) tras

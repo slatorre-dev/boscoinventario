@@ -95,6 +95,29 @@ function mergeUbicaciones(savedRows, inventoryRows) {
   return rows.concat(missing);
 }
 
+// Aulas numeradas ("Aula 35") ordenan por su número tanto si son la fila
+// global sembrada (id "aulaN", ver migrations/0008_aulas_seed.sql) como si
+// son una fila propia de departamento con otro id (creada a mano con "+
+// Añadir aula", vía CSV de aulas, o por una restauración de backup que
+// prefija el id) — sin esto, cualquier duplicado con nombre "Aula N" pero
+// id no-"aulaN" queda varado al final de la lista solo por caer en la rama
+// `orden` (101+) del ORDER BY, en vez de intercalarse por número.
+function aulaNum(row) {
+  const m1 = /^aula(\d+)$/.exec(String(row.id || ''));
+  if (m1) return parseInt(m1[1], 10);
+  const m2 = /(\d+)/.exec(String(row.name || ''));
+  return m2 ? parseInt(m2[1], 10) : null;
+}
+function sortAulas(rows) {
+  return [...rows].sort((a, b) => {
+    const na = aulaNum(a), nb = aulaNum(b);
+    if (na !== null && nb !== null) return na - nb || (a.orden || 0) - (b.orden || 0) || String(a.id).localeCompare(String(b.id));
+    if (na !== null) return -1;
+    if (nb !== null) return 1;
+    return (a.orden || 0) - (b.orden || 0) || String(a.id).localeCompare(String(b.id));
+  });
+}
+
 const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
 
 function isSuperAdmin(user){
@@ -116,8 +139,8 @@ export async function onRequestGet({ request, env, data }) {
 
   const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows, profesRows, misAulasRows] = await Promise.all([
     superadmin
-      ? env.DB.prepare("SELECT * FROM aulas ORDER BY CASE WHEN id GLOB 'aula[0-9]*' THEN CAST(SUBSTR(id,5) AS INTEGER) ELSE orden END, orden, id").all()
-      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY CASE WHEN id GLOB 'aula[0-9]*' THEN CAST(SUBSTR(id,5) AS INTEGER) ELSE orden END, orden, id`).bind(dept).all(),
+      ? env.DB.prepare("SELECT * FROM aulas ORDER BY orden, id").all()
+      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY orden, id`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all()
       : env.DB.prepare("SELECT * FROM categorias WHERE departamento=? ORDER BY orden").bind(dept).all(),
@@ -166,7 +189,7 @@ export async function onRequestGet({ request, env, data }) {
 
   return Response.json({
     ok: true,
-    aulas: aulas.results,
+    aulas: sortAulas(aulas.results),
     cats: mergeCats(cats.results, invCats.results),
     catsPropias: cats.results.length > 0,
     catsCrudo: superadmin ? cats.results : undefined,
