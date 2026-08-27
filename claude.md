@@ -1,6 +1,13 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v638 | 27/08/2026 | Toolbar más corta: "🎒 Modo clase" fuera
+**Estado:** v639 | 27/08/2026 | El chip de usuario seguía cayendo a una
+segunda fila del topbar en escritorio ancho pese a v638 — `.brand-wrap`
+pasa a layout en columna (`css/styles.css`): nombre arriba, y debajo
+(`.brand-meta`, nueva clase) el badge de departamento, versión, 🌙 tema y
+⚡ easter-egg (movidos desde `topbar-right`), liberando ancho horizontal
+para que topbar-btns + chip quepan en una sola fila. Solo aplica >1200px
+— por debajo, donde ya existe menú ⋮, `.brand-wrap` vuelve a fila única
+como antes (sin cambios visuales ahí). v638 | 27/08/2026 | Toolbar más corta: "🎒 Modo clase" fuera
 (ya está en Acciones rápidas de Inicio) y "🛒 Reponer stock" +
 "🧰 Pedir algo nuevo" fusionados en un botón "📦 Stock" que abre un modal
 de elección (`mStockChoice` en `index.html`, `openStockChoiceModal()` en

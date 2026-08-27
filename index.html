@@ -60,17 +60,19 @@
       <div class="brand-logo"><img src="icons/imagenbosco.png" class="logo-img"></div>
       <div class="brand-name" id="brandTitle" ondblclick="openRobotDance()">Inventario IES Juan Bosco</div>
     </a>
-    <span class="brand-dept" id="brandDept"></span>
-    <select class="brand-dept-select" id="deptActivoSelect" style="display:none" onchange="onDeptActivoChange(this.value)" title="Departamento activo para gestión (aulas/categorías/ciclos)"></select>
-    <span class="app-version" id="appVersion"></span>
-    <button class="tbtn dept-game-btn" id="btnDeptGame" style="display:none" onclick="openDeptGame()" title="Juego del departamento">
-      <span id="deptGameIcon" class="dept-game-icon"><img src="icons/imagenbosco.png" alt=""></span>
-    </button>
+    <div class="brand-meta">
+      <span class="brand-dept" id="brandDept"></span>
+      <select class="brand-dept-select" id="deptActivoSelect" style="display:none" onchange="onDeptActivoChange(this.value)" title="Departamento activo para gestión (aulas/categorías/ciclos)"></select>
+      <span class="app-version" id="appVersion"></span>
+      <button class="theme-toggle-btn" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema claro/oscuro">
+        <span class="theme-icon-light">🌙</span><span class="theme-icon-dark">☀️</span>
+      </button>
+      <button class="tbtn dept-game-btn" id="btnDeptGame" style="display:none" onclick="openDeptGame()" title="Juego del departamento">
+        <span id="deptGameIcon" class="dept-game-icon"><img src="icons/imagenbosco.png" alt=""></span>
+      </button>
+    </div>
   </div>
   <div class="topbar-right">
-    <button class="theme-toggle-btn" id="btnTheme" onclick="toggleTheme()" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema claro/oscuro">
-      <span class="theme-icon-light">🌙</span><span class="theme-icon-dark">☀️</span>
-    </button>
     <div class="conn-status loading" id="connStatus"><span class="conn-dot"></span></div>
     <div class="breadcrumb" id="bc"></div>
     <button class="mob-menu-btn" id="mobMenuBtn" onclick="toggleMobMenu()" title="Menú">⋮</button>
