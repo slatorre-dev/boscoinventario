@@ -4736,6 +4736,19 @@ causados por este trabajo, documentados como Pendiente #24/#25 de
    (`vitest.config.ts`) a un directorio de fixtures pequeño en vez de la
    raíz del repo, por si esa es la causa real.
 
+**Entorno de ejecución:** el worktree del plan (creado por defecto dentro
+de `.claude/worktrees/`, es decir dentro de "Mi unidad") no sirvió para
+correr `npm install` — Google Drive corrompe la escritura masiva de
+archivos pequeños de `node_modules/` igual que ya le pasaba a `.git/`
+(ver Entorno en `CLAUDE.md`), y un junction NTFS para redirigir solo
+`node_modules` fuera de Drive falla porque `H:` es una unidad virtual sin
+soporte de reparse points. Solución: worktree manual en
+`C:\ClaudeWork\worktrees\...`, fuera de Drive por completo. Fusionado a
+`main` con fast-forward (`git merge`, sin conflictos) y pusheado a
+`origin/main` el 28/08/2026 — commits `eb3adfd..17522e9` (más
+`4015e21`, trackeo de `boscoinventario.code-workspace`, sin relación con
+este trabajo).
+
 ---
 
 **Última actualización:** 28/08/2026 — tests automatizados de backend (28 tests, `npm test`) + revisión final de 4 hallazgos "Important"

@@ -21,6 +21,10 @@ backend (auth + scoping por departamento en `functions/api/*.js`) contra
 D1 local con las migraciones reales aplicadas. No lleva número de
 versión (no toca `sw.js` ni ningún archivo de `functions/api/`, es
 tooling interno, no una funcionalidad desplegada). Requiere Node ≥22.
+Ya fusionado a `main` y pusheado a `origin/main`. Implementado con
+`superpowers:subagent-driven-development` en un worktree fuera de
+Google Drive (ver gotcha nuevo en Entorno más abajo — `npm install`
+dentro de "Mi unidad" se corrompe igual que ya le pasaba a `.git/`).
 Detalle completo, incluidas dos propiedades no obvias del arnés de test
 y dos hallazgos pre-existentes (Pendiente #24/#25), en
 `docs/DEVELOPMENT.md`, entrada 28/08/2026 "Tests automatizados de
@@ -256,7 +260,7 @@ sigue estas reglas de estilo para no gastar tokens de más:
 - **Git remotes:** `origin` → `slatorre-dev/boscoinventario` (principal, único remoto al que se hace push); `slatorre` → `slatorre-dev/SQLInventarioElecFP` (proyecto **distinto y no relacionado**, no tocar nunca)
 - **D1 backup:** `npx wrangler d1 export boscoinventario --remote --output backup_FECHA.sql`
 - **Cuenta Cloudflare:** el D1 `boscoinventario` vive en la cuenta de `slatorre@iesjuanbosco.es`. Si `wrangler` da error de autenticación de cuenta al ejecutar comandos D1, borrar `.wrangler/cache/wrangler-account.json` (cachea la cuenta de una sesión anterior) y reintentar.
-- **⚠️ Repo dentro de Google Drive** ("Mi unidad"): Drive puede reinyectar archivos `desktop.ini` dentro de `.git/` (incluido `.git/refs/`), rompiendo `git fetch`/`push` con errores tipo "bad object". Si pasa: `find .git -iname "desktop.ini" -type f -delete` y reintentar. Ideal a medio plazo: excluir `.git` de la sincronización de Drive, o mover el repo fuera de la carpeta sincronizada.
+- **⚠️ Repo dentro de Google Drive** ("Mi unidad"): Drive puede reinyectar archivos `desktop.ini` dentro de `.git/` (incluido `.git/refs/`), rompiendo `git fetch`/`push` con errores tipo "bad object". Si pasa: `find .git -iname "desktop.ini" -type f -delete` y reintentar. Ideal a medio plazo: excluir `.git` de la sincronización de Drive, o mover el repo fuera de la carpeta sincronizada. **El mismo problema afecta a `npm install`** (28/08/2026, sesión de tests automatizados): con `node_modules/` dentro de "Mi unidad", `npm install` falla con `EBADF`/`ENOTEMPTY`/`TAR_ENTRY_ERROR` durante la extracción de paquetes (Drive no soporta bien la escritura masiva y rápida de miles de archivos pequeños que hace npm). Un junction NTFS para redirigir solo `node_modules` fuera de Drive **no funciona** — `H:` es una unidad virtual montada por Drive, no soporta reparse points (`New-Item -ItemType Junction` falla con "Función incorrecta"). Única solución encontrada: trabajar en un worktree fuera de "Mi unidad" por completo (ej. `C:\ClaudeWork\worktrees\...`) para cualquier tarea que necesite `npm install`/`node_modules` — el propio checkout principal en `H:\...\boscoinventario` sigue sirviendo bien para todo lo que no sea npm (git, edición de archivos).
 - **Este archivo está trackeado en git como `claude.md` (minúsculas)**, aunque se edite/mencione como `CLAUDE.md`. En este filesystem (Windows, insensible a mayúsculas) `git add CLAUDE.md` a veces no detecta el cambio y lo deja fuera del commit sin avisar — comprobar siempre `git status` después de un commit que debía incluirlo, y si falta, `git add claude.md` (minúsculas) a parte.
 - **Disco `C:` puede llenarse** (pasó una vez en esta sesión, bloqueó todas las escrituras de archivo con `ENOSPC`): comprobar espacio libre si las ediciones empiezan a fallar sin motivo aparente.
 
