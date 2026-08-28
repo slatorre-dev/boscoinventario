@@ -3,7 +3,9 @@
 -- momento posterior (ningún ciclosSync desde el modal debería borrar
 -- filas de otro departamento, pero la fila quedó vacía igualmente).
 -- Se restauran exactamente las mismas 56 filas de la migración 0010.
-INSERT INTO ciclos (cicloId,cicloNombre,nivel,icon,th,desc,modCod,modNombre,modHoras,cicloOrden,modOrden,responsable,departamento) VALUES
+-- Se usa INSERT OR IGNORE para evitar violaciones de clave primaria si
+-- los datos ya existen (en un schema virgen desde 0010, están presentes).
+INSERT OR IGNORE INTO ciclos (cicloId,cicloNombre,nivel,icon,th,desc,modCod,modNombre,modHoras,cicloOrden,modOrden,responsable,departamento) VALUES
 ('it','Técnico en Instalaciones de Telecomunicaciones (IT)','CFGM','⚡','th-purple','Grado Medio · Electricidad y Electrónica','M01','Infraestructuras comunes de telecomunicación en viviendas y edificios',0,1,1,'','electricidadelectronica'),
 ('it','Técnico en Instalaciones de Telecomunicaciones (IT)','CFGM','⚡','th-purple','Grado Medio · Electricidad y Electrónica','M02','Instalaciones domóticas',0,1,2,'','electricidadelectronica'),
 ('it','Técnico en Instalaciones de Telecomunicaciones (IT)','CFGM','⚡','th-purple','Grado Medio · Electricidad y Electrónica','M03','Electrónica aplicada',0,1,3,'','electricidadelectronica'),
