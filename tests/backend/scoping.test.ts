@@ -33,19 +33,19 @@ describe("scoping por departamento", () => {
     expect(refs).not.toContain("TEST-SHARED-001");
   });
 
-  it("un profesor auto-registrado (rol 'Profesor/a', el que asigna auth.js de verdad) SI ve el departamento compartido", async () => {
-    // A diferencia de rol='profesor' (test anterior), auth.js:371 asigna
-    // 'Profesor/a' (con mayuscula y slash) a cualquiera que se registre por
-    // el formulario publico. isProfesor() en list.js/item.js/prestar.js
-    // compara en minusculas contra exactamente 'profesor', asi que
-    // 'Profesor/a' NO matchea -> isProfesor()===false -> SI recibe el bypass
-    // de iesjuanbosco que a rol='profesor' se le niega. Comportamiento real
-    // verificado en el codigo, no un bug de este test - discrepancia de la
-    // propia app entre el rol de las migraciones de seed (profesor) y el
-    // rol real de autoregistro (Profesor/a), documentada como pendiente en
-    // CLAUDE.md.
+  it("un profesor auto-registrado (rol 'Profesor/a', el que asigna auth.js de verdad) NO ve el departamento compartido", async () => {
+    // auth.js:371 asigna 'Profesor/a' (mayuscula y slash) a cualquiera que
+    // se registre por el formulario publico, igual que el alta manual desde
+    // Usuarios y la importacion CSV (ROLES_DISPONIBLES en prestamos.js) —
+    // es la forma mayoritaria en la app real, no 'profesor' a secas (esa
+    // solo la usan las 24 cuentas sembradas por migracion y Google OAuth).
+    // isProfesor() en list.js/item.js/prestar.js/meta.js/historial.js
+    // reconoce ambas formas para que el bypass de iesjuanbosco se aplique
+    // igual sin importar por que via se creo la cuenta. Antes de este fix
+    // 'Profesor/a' no matcheaba y SI recibia el bypass (pendiente #24 de
+    // CLAUDE.md, ya resuelto).
     const refs = await itemRefs("test-profesor-selfreg", "test-profesor-selfreg");
-    expect(refs).toContain("TEST-SHARED-001");
+    expect(refs).not.toContain("TEST-SHARED-001");
   });
 
   it("un jefe/a de departamento si ve el departamento compartido iesjuanbosco", async () => {

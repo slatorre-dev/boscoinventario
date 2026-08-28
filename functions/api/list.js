@@ -31,7 +31,8 @@ function isSuperAdmin(user){
 }
 
 function isProfesor(user){
-  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'profesor';
+  const r = String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return r === 'profesor' || r === 'profesor/a' || r === 'profesora';
 }
 
 // Colores por hash del nombre — el icono ya no viene de aquí (ver

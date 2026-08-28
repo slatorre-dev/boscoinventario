@@ -9,7 +9,8 @@ function isSuperAdmin(user){
 }
 
 function isProfesor(user){
-  return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'profesor';
+  const r = String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return r === 'profesor' || r === 'profesor/a' || r === 'profesora';
 }
 
 // Deriva el departamento de un ítem a partir del ciclo/asignatura elegido:
