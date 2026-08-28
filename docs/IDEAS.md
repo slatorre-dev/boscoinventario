@@ -432,6 +432,35 @@ navegación por teclado en modales) en ningún punto del proyecto hasta la
 fecha.
 **Prioridad:** Baja (sin urgencia detectada, pero nunca evaluado)
 
+### Colores hardcodeados en `css/styles.css` fuera de los tokens del tema
+(28/08/2026) Surgió como paso 2 de una revisión de diseño ("piensa como
+diseñador gráfico web") tras arreglar que Volt no heredaba el tema
+(v649). Un grep de `#[0-9a-f]{3,6}` fuera de `:root`/`body.dark` en
+`css/styles.css` encontró **~150 ocurrencias**, muchas más de lo que
+parecía a simple vista con el caso que las disparó
+(`.home-hero h2{color:#243b53}`). Al mirarlo con más detalle el
+diagnóstico cambia respecto a lo que se pensó primero: la mayoría **no
+son fugas del sistema de tokens**, son pares fondo+texto autocontenidos
+(badges de rol, chips de historial, los 10 colores pastel de "Acciones
+rápidas" de Inicio, cabeceras de ciclo/categoría con degradado fijo,
+estilos de impresión) — un chip claro con texto oscuro sigue siendo
+legible da igual el tema de la app alrededor. Incluso `.home-hero h2` en
+concreto resultó ser consistente: vive dentro de `.home-hero`, que
+también tiene un fondo degradado claro **fijo** (no depende de
+`var(--bg)`), así que el texto oscuro es coherente con su propia
+tarjeta, no una fuga real.
+
+**Lo que falta para cerrar esto de verdad:** separar los casos que sí son
+bugs (texto/color apoyado directamente en `var(--bg)`/`var(--white)` de
+la página, que si no se ve bien en oscuro) de los que son decoración
+intencional — y eso requiere verlos con datos reales en modo oscuro
+(Inicio, tarjetas de aula, modales), no solo grep. Necesita el stack
+completo corriendo (`wrangler pages dev` + D1 local), no basta con
+servir el HTML estático como se hizo para verificar Volt. Aparcado a
+petición del usuario (era mucho más grande de lo estimado al proponerlo).
+**Prioridad:** Baja (nada confirmado roto todavía, solo una sospecha sin
+verificar)
+
 ---
 
 ## Volt — Agente IA
@@ -564,7 +593,7 @@ hoy no se puede representar), no de forma especulativa.
 ## Estado
 
 - **Última actualización:** 28/08/2026
-- **Versión actual:** v646
+- **Versión actual:** v649
 - **Roadmap "Modo Cámara Inteligente":** completo — ideas #1-#8 implementadas
   y en producción, #9 resultó ya cubierta por código existente (sin
   cambios necesarios), #10 descartada por bajo valor frente a su
