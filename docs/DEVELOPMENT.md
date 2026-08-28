@@ -4912,4 +4912,73 @@ la propuesta antigua (bundler + `js/main.js`, nunca detallada).
 
 ---
 
-**Última actualización:** 28/08/2026 — diseño del proceso de modularización de JS (sin implementar, ritmo oportunista), + pestañas Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores cerrados en v647 (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)
+### 28/08/2026 (v649) — Volt hereda el tema claro/oscuro de la app
+
+Cierra el hallazgo #3 de "Diseño / estética" de la auditoría del
+27/08/2026, a petición del usuario tras pedirle una revisión "como
+diseñador gráfico web" de la interfaz. El conteo original de esa
+auditoría ("36 hex hardcodeados, 0 `var(--...)`") subestimaba el alcance
+real: un grep de `#[0-9a-f]{3,6}` en `js/agente-widget.js` encontró **155
+ocurrencias** (~30 colores distintos), repartidas entre el bloque
+`<style>` inyectado (líneas 148-284) y decenas de `style="color:..."`
+inline dentro de las plantillas de chat/formularios generadas con
+concatenación de strings — Volt no es un componente pequeño, son 4400
+líneas con su propio mini sistema de diseño paralelo al de la app.
+
+**Decisión de diseño:** en vez de crear un espacio de tokens `--ag-*`
+nuevo (que habría exigido diseñar una paleta clara desde cero para cada
+uno de los ~30 colores), se reutilizan directamente los tokens que
+`css/styles.css` ya define en `:root`/`body.dark` — `--bg`, `--white`,
+`--surface2`, `--border`, `--text`, `--muted`, `--accent`, `--acc2`,
+`--green`/`--green-l`, `--red`/`--red-l`, `--amber`/`--amber-l`, `--teal`.
+Los tres tonos de gris "muted" (`#94a3b8`/`#64748b`/`#475569`) y los tres
+de texto claro (`#f1f5f9`/`#e2e8f0`/`#cbd5e1`) que Volt usaba para dar
+jerarquía dentro de su propio panel oscuro colapsan a un único
+`var(--muted)`/`var(--text)` — el resto de la app tampoco tiene más de un
+nivel de cada uno, así que era la propia inconsistencia de Volt la que
+sobraba, no una pérdida real de jerarquía. Las paletas de "acento" de
+Volt (verde/rojo/ámbar/morado/celeste, una por tipo de formulario rápido:
+alta de ítem, préstamo, mantenimiento, actualizar stock, cambiar estado)
+mapean 1:1 a los pares hue-existentes de la app (`--green`, `--red`,
+`--amber`, `--acc2` para el morado, `--teal` para los dos celestes/cian
+que Volt distinguía sin motivo real). Las burbujas del chat con texto
+claro sobre fondo de color (`.ag-msg-user`, `.ag-btn-blue`) se dejaron con
+`color:#fff` explícito en vez de `var(--text)` — con `var(--text)` en modo
+claro habría quedado texto casi negro sobre azul, imposible de leer; ese
+es exactamente el tipo de error que un mapeo ciego "todo lo que sea un
+hex se convierte en su token más parecido" habría introducido.
+
+**Excepciones deliberadas, sin tokenizar:**
+- Overlay de escaneo QR/código de barras (`#000`/`#fff` en la función que
+  monta `overlay.style.cssText`) — es un visor de cámara en vivo a
+  pantalla completa, necesita fondo negro fijo para que el vídeo se vea
+  con contraste sea cual sea el tema de la app, igual que cualquier
+  visor de cámara nativo.
+- Extremo del degradado del FAB (`#1d4ed8`) — color de marca fijo, mismo
+  patrón que ya usa `css/styles.css:581` (`.mod-code`, gradiente
+  `var(--accent)` + `#1d4ed8` literal) para otro elemento de marca.
+
+**Un caso encontrado y corregido durante el mapeo:** `.ag-btn-blue` no
+tenía `color` propio en la regla original, heredaba el `color` de
+`.ag-btn` (pensado para fondo neutro oscuro). Al tokenizar `.ag-btn`
+pasa a `color:var(--text)` (correcto sobre su fondo neutro
+`var(--white)`), pero `.ag-btn-blue` sobrescribe el fondo a
+`var(--accent)` (azul saturado) sin tocar el color de texto heredado —
+en modo claro habría quedado texto oscuro sobre azul medio, contraste
+insuficiente. Se añadió `color:#fff` explícito a `.ag-btn-blue` para
+corregirlo antes de que llegara a producción.
+
+**Verificación:** Playwright sirviendo el HTML estático con
+`python -m http.server` (el panel de Volt se construye al cargar la
+página, antes del login — no hace falta backend/D1 para comprobar
+colores). Comparado el panel en modo oscuro (por defecto) y claro
+(toggle `#btnTheme`) en escritorio, más una pasada en 390×844 (mismo
+viewport que el bug de overflow de v645) para confirmar que la
+tokenización no rompió el layout móvil. Sin regresión visual encontrada.
+
+Sin cambios de backend ni de esquema — puramente CSS/JS de presentación,
+`sw.js` → v649.
+
+---
+
+**Última actualización:** 28/08/2026 — Volt hereda el tema claro/oscuro de la app (v649, cierra el hallazgo #3 de la auditoría del 27/08/2026), + diseño del proceso de modularización de JS (sin implementar, ritmo oportunista), + pestañas Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores cerrados en v647 (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)

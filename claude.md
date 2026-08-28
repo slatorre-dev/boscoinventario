@@ -21,6 +21,23 @@ y `css/styles.css` (sin forma nativa de trocear HTML sin build step).
 Checklist paso a paso, tabla de prioridad y piloto concreto
 (`js/agente-widget.js` → `js/agente-voz.js`) en
 `docs/superpowers/specs/2026-08-28-modularizacion-js-design.md`.
+**Estado:** v649 | 28/08/2026 | Volt (`js/agente-widget.js`) ya hereda el
+tema claro/oscuro de la app — cierra el hallazgo #3 ("diseño") de la
+auditoría del 27/08/2026, a petición del usuario tras una revisión "como
+diseñador gráfico web". El conteo original de esa auditoría (36 hex
+hardcodeados) se quedaba corto: eran 155 ocurrencias (~30 colores
+distintos) entre el `<style>` inyectado y estilos inline de las
+plantillas de chat. Se mapearon a los tokens ya existentes en
+`css/styles.css` (`--bg`/`--white`/`--border`/`--text`/`--muted`/
+`--accent`/`--acc2`/`--green`/`--red`/`--amber`/`--teal`, con sus pares
+`-l`) en vez de crear un espacio `--ag-*` paralelo — Volt pasa a
+compartir superficies con el resto de la app. Excepciones deliberadas
+sin tokenizar: overlay de cámara QR (negro/blanco fijo, visor de vídeo
+en vivo) y extremo del degradado del FAB (`#1d4ed8`, marca fija, mismo
+patrón que `css/styles.css:581`). Verificado con Playwright en
+escritorio claro/oscuro y móvil 390px sirviendo el HTML estático (el
+panel se construye antes del login, no requiere backend). Detalle
+completo en `docs/DEVELOPMENT.md` 28/08/2026.
 **Estado:** v648 | 28/08/2026 | Pestañas "🔍 Auditoría"/"📥 CSV" de Volt
 (gestión masiva de datos) ya solo visibles para `superadmin` — a petición
 directa del usuario tras revisar el Pendiente #21. `applyAgentTabGating()`
@@ -711,9 +728,12 @@ Workers AI, onboarding de cámara (v543-v557).
     como check informativo en GitHub Actions (no bloquea el deploy de
     Cloudflare Pages). Sigue sin haber tests de frontend/E2E (18.4k líneas
     de `js/*`, sub-proyecto aparte, sin empezar — ver "Origen" en
-    `docs/superpowers/specs/2026-08-28-tests-backend-design.md`); 3) Volt
+    `docs/superpowers/specs/2026-08-28-tests-backend-design.md`); ~~3) Volt
     (`js/agente-widget.js`, 36 hex hardcodeados, 0 `var(--...)`) no
-    hereda el tema claro/oscuro de la app. Otros hallazgos menores ya
+    hereda el tema claro/oscuro de la app~~ ✅ resuelto (28/08/2026, v649,
+    ver Estado arriba) — eran en realidad 155 ocurrencias, mapeadas a los
+    tokens ya existentes de `css/styles.css` en vez de un espacio de
+    tokens nuevo. Otros hallazgos menores ya
     localizados: umbral de arrastre del FAB de Volt demasiado sensible
     en táctil (`agente-widget.js:470`); panel "🔔 Requiere tu atención"
     sin señal de reservas de hoy sin confirmar recogida

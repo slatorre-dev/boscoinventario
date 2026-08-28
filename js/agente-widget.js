@@ -146,11 +146,14 @@
   }
 
   // ── CSS ────────────────────────────────────────────────────────────────────
+  // Colores en var(--...) = tokens de css/styles.css (:root / body.dark) — Volt
+  // hereda el tema claro/oscuro de la app en vez de forzar siempre su paleta
+  // oscura propia (deuda documentada en docs/DEVELOPMENT.md 27/08/2026).
   var css = `
     #agente-fab {
       position: fixed; top: 68px; right: 14px; z-index: 99998;
       height: 36px; padding: 0 18px; border-radius: 18px;
-      background: linear-gradient(135deg, #1d4ed8, #0369a1);
+      background: linear-gradient(135deg, var(--accent), #1d4ed8);
       border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(29,78,216,.5);
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; font-weight: 700; letter-spacing: .3px; font-family: inherit; transition: opacity .2s, box-shadow .2s; white-space: nowrap; gap: 7px;
@@ -159,7 +162,7 @@
     #agente-fab:hover { opacity: .9; box-shadow: 0 6px 24px rgba(29,78,216,.7); }
     #agente-fab .fab-badge {
       position: absolute; top: -4px; right: -4px;
-      background: #ef4444; color: white; border-radius: 50%;
+      background: var(--red); color: white; border-radius: 50%;
       width: 18px; height: 18px; font-size: 10px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
     }
@@ -167,7 +170,7 @@
     #agente-panel {
       position: fixed; top: 0; right: 0; z-index: 99999;
       width: 420px; height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh;
-      background: #070d1a; border-left: 1px solid #1e293b;
+      background: var(--bg); border-left: 1px solid var(--border);
       display: flex; flex-direction: column;
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
       transform: translateY(-100vh); transition: transform .3s cubic-bezier(.4,0,.2,1);
@@ -184,31 +187,31 @@
     }
 
     .ag-header {
-      background: #0a1628; border-bottom: 1px solid #1e293b;
+      background: var(--white); border-bottom: 1px solid var(--border);
       padding: 10px 14px; display: flex; align-items: center; gap: 10px;
       flex-shrink: 0;
     }
     .ag-header-title { flex: 1; }
-    .ag-header-title .ag-title { font-size: 12px; font-weight: 700; color: #7dd3fc; letter-spacing: 1px; }
-    .ag-header-title .ag-sub { font-size: 10px; color: #475569; }
+    .ag-header-title .ag-title { font-size: 12px; font-weight: 700; color: var(--teal); letter-spacing: 1px; }
+    .ag-header-title .ag-sub { font-size: 10px; color: var(--muted); }
     .ag-badge { padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 600; }
-    .ag-badge-green { background: #d1fae5; color: #065f46; }
-    .ag-badge-yellow { background: #fef3c7; color: #92400e; }
-    .ag-badge-red { background: #fee2e2; color: #991b1b; }
-    .ag-close { background: none; border: none; color: #475569; cursor: pointer; font-size: 18px; padding: 4px; }
-    .ag-close:hover { color: #94a3b8; }
+    .ag-badge-green { background: var(--green-l); color: var(--green); }
+    .ag-badge-yellow { background: var(--amber-l); color: var(--amber); }
+    .ag-badge-red { background: var(--red-l); color: var(--red); }
+    .ag-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px; }
+    .ag-close:hover { color: var(--text); }
 
     .ag-tabs {
-      display: flex; border-bottom: 1px solid #1e293b;
-      background: #0a1628; overflow-x: auto; flex-shrink: 0;
+      display: flex; border-bottom: 1px solid var(--border);
+      background: var(--white); overflow-x: auto; flex-shrink: 0;
     }
     .ag-tab {
       background: transparent; border: none; border-bottom: 2px solid transparent;
-      color: #475569; padding: 8px 12px; cursor: pointer; font-size: 11px;
+      color: var(--muted); padding: 8px 12px; cursor: pointer; font-size: 11px;
       font-weight: 600; white-space: nowrap; font-family: inherit;
       transition: all .15s;
     }
-    .ag-tab.active { background: #1e293b; border-bottom-color: #38bdf8; color: #7dd3fc; }
+    .ag-tab.active { background: var(--surface2); border-bottom-color: var(--teal); color: var(--teal); }
 
     .ag-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
     .ag-panel { display: none; flex-direction: column; overflow-y: auto; padding: 14px; gap: 10px; min-height: 0; flex: 1; }
@@ -219,65 +222,65 @@
     .ag-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 14px; min-height: 0; }
     #ag-quick { flex-shrink: 0; }
     #ag-suggestions { flex-shrink: 0; }
-    .ag-input-row { flex-shrink: 0; padding: 10px 14px; border-top: 1px solid #1e293b; display: flex; gap: 8px; }
+    .ag-input-row { flex-shrink: 0; padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
     .ag-msg { max-width: 88%; padding: 9px 12px; border-radius: 10px; font-size: 12px; line-height: 1.6; }
-    .ag-msg-user { background: #0369a1; color: #f1f5f9; align-self: flex-end; border-bottom-right-radius: 2px; }
-    .ag-msg-ai { background: #1e293b; color: #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; }
+    .ag-msg-user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .ag-msg-ai { background: var(--white); color: var(--text); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid var(--border); }
     .ag-msg-ai table { border-collapse: collapse; font-size: 11px; width: 100%; margin: 6px 0; }
-    .ag-msg-ai th { background: #0f172a; color: #94a3b8; padding: 4px 8px; text-align: left; }
-    .ag-msg-ai td { padding: 4px 8px; color: #e2e8f0; border-bottom: 1px solid #1e293b; }
-    .ag-msg-ai strong { color: #f1f5f9; }
+    .ag-msg-ai th { background: var(--bg); color: var(--muted); padding: 4px 8px; text-align: left; }
+    .ag-msg-ai td { padding: 4px 8px; color: var(--text); border-bottom: 1px solid var(--border); }
+    .ag-msg-ai strong { color: var(--text); }
     .ag-msg-ai ul, .ag-msg-ai ol { padding-left: 16px; margin: 4px 0; }
-    .ag-cursor { display: inline-block; width: 5px; height: 12px; background: #38bdf8; margin-left: 2px; animation: ag-blink 1s infinite; vertical-align: middle; }
+    .ag-cursor { display: inline-block; width: 5px; height: 12px; background: var(--teal); margin-left: 2px; animation: ag-blink 1s infinite; vertical-align: middle; }
     @keyframes ag-blink { 0%,100%{opacity:1} 50%{opacity:0} }
     .ag-dots { display: flex; gap: 4px; padding: 10px 14px; }
-    .ag-dot { width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; animation: ag-bounce 1.2s ease-in-out infinite; }
+    .ag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: ag-bounce 1.2s ease-in-out infinite; }
     @keyframes ag-bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-    .ag-intent-chip { align-self: flex-start; background: rgba(148,163,184,.1); border: 1px solid rgba(148,163,184,.2); border-radius: 6px; padding: 2px 8px; font-size: 10px; color: #64748b; font-style: italic; margin: -2px 0 2px; max-width: 88%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ag-intent-chip { align-self: flex-start; background: rgba(148,163,184,.1); border: 1px solid rgba(148,163,184,.2); border-radius: 6px; padding: 2px 8px; font-size: 10px; color: var(--muted); font-style: italic; margin: -2px 0 2px; max-width: 88%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ag-quick { display: flex; flex-direction: column; gap: 6px; padding: 0 14px 10px; }
-    .ag-quick-btn { background: #1e293b; border: 1px solid #334155; border-radius: 7px; color: #94a3b8; padding: 7px 10px; cursor: pointer; font-size: 11px; text-align: left; font-family: inherit; transition: all .15s; }
-    .ag-quick-btn:hover { border-color: #38bdf8; color: #e2e8f0; }
-    .ag-input { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 7px; color: #f1f5f9; padding: 8px 10px; font-size: 12px; outline: none; font-family: inherit; }
-    .ag-send { background: #0369a1; border: none; border-radius: 7px; color: white; padding: 8px 12px; cursor: pointer; font-size: 14px; }
-    .ag-send:disabled { background: #1e293b; cursor: not-allowed; }
-    .ag-mic-btn.listening { background: #dc2626 !important; animation: ag-mic-pulse 1s infinite; }
+    .ag-quick-btn { background: var(--white); border: 1px solid var(--border); border-radius: 7px; color: var(--muted); padding: 7px 10px; cursor: pointer; font-size: 11px; text-align: left; font-family: inherit; transition: all .15s; }
+    .ag-quick-btn:hover { border-color: var(--teal); color: var(--text); }
+    .ag-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); padding: 8px 10px; font-size: 12px; outline: none; font-family: inherit; }
+    .ag-send { background: var(--accent); border: none; border-radius: 7px; color: white; padding: 8px 12px; cursor: pointer; font-size: 14px; }
+    .ag-send:disabled { background: var(--surface2); cursor: not-allowed; }
+    .ag-mic-btn.listening { background: var(--red) !important; animation: ag-mic-pulse 1s infinite; }
     @keyframes ag-mic-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.5)} 50%{box-shadow:0 0 0 6px rgba(220,38,38,0)} }
 
     /* Tablas genéricas */
     .ag-table-wrap { overflow-x: auto; }
     .ag-table { border-collapse: collapse; font-size: 11px; width: 100%; }
-    .ag-table th { background: #1e293b; color: #94a3b8; padding: 5px 8px; text-align: left; white-space: nowrap; }
-    .ag-table td { padding: 4px 8px; color: #e2e8f0; border-bottom: 1px solid #1e293b; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+    .ag-table th { background: var(--white); color: var(--muted); padding: 5px 8px; text-align: left; white-space: nowrap; }
+    .ag-table td { padding: 4px 8px; color: var(--text); border-bottom: 1px solid var(--border); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
     .ag-table td:nth-child(2) { max-width: 260px; } /* columna descripción más ancha */
-    .ag-table tr:nth-child(even) td { background: #111827; }
+    .ag-table tr:nth-child(even) td { background: var(--bg); }
 
     /* Controles */
-    .ag-btn { background: #1e293b; border: 1px solid #334155; border-radius: 7px; color: #f1f5f9; padding: 7px 12px; cursor: pointer; font-size: 11px; font-weight: 600; font-family: inherit; transition: opacity .15s; }
+    .ag-btn { background: var(--white); border: 1px solid var(--border); border-radius: 7px; color: var(--text); padding: 7px 12px; cursor: pointer; font-size: 11px; font-weight: 600; font-family: inherit; transition: opacity .15s; }
     .ag-btn:hover:not(:disabled) { opacity: .8; }
     .ag-btn:disabled { opacity: .4; cursor: not-allowed; }
-    .ag-btn-blue { background: #0369a1; border-color: #7dd3fc; }
-    .ag-label { color: #64748b; font-size: 10px; display: block; margin-bottom: 3px; }
-    .ag-input-field { background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #f1f5f9; padding: 7px 9px; font-size: 11px; outline: none; width: 100%; box-sizing: border-box; font-family: inherit; }
+    .ag-btn-blue { background: var(--accent); border-color: var(--teal); color: #fff; }
+    .ag-label { color: var(--muted); font-size: 10px; display: block; margin-bottom: 3px; }
+    .ag-input-field { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 9px; font-size: 11px; outline: none; width: 100%; box-sizing: border-box; font-family: inherit; }
     .ag-row { display: flex; gap: 8px; }
     .ag-col { flex: 1; }
-    .ag-ai-result { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; font-size: 11px; line-height: 1.7; color: #cbd5e1; margin-top: 4px; max-height: 300px; overflow-y: auto; }
+    .ag-ai-result { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 11px; line-height: 1.7; color: var(--text); margin-top: 4px; max-height: 300px; overflow-y: auto; }
     .ag-ai-result table { border-collapse: collapse; width: 100%; }
-    .ag-ai-result th { background: #1e293b; color: #94a3b8; padding: 4px 8px; font-size: 10px; }
-    .ag-ai-result td { padding: 4px 8px; border-bottom: 1px solid #1e293b; }
-    .ag-ai-result strong { color: #f1f5f9; }
-    .ag-section-title { color: #7dd3fc; font-size: 12px; font-weight: 700; margin: 0 0 4px; }
+    .ag-ai-result th { background: var(--white); color: var(--muted); padding: 4px 8px; font-size: 10px; }
+    .ag-ai-result td { padding: 4px 8px; border-bottom: 1px solid var(--border); }
+    .ag-ai-result strong { color: var(--text); }
+    .ag-section-title { color: var(--teal); font-size: 12px; font-weight: 700; margin: 0 0 4px; }
     .ag-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 
     /* Item links en respuestas IA */
-    .ag-item-link { color: #38bdf8; cursor: pointer; border-bottom: 1px dashed #38bdf8; transition: color .15s; }
-    .ag-item-link:hover { color: #7dd3fc; border-bottom-color: #7dd3fc; }
+    .ag-item-link { color: var(--teal); cursor: pointer; border-bottom: 1px dashed var(--teal); transition: color .15s; }
+    .ag-item-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
     /* Login overlay */
     .ag-login { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; padding: 24px; }
     .ag-login input { width: 100%; max-width: 260px; }
-    .ag-login-title { color: #7dd3fc; font-size: 14px; font-weight: 700; }
-    .ag-login-sub { color: #475569; font-size: 11px; }
-    .ag-err { color: #ef4444; font-size: 11px; }
+    .ag-login-title { color: var(--teal); font-size: 14px; font-weight: 700; }
+    .ag-login-sub { color: var(--muted); font-size: 11px; }
+    .ag-err { color: var(--red); font-size: 11px; }
   `;
 
   // ── Markdown → HTML simple ─────────────────────────────────────────────────
@@ -300,8 +303,8 @@
       if (line.startsWith('|')) { inTable = true; tableLines.push(line); return; }
       if (inTable) flushTable();
       if (!line.trim()) { html += '<br>'; return; }
-      if (line.startsWith('### ')) { html += '<strong style="color:#38bdf8;display:block;margin:8px 0 4px">' + esc(line.slice(4)) + '</strong>'; return; }
-      if (line.startsWith('## ')) { html += '<strong style="color:#7dd3fc;display:block;margin:10px 0 4px;font-size:12px">' + esc(line.slice(3)) + '</strong>'; return; }
+      if (line.startsWith('### ')) { html += '<strong style="color:var(--teal);display:block;margin:8px 0 4px">' + esc(line.slice(4)) + '</strong>'; return; }
+      if (line.startsWith('## ')) { html += '<strong style="color:var(--teal);display:block;margin:10px 0 4px;font-size:12px">' + esc(line.slice(3)) + '</strong>'; return; }
       if (line.startsWith('- ')) { html += '<div style="padding-left:10px;margin-bottom:2px">· ' + inlineMd(line.slice(2)) + '</div>'; return; }
       html += '<div style="margin-bottom:2px">' + inlineMd(line) + '</div>';
     });
@@ -598,15 +601,15 @@
         // ── Chat ──
         '<div id="ag-tab-chat" class="ag-panel active" style="padding:0;gap:0;">',
           '<div id="ag-messages" class="ag-messages">',
-            '<div style="text-align:center;padding:30px 16px;color:#475569;font-size:11px">',
+            '<div style="text-align:center;padding:30px 16px;color:var(--muted);font-size:11px">',
               'Conectando con el inventario...',
             '</div>',
           '</div>',
           '<div id="ag-quick" class="ag-quick" style="display:none">',
             '<div id="ag-stats-bar" style="display:none;gap:5px;flex-wrap:wrap;padding:0 10px 6px"></div>',
-            '<div style="padding:8px 10px;color:#64748b;font-size:9px;line-height:1.35;background:#0f172a;border-radius:7px;margin:0 10px 8px;border:1px solid #1e293b">',
-              '<strong style="color:#7dd3fc;display:block;margin-bottom:4px;font-size:9px">💡 PUEDES DECIRME:</strong>',
-              '<div style="margin-left:4px;color:#94a3b8">',
+            '<div style="padding:8px 10px;color:var(--muted);font-size:9px;line-height:1.35;background:var(--bg);border-radius:7px;margin:0 10px 8px;border:1px solid var(--border)">',
+              '<strong style="color:var(--teal);display:block;margin-bottom:4px;font-size:9px">💡 PUEDES DECIRME:</strong>',
+              '<div style="margin-left:4px;color:var(--muted)">',
                 '<div style="margin-bottom:2px">🔍 "¿Dónde está la Fusionadora de fibra?"</div>',
                 '<div style="margin-bottom:2px">📋 "¿Quién tiene el Osciloscopio?" · "Préstamos activos"</div>',
                 '<div style="margin-bottom:2px">✅ "Dame el multímetro" · "Necesito el soldador" · "Me llevo el taladro"</div>',
@@ -618,11 +621,11 @@
               '</div>',
             '</div>',
           '</div>',
-          '<div id="ag-suggestions" class="ag-quick" style="display:none;padding:8px 14px;border-top:1px solid #1e293b;gap:4px"></div>',
+          '<div id="ag-suggestions" class="ag-quick" style="display:none;padding:8px 14px;border-top:1px solid var(--border);gap:4px"></div>',
           '<div class="ag-input-row">',
-            '<button id="ag-scan" class="ag-send" title="Escanear código QR / código de barras" style="background:#1e293b">📷</button>',
-            '<button id="ag-mic" class="ag-send ag-mic-btn" title="Hablar por micrófono" style="background:#1e293b">🎤</button>',
-            '<button id="ag-clear" class="ag-send" title="Borrar pantalla del chat" style="background:#1e293b">🧹</button>',
+            '<button id="ag-scan" class="ag-send" title="Escanear código QR / código de barras" style="background:var(--white)">📷</button>',
+            '<button id="ag-mic" class="ag-send ag-mic-btn" title="Hablar por micrófono" style="background:var(--white)">🎤</button>',
+            '<button id="ag-clear" class="ag-send" title="Borrar pantalla del chat" style="background:var(--white)">🧹</button>',
             '<input id="ag-chat-input" class="ag-input" placeholder="Dame el multímetro · Devuelvo el soldador · ¿Qué hay en Aula 35?">',
             '<button id="ag-send" class="ag-send" disabled>➤</button>',
           '</div>',
@@ -1177,25 +1180,25 @@
     var prestActivos = (typeof prestamos !== 'undefined' ? prestamos : []).filter(function(p) {
       return p.estado === 'Activo' && String(p.itemId) === String(item.id);
     });
-    var stockColor = (min > 0 && Number(qty) < Number(min)) ? '#ef4444' : '#34d399';
+    var stockColor = (min > 0 && Number(qty) < Number(min)) ? 'var(--red)' : 'var(--green)';
 
     var html =
-      '<div style="margin-bottom:6px"><strong style="color:#7dd3fc;font-size:12px">' + esc(nombre) + '</strong>' +
-      ' <span style="color:#475569;font-size:10px">· ' + esc(ref) + '</span>' +
+      '<div style="margin-bottom:6px"><strong style="color:var(--teal);font-size:12px">' + esc(nombre) + '</strong>' +
+      ' <span style="color:var(--muted);font-size:10px">· ' + esc(ref) + '</span>' +
       ' <button onclick="if(window.navigateToItem)window.navigateToItem(' + Number(item.id) + ')" ' +
-      'style="font-size:9px;padding:2px 6px;background:#1e293b;border:1px solid #334155;border-radius:4px;color:#7dd3fc;cursor:pointer;margin-left:6px">✏ Editar ficha</button></div>' +
+      'style="font-size:9px;padding:2px 6px;background:var(--white);border:1px solid var(--border);border-radius:4px;color:var(--teal);cursor:pointer;margin-left:6px">✏ Editar ficha</button></div>' +
       '<table class="ag-table" style="width:100%;margin-top:4px"><tbody>' +
-      '<tr><td style="color:#94a3b8;width:90px">Aula</td><td>' + esc(aula) + '</td>' +
-          '<td style="color:#94a3b8;width:90px">Ubicación</td><td>' + esc(loc) + '</td></tr>' +
-      '<tr><td style="color:#94a3b8">Stock</td><td style="color:' + stockColor + ';font-weight:700">' + qty +
-          (min > 0 ? ' <span style="color:#64748b;font-weight:400">(mín: ' + min + ')</span>' : '') + '</td>' +
-          '<td style="color:#94a3b8">Estado</td><td>' + esc(estado) + '</td></tr>' +
-      '<tr><td style="color:#94a3b8">Categoría</td><td>' + esc(cat) + '</td>' +
-          '<td style="color:#94a3b8">Mant.</td><td>' + mant + '</td></tr>' +
+      '<tr><td style="color:var(--muted);width:90px">Aula</td><td>' + esc(aula) + '</td>' +
+          '<td style="color:var(--muted);width:90px">Ubicación</td><td>' + esc(loc) + '</td></tr>' +
+      '<tr><td style="color:var(--muted)">Stock</td><td style="color:' + stockColor + ';font-weight:700">' + qty +
+          (min > 0 ? ' <span style="color:var(--muted);font-weight:400">(mín: ' + min + ')</span>' : '') + '</td>' +
+          '<td style="color:var(--muted)">Estado</td><td>' + esc(estado) + '</td></tr>' +
+      '<tr><td style="color:var(--muted)">Categoría</td><td>' + esc(cat) + '</td>' +
+          '<td style="color:var(--muted)">Mant.</td><td>' + mant + '</td></tr>' +
       '</tbody></table>';
 
     if (prestActivos.length) {
-      html += '<div style="margin-top:6px;color:#fbbf24;font-size:10px">📤 Prestado a: ' +
+      html += '<div style="margin-top:6px;color:var(--amber);font-size:10px">📤 Prestado a: ' +
         prestActivos.map(function(p) {
           return esc(p.profesorNombre || '—') + ' · ' + esc(p.aulaDestino || '—') + ' (' + p.cantidad + ' ud.)';
         }).join(', ') + '</div>';
@@ -1579,24 +1582,24 @@
     }
     box.style.display = 'block';
     box.innerHTML =
-      '<strong style="color:#fbbf24">⚠ Ya existen ' + similares.length + ' ítem' + (similares.length !== 1 ? 's' : '') + ' similar' + (similares.length !== 1 ? 'es' : '') + ':</strong>' +
+      '<strong style="color:var(--amber)">⚠ Ya existen ' + similares.length + ' ítem' + (similares.length !== 1 ? 's' : '') + ' similar' + (similares.length !== 1 ? 'es' : '') + ':</strong>' +
       '<div style="margin-top:5px;display:grid;gap:3px">' +
         similares.map(function(it) {
           var qty = it.qty != null ? it.qty : (it.cantidad || 0);
           var nombreItem = it.item || it.nombre || it.name || '(sin nombre)';
-          return '<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid #1f2937;padding-top:3px">' +
-            '<span style="color:#cbd5e1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nombreItem) + '</span>' +
-            '<span style="color:#64748b;white-space:nowrap">' + esc(it.aula || '—') + ' · ' + qty + ' ud.</span>' +
+          return '<div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:3px">' +
+            '<span style="color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nombreItem) + '</span>' +
+            '<span style="color:var(--muted);white-space:nowrap">' + esc(it.aula || '—') + ' · ' + qty + ' ud.</span>' +
           '</div>';
         }).join('') +
       '</div>' +
-      '<div style="margin-top:5px;color:#64748b">Puedes crearlo igualmente si es un material distinto.</div>';
+      '<div style="margin-top:5px;color:var(--muted)">Puedes crearlo igualmente si es un material distinto.</div>';
   }
 
   function mostrarFormularioNuevoItem(nombreInicial, fraseCompleta, cantidadInicial) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #10b981;overflow:visible;';
+    formDiv.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--green);overflow:visible;';
 
     var aulaOptions = [];
     var cicloOptions = [];
@@ -1636,10 +1639,10 @@
     var selectMod = '<select class="ag-input-field ag-new-item-mod" style="padding:7px"><option value="">-- Seleccionar módulo --</option></select>';
 
     formDiv.innerHTML =
-      '<div style="margin-bottom:10px"><strong style="color:#10b981">📦 Crear nuevo item:</strong></div>' +
+      '<div style="margin-bottom:10px"><strong style="color:var(--green)">📦 Crear nuevo item:</strong></div>' +
       '<label class="ag-label">Nombre del item *</label>' +
       '<input class="ag-input-field ag-new-item-name" placeholder="Ej: Osciloscopio digital" value="' + esc(nombreInicial || '') + '">' +
-      '<div class="ag-new-item-similar" style="display:none;margin-top:6px;padding:7px 8px;background:#111827;border:1px solid #334155;border-radius:6px;font-size:10px;color:#94a3b8;line-height:1.35"></div>' +
+      '<div class="ag-new-item-similar" style="display:none;margin-top:6px;padding:7px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:10px;color:var(--muted);line-height:1.35"></div>' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
         '<div style="flex:1"><label class="ag-label">Tipo *</label>' +
         '<select class="ag-input-field ag-new-item-tipo" style="padding:7px"><option value="consumible">Consumible</option><option value="inventariable">Inventariable</option></select></div>' +
@@ -1749,7 +1752,7 @@
 
     formDiv.querySelector('.ag-new-item-submit').addEventListener('click', function() {
       var nombre = nameInput.value.trim();
-      if (!nombre) { nameInput.focus(); nameInput.style.borderColor = '#ef4444'; return; }
+      if (!nombre) { nameInput.focus(); nameInput.style.borderColor = 'var(--red)'; return; }
 
       var tipo = formDiv.querySelector('.ag-new-item-tipo').value;
       var qty = Number(formDiv.querySelector('.ag-new-item-qty').value) || 1;
@@ -1762,11 +1765,11 @@
       var obs = formDiv.querySelector('.ag-new-item-obs').value.trim();
       var resultEl = formDiv.querySelector('.ag-new-item-result');
 
-      if (!aula) { formDiv.querySelector('.ag-new-item-aula').focus(); formDiv.querySelector('.ag-new-item-aula').style.borderColor = '#ef4444'; return; }
-      if (!cat) { formDiv.querySelector('.ag-new-item-cat').focus(); formDiv.querySelector('.ag-new-item-cat').style.borderColor = '#ef4444'; return; }
+      if (!aula) { formDiv.querySelector('.ag-new-item-aula').focus(); formDiv.querySelector('.ag-new-item-aula').style.borderColor = 'var(--red)'; return; }
+      if (!cat) { formDiv.querySelector('.ag-new-item-cat').focus(); formDiv.querySelector('.ag-new-item-cat').style.borderColor = 'var(--red)'; return; }
 
       resultEl.innerHTML = '⏳ Creando item...';
-      resultEl.style.color = '#94a3b8';
+      resultEl.style.color = 'var(--muted)';
 
       var newItem = {
         item: nombre,
@@ -1796,7 +1799,7 @@
       }).then(function(res) {
         if (res.ok && res.item) {
           resultEl.innerHTML = '✅ Item creado: ' + esc(nombre) + ' (#' + res.item.id + ')';
-          resultEl.style.color = '#34d399';
+          resultEl.style.color = 'var(--green)';
           formDiv.querySelector('.ag-new-item-submit').disabled = true;
           formDiv.querySelector('.ag-new-item-submit').textContent = '✅ Guardado';
           detectarYGuardarCorreccion(formDiv, fraseCompleta);
@@ -1811,11 +1814,11 @@
           }
         } else {
           resultEl.innerHTML = '❌ Error: ' + (res.error || 'No se pudo crear el item');
-          resultEl.style.color = '#ef4444';
+          resultEl.style.color = 'var(--red)';
         }
       }).catch(function(e) {
         resultEl.innerHTML = '❌ Error: ' + e.message;
-        resultEl.style.color = '#ef4444';
+        resultEl.style.color = 'var(--red)';
       });
     });
   }
@@ -1823,16 +1826,16 @@
   function mostrarFormularioPrestamo(item, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #38bdf8';
+    formDiv.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--teal)';
 
     var qty = item.qty != null ? item.qty : (item.cantidad || 0);
     var nombreItem = item.item || item.nombre || item.name || '(sin nombre)';
 
     var min = Number(item.min || item.stock_min || 0);
     formDiv.innerHTML =
-      '<div style="margin-bottom:10px"><strong style="color:#7dd3fc">📋 Solicitar préstamo:</strong><br>' +
-      '<span style="color:#e2e8f0">' + esc(nombreItem) + '</span><br>' +
-      '<small style="color:#64748b">Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + (min > 0 ? ' · Mín: ' + min : '') + '</small></div>' +
+      '<div style="margin-bottom:10px"><strong style="color:var(--teal)">📋 Solicitar préstamo:</strong><br>' +
+      '<span style="color:var(--text)">' + esc(nombreItem) + '</span><br>' +
+      '<small style="color:var(--muted)">Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + (min > 0 ? ' · Mín: ' + min : '') + '</small></div>' +
       '<label class="ag-label">Profesor/a que lo solicita *</label>' +
       '<input class="ag-input-field ag-loan-prof" placeholder="Ej: Juan García">' +
       '<div style="display:flex;gap:6px;margin-top:6px">' +
@@ -1841,7 +1844,7 @@
         '<div style="width:80px"><label class="ag-label">Cantidad</label>' +
         '<input class="ag-input-field ag-loan-qty" type="number" min="1" max="' + qty + '" value="1"></div>' +
       '</div>' +
-      '<div class="ag-loan-stock-warn" style="display:none;margin-top:6px;padding:5px 8px;border-radius:6px;background:#7c2d12;color:#fca5a5;font-size:11px"></div>' +
+      '<div class="ag-loan-stock-warn" style="display:none;margin-top:6px;padding:5px 8px;border-radius:6px;background:var(--red-l);color:var(--red);font-size:11px"></div>' +
       '<label class="ag-label" style="margin-top:6px">Devolución prevista</label>' +
       '<input class="ag-input-field ag-loan-date" type="date" min="' + new Date().toISOString().split('T')[0] + '">' +
       '<div style="display:flex;gap:6px;margin-top:10px">' +
@@ -1873,7 +1876,7 @@
       if (autoMsgs.length) {
         var loanResult = formDiv.querySelector('.ag-loan-result');
         if (loanResult) {
-          loanResult.style.color = '#64748b';
+          loanResult.style.color = 'var(--muted)';
           loanResult.innerHTML = '✨ ' + autoMsgs.join(' · ');
         }
       }
@@ -1905,7 +1908,7 @@
 
     formDiv.querySelector('.ag-loan-submit').addEventListener('click', function() {
       var profesor = profInput.value.trim();
-      if (!profesor) { profInput.focus(); profInput.style.borderColor = '#ef4444'; return; }
+      if (!profesor) { profInput.focus(); profInput.style.borderColor = 'var(--red)'; return; }
 
       var aula = formDiv.querySelector('.ag-loan-aula').value.trim();
       var cantidad = Number(formDiv.querySelector('.ag-loan-qty').value) || 1;
@@ -1913,7 +1916,7 @@
       var resultEl = formDiv.querySelector('.ag-loan-result');
 
       resultEl.innerHTML = '⏳ Registrando préstamo...';
-      resultEl.style.color = '#94a3b8';
+      resultEl.style.color = 'var(--muted)';
 
       var hoy = new Date().toISOString().replace('T',' ').slice(0,19);
       apiPost('/api/prestar', {
@@ -1936,13 +1939,13 @@
         }
       }).then(function(res) {
         resultEl.innerHTML = '✅ Préstamo registrado correctamente';
-        resultEl.style.color = '#34d399';
+        resultEl.style.color = 'var(--green)';
         formDiv.querySelector('.ag-loan-submit').disabled = true;
         formDiv.querySelector('.ag-loan-submit').textContent = '✅ Guardado';
         guardarAprendizaje(queryOriginal, 'prestamo');
       }).catch(function(e) {
         resultEl.innerHTML = '❌ Error: ' + e.message;
-        resultEl.style.color = '#ef4444';
+        resultEl.style.color = 'var(--red)';
       });
     });
   }
@@ -2012,7 +2015,7 @@
     if (!_practicaFlow) return;
     if (_practicaFlow.step === 'material') {
       var extra = _practicaFlow.lineas.length
-        ? '<br><small style="color:#64748b">Añadido hasta ahora: ' + _practicaFlow.lineas.map(function(l) { return esc(l.itemNombre) + ' (' + l.cantidad + ')'; }).join(', ') + '</small>'
+        ? '<br><small style="color:var(--muted)">Añadido hasta ahora: ' + _practicaFlow.lineas.map(function(l) { return esc(l.itemNombre) + ' (' + l.cantidad + ')'; }).join(', ') + '</small>'
         : '';
       appendMsgHtml('¿Qué material necesitas? Escribe un ítem cada vez (ej. "3 multímetros") y "listo" cuando termines.' + extra);
     } else if (_practicaFlow.step === 'fecha') {
@@ -2085,7 +2088,7 @@
       var btn = document.createElement('button');
       btn.className = 'ag-quick-btn';
       btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
-      btn.innerHTML = '📦 ' + esc(nombre) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ')</small>';
+      btn.innerHTML = '📦 ' + esc(nombre) + ' <small style="color:var(--muted)">(Aula: ' + esc(item.aula || '—') + ')</small>';
       btn.addEventListener('click', function() { div.remove(); _agregarLineaFlujoPractica(item, cantidad); });
       div.appendChild(btn);
     });
@@ -2169,18 +2172,18 @@
     var esHoy = f.fecha === hoyIso;
     var div = document.createElement('div');
     div.className = 'ag-msg ag-msg-ai';
-    div.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #38bdf8';
+    div.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--teal)';
     div.innerHTML =
-      '<div style="margin-bottom:8px"><strong style="color:#7dd3fc">📋 Resumen de la práctica</strong></div>' +
-      '<div style="font-size:13px;line-height:1.7;color:#e2e8f0">' +
+      '<div style="margin-bottom:8px"><strong style="color:var(--teal)">📋 Resumen de la práctica</strong></div>' +
+      '<div style="font-size:13px;line-height:1.7;color:var(--text)">' +
         '📅 ' + esc(f.fecha) + (f.franja ? ' · ' + esc(f.franja) : '') + '<br>' +
         '👤 ' + esc(f.profesorNombre || '—') +
         (f.moduloNombre ? '<br>📚 ' + esc(f.moduloNombre) : '') +
       '</div>' +
-      '<div style="margin:8px 0;font-size:13px;color:#e2e8f0">' + lineasHtml + '</div>' +
+      '<div style="margin:8px 0;font-size:13px;color:var(--text)">' + lineasHtml + '</div>' +
       (esHoy
-        ? '<small style="color:#fbbf24">Es hoy: al confirmar se creará la reserva y se registrará el préstamo automáticamente.</small>'
-        : '<small style="color:#64748b">Quedará como reserva pendiente hasta el día de recogida (Préstamos → Ver reservas).</small>') +
+        ? '<small style="color:var(--amber)">Es hoy: al confirmar se creará la reserva y se registrará el préstamo automáticamente.</small>'
+        : '<small style="color:var(--muted)">Quedará como reserva pendiente hasta el día de recogida (Préstamos → Ver reservas).</small>') +
       '<div style="display:flex;gap:6px;margin-top:10px">' +
         '<button class="ag-btn ag-btn-blue ag-practica-confirm" style="flex:1">✅ Confirmar</button>' +
         '<button class="ag-btn ag-practica-cancel">Cancelar</button>' +
@@ -2219,7 +2222,7 @@
     var resultEl = div ? div.querySelector('.ag-practica-result') : null;
     var confirmBtn = div ? div.querySelector('.ag-practica-confirm') : null;
     if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '⏳ Guardando...'; }
-    if (resultEl) { resultEl.style.color = '#94a3b8'; resultEl.innerHTML = '⏳ Creando reserva...'; }
+    if (resultEl) { resultEl.style.color = 'var(--muted)'; resultEl.innerHTML = '⏳ Creando reserva...'; }
 
     var hoyIso = new Date().toISOString().slice(0, 10);
     var esHoy = f.fecha === hoyIso;
@@ -2236,7 +2239,7 @@
 
       if (!esHoy) {
         if (confirmBtn) confirmBtn.textContent = '✅ Guardado';
-        if (resultEl) { resultEl.style.color = '#34d399'; resultEl.innerHTML = '✅ Práctica planificada'; }
+        if (resultEl) { resultEl.style.color = 'var(--green)'; resultEl.innerHTML = '✅ Práctica planificada'; }
         appendMsg('ai', '📅 Reserva creada para el ' + esc(f.fecha) + '. La verás en Préstamos → Ver reservas.');
         _practicaFlow = null;
         _refrescarVistaReservasSiActiva();
@@ -2259,17 +2262,17 @@
         if (confirmBtn) confirmBtn.textContent = '✅ Guardado';
         if (res2.fallos && res2.fallos.length) {
           var nombresFallo = res2.fallos.map(function(x) { return x.itemNombre || '?'; }).join(', ');
-          if (resultEl) { resultEl.style.color = '#fbbf24'; resultEl.innerHTML = '⚠ Reserva creada, préstamo parcial'; }
+          if (resultEl) { resultEl.style.color = 'var(--amber)'; resultEl.innerHTML = '⚠ Reserva creada, préstamo parcial'; }
           appendMsg('ai', '⚠ Reserva creada. Sin stock suficiente para: ' + esc(nombresFallo) + '.');
         } else {
-          if (resultEl) { resultEl.style.color = '#34d399'; resultEl.innerHTML = '✅ Reserva y préstamo registrados'; }
+          if (resultEl) { resultEl.style.color = 'var(--green)'; resultEl.innerHTML = '✅ Reserva y préstamo registrados'; }
           appendMsg('ai', '✅ Listo — reserva creada y préstamo registrado para hoy.');
         }
         _practicaFlow = null;
         _refrescarVistaReservasSiActiva();
       });
     }).catch(function(e) {
-      if (resultEl) { resultEl.style.color = '#ef4444'; resultEl.innerHTML = '❌ Error: ' + esc(e.message); }
+      if (resultEl) { resultEl.style.color = 'var(--red)'; resultEl.innerHTML = '❌ Error: ' + esc(e.message); }
       else appendMsg('ai', '❌ Error: ' + e.message);
       if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ Confirmar'; }
     });
@@ -2578,7 +2581,7 @@
     });
     var chip = document.createElement('div');
     chip.className = 'ag-intent-chip';
-    chip.style.cssText = 'color:#34d399;border-color:rgba(52,211,153,.3);margin:4px 14px';
+    chip.style.cssText = 'color:var(--green);border-color:rgba(52,211,153,.3);margin:4px 14px';
     chip.textContent = '🧠 Aprendido: la próxima vez usaré ' + cambios.join(', ') + ' correcto' + (cambios.length > 1 ? 's' : '');
     el.messages.appendChild(chip);
     el.messages.scrollTop = el.messages.scrollHeight;
@@ -3135,8 +3138,8 @@
       var resultEl = formDiv.querySelector('.ag-new-item-result');
       if (resultEl) {
         resultEl.style.display = 'block';
-        resultEl.innerHTML = '<span style="color:#64748b">✨ Volt completó: </span>' +
-          msgs.map(function(m) { return '<span style="color:#34d399;margin-right:6px">' + esc(m) + '</span>'; }).join('');
+        resultEl.innerHTML = '<span style="color:var(--muted)">✨ Volt completó: </span>' +
+          msgs.map(function(m) { return '<span style="color:var(--green);margin-right:6px">' + esc(m) + '</span>'; }).join('');
       }
     }
 
@@ -3213,9 +3216,9 @@
     var mantPend  = inv.filter(function(x) { return x.mant == 1 || x.mant === '1'; });
     statsEl.innerHTML = '';
     var parts = [];
-    if (prestActivos.length) parts.push({ txt: '📋 ' + prestActivos.length + ' prestados', q: 'préstamos activos', col: '#38bdf8' });
-    if (stockBajo.length)    parts.push({ txt: '⚠ '  + stockBajo.length   + ' stock bajo',    q: 'stock bajo',        col: '#ef4444' });
-    if (mantPend.length)     parts.push({ txt: '🔧 ' + mantPend.length    + ' mantenimiento', q: 'lista mantenimiento',col: '#fbbf24' });
+    if (prestActivos.length) parts.push({ txt: '📋 ' + prestActivos.length + ' prestados', q: 'préstamos activos', col: 'var(--teal)' });
+    if (stockBajo.length)    parts.push({ txt: '⚠ '  + stockBajo.length   + ' stock bajo',    q: 'stock bajo',        col: 'var(--red)' });
+    if (mantPend.length)     parts.push({ txt: '🔧 ' + mantPend.length    + ' mantenimiento', q: 'lista mantenimiento',col: 'var(--amber)' });
     if (!parts.length) { statsEl.style.display = 'none'; return; }
     parts.forEach(function(p) {
       var b = document.createElement('button');
@@ -3250,10 +3253,10 @@
   function mostrarFormularioDevolucion(prestamosEncontrados, itemQuery, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #f59e0b';
+    formDiv.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--amber)';
 
     if (!prestamosEncontrados.length) {
-      formDiv.innerHTML = '<div style="color:#fbbf24">⚠ No encontré préstamos activos' +
+      formDiv.innerHTML = '<div style="color:var(--amber)">⚠ No encontré préstamos activos' +
         (itemQuery ? ' para "' + esc(itemQuery) + '"' : '') + '.</div>';
       el.messages.appendChild(formDiv);
       el.messages.scrollTop = el.messages.scrollHeight;
@@ -3266,12 +3269,12 @@
         '<td>' + esc(p.itemNombre || '—') + '</td>' +
         '<td>' + esc(p.profesorNombre || '—') + '</td>' +
         '<td style="text-align:center">' + (p.cantidad||1) + '</td>' +
-        '<td style="color:#64748b">' + (p.fechaPrestamo||'').slice(0,10) + '</td>' +
+        '<td style="color:var(--muted)">' + (p.fechaPrestamo||'').slice(0,10) + '</td>' +
       '</tr>';
     }).join('');
 
     formDiv.innerHTML =
-      '<div style="margin-bottom:10px"><strong style="color:#fbbf24">↩ Devolver préstamo:</strong></div>' +
+      '<div style="margin-bottom:10px"><strong style="color:var(--amber)">↩ Devolver préstamo:</strong></div>' +
       '<table class="ag-table" style="width:100%;margin-bottom:10px">' +
         '<thead><tr><th></th><th>Ítem</th><th>Profesor</th><th>Cant.</th><th>Fecha</th></tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
@@ -3288,9 +3291,9 @@
     formDiv.querySelector('.ag-dev-cancel').addEventListener('click', function() { formDiv.remove(); });
     formDiv.querySelector('.ag-dev-submit').addEventListener('click', function() {
       var checks = formDiv.querySelectorAll('.ag-dev-check:checked');
-      if (!checks.length) { appendMsgInDiv(formDiv, '⚠ Marca al menos un préstamo', '#fbbf24'); return; }
+      if (!checks.length) { appendMsgInDiv(formDiv, '⚠ Marca al menos un préstamo', 'var(--amber)'); return; }
       var resultEl = formDiv.querySelector('.ag-dev-result');
-      resultEl.innerHTML = '⏳ Procesando...'; resultEl.style.color = '#94a3b8';
+      resultEl.innerHTML = '⏳ Procesando...'; resultEl.style.color = 'var(--muted)';
       var promises = Array.from(checks).map(function(chk) {
         return apiPost('/api/prestar', {
           action: 'devolver',
@@ -3300,13 +3303,13 @@
       });
       Promise.all(promises).then(function() {
         resultEl.innerHTML = '✅ Devolución registrada';
-        resultEl.style.color = '#34d399';
+        resultEl.style.color = 'var(--green)';
         formDiv.querySelector('.ag-dev-submit').disabled = true;
         guardarAprendizaje(queryOriginal, 'devolver');
         if (typeof loadData === 'function') setTimeout(loadData, 500);
       }).catch(function(e) {
         resultEl.innerHTML = '❌ Error: ' + e.message;
-        resultEl.style.color = '#ef4444';
+        resultEl.style.color = 'var(--red)';
       });
     });
   }
@@ -3315,10 +3318,10 @@
   function mostrarFormularioStock(item, cantidadSugerida, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #8b5cf6';
+    formDiv.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--acc2)';
     formDiv.innerHTML =
-      '<div style="margin-bottom:8px"><strong style="color:#a78bfa">📦 Actualizar stock:</strong> ' + esc(item.item) + '</div>' +
-      '<div style="color:#64748b;font-size:11px;margin-bottom:8px">Stock actual: <strong style="color:#e2e8f0">' + (item.qty||0) + '</strong> · Mínimo: ' + (item.min||0) + '</div>' +
+      '<div style="margin-bottom:8px"><strong style="color:var(--acc2)">📦 Actualizar stock:</strong> ' + esc(item.item) + '</div>' +
+      '<div style="color:var(--muted);font-size:11px;margin-bottom:8px">Stock actual: <strong style="color:var(--text)">' + (item.qty||0) + '</strong> · Mínimo: ' + (item.min||0) + '</div>' +
       '<label class="ag-label">Nueva cantidad *</label>' +
       '<input class="ag-input-field ag-stock-qty" type="number" min="0" value="' + (cantidadSugerida !== null ? cantidadSugerida : item.qty||0) + '">' +
       '<label class="ag-label" style="margin-top:6px">Motivo (opcional)</label>' +
@@ -3336,7 +3339,7 @@
     formDiv.querySelector('.ag-stock-submit').addEventListener('click', function() {
       var nuevaQty = Number(formDiv.querySelector('.ag-stock-qty').value);
       var resultEl = formDiv.querySelector('.ag-stock-result');
-      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = '#94a3b8';
+      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = 'var(--muted)';
       var updated = Object.assign({}, item, { qty: nuevaQty });
       apiPost('/api/item', { action: 'update', item: updated }).then(function(res) {
         if (!res.ok) throw new Error(res.error);
@@ -3344,11 +3347,11 @@
         if (idx >= 0) items[idx] = updated;
         rebuildInventoryIndex(true);
         resultEl.innerHTML = '✅ Stock actualizado a ' + nuevaQty;
-        resultEl.style.color = '#34d399';
+        resultEl.style.color = 'var(--green)';
         formDiv.querySelector('.ag-stock-submit').disabled = true;
         guardarAprendizaje(queryOriginal, 'stock');
       }).catch(function(e) {
-        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
+        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = 'var(--red)';
       });
     });
   }
@@ -3357,13 +3360,13 @@
   function mostrarFormularioEstado(item, estadoSugerido, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #06b6d4';
+    formDiv.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--teal)';
     var opts = ['Bueno','Deteriorado','Avería','Baja'].map(function(e) {
       return '<option value="' + e + '"' + (e === (estadoSugerido || item.est) ? ' selected' : '') + '>' + e + '</option>';
     }).join('');
     formDiv.innerHTML =
-      '<div style="margin-bottom:8px"><strong style="color:#67e8f9">🔧 Cambiar estado:</strong> ' + esc(item.item) + '</div>' +
-      '<div style="color:#64748b;font-size:11px;margin-bottom:8px">Estado actual: <strong style="color:#e2e8f0">' + esc(item.est||'—') + '</strong></div>' +
+      '<div style="margin-bottom:8px"><strong style="color:var(--teal)">🔧 Cambiar estado:</strong> ' + esc(item.item) + '</div>' +
+      '<div style="color:var(--muted);font-size:11px;margin-bottom:8px">Estado actual: <strong style="color:var(--text)">' + esc(item.est||'—') + '</strong></div>' +
       '<label class="ag-label">Nuevo estado *</label>' +
       '<select class="ag-input-field ag-estado-sel" style="padding:7px">' + opts + '</select>' +
       '<label class="ag-label" style="margin-top:6px">Nota (opcional)</label>' +
@@ -3381,7 +3384,7 @@
       var nuevoEst = formDiv.querySelector('.ag-estado-sel').value;
       var obs = formDiv.querySelector('.ag-estado-obs').value.trim();
       var resultEl = formDiv.querySelector('.ag-estado-result');
-      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = '#94a3b8';
+      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = 'var(--muted)';
       var updated = Object.assign({}, item, { est: nuevoEst, obs: obs || item.obs });
       apiPost('/api/item', { action: 'update', item: updated }).then(function(res) {
         if (!res.ok) throw new Error(res.error);
@@ -3389,11 +3392,11 @@
         if (idx >= 0) items[idx] = updated;
         rebuildInventoryIndex(true);
         resultEl.innerHTML = '✅ Estado cambiado a ' + nuevoEst;
-        resultEl.style.color = '#34d399';
+        resultEl.style.color = 'var(--green)';
         formDiv.querySelector('.ag-estado-submit').disabled = true;
         guardarAprendizaje(queryOriginal, 'estado');
       }).catch(function(e) {
-        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
+        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = 'var(--red)';
       });
     });
   }
@@ -3402,9 +3405,9 @@
   function mostrarFormularioMantenimiento(item, queryOriginal) {
     var formDiv = document.createElement('div');
     formDiv.className = 'ag-msg ag-msg-ai';
-    formDiv.style.cssText = 'max-width:95%;background:#0f172a;border:1px solid #f59e0b';
+    formDiv.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--amber)';
     formDiv.innerHTML =
-      '<div style="margin-bottom:8px"><strong style="color:#fbbf24">🛠 Solicitar mantenimiento:</strong> ' + esc(item.item) + '</div>' +
+      '<div style="margin-bottom:8px"><strong style="color:var(--amber)">🛠 Solicitar mantenimiento:</strong> ' + esc(item.item) + '</div>' +
       '<label class="ag-label">Responsable (opcional)</label>' +
       '<input class="ag-input-field ag-mant-resp" placeholder="Ej: Servicio técnico, Juan...">' +
       '<label class="ag-label" style="margin-top:6px">Descripción del problema *</label>' +
@@ -3422,11 +3425,11 @@
     formDiv.querySelector('.ag-mant-cancel').addEventListener('click', function() { formDiv.remove(); });
     formDiv.querySelector('.ag-mant-submit').addEventListener('click', function() {
       var nota = formDiv.querySelector('.ag-mant-nota').value.trim();
-      if (!nota) { formDiv.querySelector('.ag-mant-nota').style.borderColor = '#ef4444'; return; }
+      if (!nota) { formDiv.querySelector('.ag-mant-nota').style.borderColor = 'var(--red)'; return; }
       var resp = formDiv.querySelector('.ag-mant-resp').value.trim();
       var fecha = formDiv.querySelector('.ag-mant-fecha').value;
       var resultEl = formDiv.querySelector('.ag-mant-result');
-      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = '#94a3b8';
+      resultEl.innerHTML = '⏳ Guardando...'; resultEl.style.color = 'var(--muted)';
       var updated = Object.assign({}, item, {
         mant: '1', mantEstado: 'Pendiente',
         mantNota: nota, mantResp: resp, mantFecha: fecha
@@ -3437,11 +3440,11 @@
         if (idx >= 0) items[idx] = updated;
         rebuildInventoryIndex(true);
         resultEl.innerHTML = '✅ Mantenimiento solicitado';
-        resultEl.style.color = '#34d399';
+        resultEl.style.color = 'var(--green)';
         formDiv.querySelector('.ag-mant-submit').disabled = true;
         guardarAprendizaje(queryOriginal, 'mantenimiento');
       }).catch(function(e) {
-        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = '#ef4444';
+        resultEl.innerHTML = '❌ ' + e.message; resultEl.style.color = 'var(--red)';
       });
     });
   }
@@ -3453,11 +3456,11 @@
     if (tipo === 'stock_bajo') {
       var bajos = (items || []).filter(function(x) { return x.min && Number(x.qty) < Number(x.min); });
       if (!bajos.length) { appendMsg('ai', '✅ No hay ítems con stock bajo en este momento.'); return true; }
-      appendMsgHtml('<strong style="color:#fbbf24">⚠ ' + bajos.length + ' ítems con stock bajo:</strong>' +
+      appendMsgHtml('<strong style="color:var(--amber)">⚠ ' + bajos.length + ' ítems con stock bajo:</strong>' +
         '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Aula</th><th>Stock</th><th>Mín.</th></tr></thead><tbody>' +
         bajos.slice(0,15).map(function(x) {
           return '<tr><td>' + esc(x.item) + '</td><td>' + esc(x.aula||'—') + '</td>' +
-            '<td style="color:#ef4444;font-weight:700">' + x.qty + '</td><td>' + x.min + '</td></tr>';
+            '<td style="color:var(--red);font-weight:700">' + x.qty + '</td><td>' + x.min + '</td></tr>';
         }).join('') + '</tbody></table>');
       return true;
     }
@@ -3465,7 +3468,7 @@
     if (tipo === 'lista_mantenimiento') {
       var mant = (items || []).filter(function(x) { return x.mant == 1 || x.mant === '1'; });
       if (!mant.length) { appendMsg('ai', '✅ No hay ítems pendientes de mantenimiento.'); return true; }
-      appendMsgHtml('<strong style="color:#fbbf24">🛠 ' + mant.length + ' ítems con mantenimiento pendiente:</strong>' +
+      appendMsgHtml('<strong style="color:var(--amber)">🛠 ' + mant.length + ' ítems con mantenimiento pendiente:</strong>' +
         '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Aula</th><th>Estado</th><th>Responsable</th></tr></thead><tbody>' +
         mant.slice(0,15).map(function(x) {
           return '<tr><td>' + esc(x.item) + '</td><td>' + esc(x.aula||'—') + '</td>' +
@@ -3495,14 +3498,14 @@
       if (!aulaItems.length) { appendMsg('ai', 'No encontré ítems en ' + esc(aula.name) + '.'); return true; }
       var bajos2 = aulaItems.filter(function(x) { return x.min && Number(x.qty) < Number(x.min); }).length;
       var mant2 = aulaItems.filter(function(x) { return x.mant == 1 || x.mant === '1'; }).length;
-      appendMsgHtml('<strong style="color:#67e8f9">🏫 Resumen ' + esc(aula.name) + '</strong> — ' +
-        aulaItems.length + ' ítems · <span style="color:#ef4444">⚠ ' + bajos2 + ' stock bajo</span> · <span style="color:#fbbf24">🛠 ' + mant2 + ' mantenimiento</span>' +
+      appendMsgHtml('<strong style="color:var(--teal)">🏫 Resumen ' + esc(aula.name) + '</strong> — ' +
+        aulaItems.length + ' ítems · <span style="color:var(--red)">⚠ ' + bajos2 + ' stock bajo</span> · <span style="color:var(--amber)">🛠 ' + mant2 + ' mantenimiento</span>' +
         '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Cant.</th><th>Estado</th><th>Ubicación</th></tr></thead><tbody>' +
         aulaItems.slice(0,20).map(function(x) {
           var low = x.min && Number(x.qty) < Number(x.min);
           return '<tr><td>' + esc(x.item) + '</td>' +
-            '<td style="color:' + (low?'#ef4444':'#34d399') + ';font-weight:700">' + x.qty + '</td>' +
-            '<td>' + esc(x.est||'—') + '</td><td style="color:#64748b">' + esc(x.loc||'—') + '</td></tr>';
+            '<td style="color:' + (low?'var(--red)':'var(--green)') + ';font-weight:700">' + x.qty + '</td>' +
+            '<td>' + esc(x.est||'—') + '</td><td style="color:var(--muted)">' + esc(x.loc||'—') + '</td></tr>';
         }).join('') + '</tbody></table>');
       return true;
     }
@@ -3514,13 +3517,13 @@
       var filtrados = palabras.length > 2 ? activos.filter(function(p) {
         return normalize(p.itemNombre||'').includes(palabras) || normalize(p.profesorNombre||'').includes(palabras);
       }) : activos;
-      appendMsgHtml('<strong style="color:#7dd3fc">📋 Préstamos activos' +
+      appendMsgHtml('<strong style="color:var(--teal)">📋 Préstamos activos' +
         (palabras.length > 2 ? ' para "' + esc(palabras) + '"' : '') + ' (' + filtrados.length + '):</strong>' +
         '<table class="ag-table" style="width:100%;margin-top:8px"><thead><tr><th>Ítem</th><th>Profesor</th><th>Cant.</th><th>Desde</th><th>Prevista</th></tr></thead><tbody>' +
         filtrados.slice(0,10).map(function(p) {
           return '<tr><td>' + esc(p.itemNombre||'—') + '</td><td>' + esc(p.profesorNombre||'—') + '</td>' +
-            '<td>' + (p.cantidad||1) + '</td><td style="color:#64748b">' + (p.fechaPrestamo||'').slice(0,10) + '</td>' +
-            '<td style="color:#f59e0b">' + (p.fechaPrevista||'—').slice(0,10) + '</td></tr>';
+            '<td>' + (p.cantidad||1) + '</td><td style="color:var(--muted)">' + (p.fechaPrestamo||'').slice(0,10) + '</td>' +
+            '<td style="color:var(--amber)">' + (p.fechaPrevista||'—').slice(0,10) + '</td></tr>';
         }).join('') + '</tbody></table>');
       return true;
     }
@@ -3533,9 +3536,9 @@
     var itemName = getItemName(item) || 'este ítem';
     var qty = item.qty != null ? item.qty : (item.cantidad || 0);
     div.className = 'ag-msg ag-msg-ai';
-    div.style.cssText = 'max-width:95%;background:#111827;border:1px solid #f59e0b';
+    div.style.cssText = 'max-width:95%;background:var(--bg);border:1px solid var(--amber)';
     div.innerHTML =
-      '<div style="margin-bottom:8px"><strong style="color:#fbbf24">Confirmación requerida</strong></div>' +
+      '<div style="margin-bottom:8px"><strong style="color:var(--amber)">Confirmación requerida</strong></div>' +
       '<div style="font-size:12px;line-height:1.5;margin-bottom:8px">Acción: <strong>' + esc(actionLabel) + '</strong><br>' +
       'Ítem: <strong>' + esc(itemName) + '</strong> · Aula: ' + esc(item.aula || '—') + ' · Stock: ' + qty + '</div>' +
       '<div style="display:flex;gap:6px">' +
@@ -3587,13 +3590,13 @@
 
     var listMsg = document.createElement('div');
     listMsg.className = 'ag-msg ag-msg-ai';
-    listMsg.innerHTML = '<strong>Acción: pendiente por ambigüedad.</strong><br><small style="color:#94a3b8">Resultado: encontré varios ítems. Siguiente: elige uno.</small><br><br>';
+    listMsg.innerHTML = '<strong>Acción: pendiente por ambigüedad.</strong><br><small style="color:var(--muted)">Resultado: encontré varios ítems. Siguiente: elige uno.</small><br><br>';
     candidatos.slice(0, 6).forEach(function(cand) {
       var item = cand.item;
       var btn = document.createElement('button');
       btn.className = 'ag-quick-btn';
       btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
-      btn.innerHTML = '📦 ' + esc(getItemName(item) || '(sin nombre)') + ' <small style="color:#64748b">(Aula: ' + esc(item.aula||'—') + ' · ' + esc(item.est||'—') + ' · ' + (item.qty||0) + ' ud. · score ' + cand.score + ')</small>';
+      btn.innerHTML = '📦 ' + esc(getItemName(item) || '(sin nombre)') + ' <small style="color:var(--muted)">(Aula: ' + esc(item.aula||'—') + ' · ' + esc(item.est||'—') + ' · ' + (item.qty||0) + ' ud. · score ' + cand.score + ')</small>';
       btn.addEventListener('click', (function(it) { return function() { listMsg.remove(); callback(it); }; })(item));
       listMsg.appendChild(btn);
     });
@@ -3607,15 +3610,15 @@
     if ((frase || '').trim().length < 12) return;
     var div = document.createElement('div');
     div.className = 'ag-msg ag-msg-ai';
-    div.style.cssText = 'max-width:95%;background:#0b1220;border:1px dashed #334155;padding:8px';
+    div.style.cssText = 'max-width:95%;background:var(--bg);border:1px dashed var(--border);padding:8px';
     var actual = detectada && INTENT_LABELS[detectada] ? ' · detecté: ' + INTENT_LABELS[detectada] : '';
     div.innerHTML =
       '<div style="display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap">' +
-        '<span style="font-size:11px;color:#94a3b8">¿No era eso?' + esc(actual) + '</span>' +
+        '<span style="font-size:11px;color:var(--muted)">¿No era eso?' + esc(actual) + '</span>' +
         '<button class="ag-quick-btn ag-learn-open" style="font-size:10px;padding:5px 8px">Enseñar intención</button>' +
       '</div>' +
       '<div class="ag-learn-options" style="display:none;gap:5px;flex-wrap:wrap;margin-top:7px"></div>' +
-      '<div class="ag-learn-result" style="font-size:11px;margin-top:6px;color:#94a3b8"></div>';
+      '<div class="ag-learn-result" style="font-size:11px;margin-top:6px;color:var(--muted)"></div>';
     el.messages.appendChild(div);
     el.messages.scrollTop = el.messages.scrollHeight;
 
@@ -3659,8 +3662,8 @@
 
   function mostrarAyudaVolt() {
     appendMsgHtml(
-      '<strong style="color:#7dd3fc">Qué puede hacer Volt</strong>' +
-      '<div style="font-size:11px;line-height:1.55;margin-top:6px;color:#cbd5e1">' +
+      '<strong style="color:var(--teal)">Qué puede hacer Volt</strong>' +
+      '<div style="font-size:11px;line-height:1.55;margin-top:6px;color:var(--text)">' +
         '<div>📦 <strong>Añadir:</strong> "añade un osciloscopio en aula 40"</div>' +
         '<div>✅ <strong>Préstamos:</strong> "dame el multímetro", "me llevo el taladro"</div>' +
         '<div>↩ <strong>Devolver:</strong> "devuelvo el osciloscopio", "cerrar préstamo"</div>' +
@@ -3668,7 +3671,7 @@
         '<div>🔧 <strong>Estado/mantenimiento:</strong> "está averiado", "solicitar reparación"</div>' +
         '<div>🔍 <strong>Consultas:</strong> "qué hay en aula 35", "quién tiene el soldador"</div>' +
         '<div>✏️ <strong>Editar:</strong> "abre la ficha del polímetro", "cambia el aula"</div>' +
-        '<div style="margin-top:6px;color:#94a3b8">Comandos: borra la pantalla · ver aprendizajes · borra aprendizajes · deshacer última enseñanza</div>' +
+        '<div style="margin-top:6px;color:var(--muted)">Comandos: borra la pantalla · ver aprendizajes · borra aprendizajes · deshacer última enseñanza</div>' +
       '</div>'
     );
   }
@@ -3680,13 +3683,13 @@
         return;
       }
       appendMsgHtml(
-        '<strong style="color:#7dd3fc">Aprendizajes guardados (' + state.learnedIntents.length + ')</strong>' +
+        '<strong style="color:var(--teal)">Aprendizajes guardados (' + state.learnedIntents.length + ')</strong>' +
         '<table class="ag-table" style="width:100%;margin-top:8px;font-size:10px"><thead><tr><th>Frase</th><th>Intención</th></tr></thead><tbody>' +
           state.learnedIntents.slice().reverse().slice(0, 20).map(function(ex) {
             return '<tr><td>' + esc(ex.raw || ex.phrase) + '</td><td>' + esc(INTENT_LABELS[ex.intent] || ex.intent) + '</td></tr>';
           }).join('') +
         '</tbody></table>' +
-        (state.learnedIntents.length > 20 ? '<div style="font-size:10px;color:#94a3b8;margin-top:6px">Mostrando los 20 últimos.</div>' : '')
+        (state.learnedIntents.length > 20 ? '<div style="font-size:10px;color:var(--muted);margin-top:6px">Mostrando los 20 últimos.</div>' : '')
       );
     });
   }
@@ -3757,7 +3760,7 @@
 
   function appendMsgInDiv(div, text, color) {
     var r = div.querySelector('.ag-dev-result') || div.querySelector('.ag-stock-result') || div.querySelector('.ag-mant-result');
-    if (r) { r.innerHTML = text; r.style.color = color || '#e2e8f0'; }
+    if (r) { r.innerHTML = text; r.style.color = color || 'var(--text)'; }
   }
 
   function appendIntentChip(tipo, entidad) {
@@ -3928,7 +3931,7 @@
         // Si hay varios, pedir que elija
         var listaMsg = document.createElement('div');
         listaMsg.className = 'ag-msg ag-msg-ai';
-        listaMsg.innerHTML = '<strong>Acción: préstamo pendiente.</strong><br><small style="color:#94a3b8">Resultado: encontré varios candidatos. Siguiente: elige uno.</small><br><br>';
+        listaMsg.innerHTML = '<strong>Acción: préstamo pendiente.</strong><br><small style="color:var(--muted)">Resultado: encontré varios candidatos. Siguiente: elige uno.</small><br><br>';
         candidatosPrest.slice(0, 5).forEach(function(cand) {
           var item = cand.item;
           var btn = document.createElement('button');
@@ -3936,7 +3939,7 @@
           btn.style.cssText = 'display:block;margin:4px 0;width:100%;text-align:left';
           var qty = item.qty != null ? item.qty : (item.cantidad || 0);
           var nombreBtn = item.item || item.nombre || item.name || '(sin nombre)';
-          btn.innerHTML = '📦 ' + esc(nombreBtn) + ' <small style="color:#64748b">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ', score ' + cand.score + ')</small>';
+          btn.innerHTML = '📦 ' + esc(nombreBtn) + ' <small style="color:var(--muted)">(Aula: ' + esc(item.aula || '—') + ', Stock: ' + qty + ', score ' + cand.score + ')</small>';
           btn.addEventListener('click', (function(it) { return function() {
             listaMsg.remove();
             mostrarFormularioPrestamo(it, q);
@@ -4045,7 +4048,7 @@
       if (!hist.length) return;
       // Separador visual
       var sep = document.createElement('div');
-      sep.style.cssText = 'text-align:center;font-size:10px;color:#334155;padding:4px 0;border-top:1px solid #1e293b;margin-bottom:4px';
+      sep.style.cssText = 'text-align:center;font-size:10px;color:var(--muted);padding:4px 0;border-top:1px solid var(--border);margin-bottom:4px';
       sep.textContent = '— conversación anterior —';
       el.messages.appendChild(sep);
       hist.forEach(function(m) {
@@ -4214,7 +4217,7 @@
     overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center';
     overlay.innerHTML = '<div style="position:absolute;top:14px;left:14px;right:14px;color:#fff;font-family:monospace;font-size:13px;text-align:center">📷 Apunta a un código QR o código de barras</div>' +
       '<video autoplay playsinline style="max-width:90vw;max-height:70vh;border-radius:12px"></video>' +
-      '<button style="position:absolute;top:10px;right:10px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer">✕</button>';
+      '<button style="position:absolute;top:10px;right:10px;background:var(--red);color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer">✕</button>';
     document.body.appendChild(overlay);
 
     var video = overlay.querySelector('video');
@@ -4308,14 +4311,14 @@
     filtrados.slice(0, 40).forEach(function(item){
       html += '<tr>' +
         '<td>' + esc(item.nombre || '') + '</td>' +
-        '<td style="color:' + (item.aula ? '#94a3b8' : '#ef4444') + '">' + esc(item.aula || '⚠️') + '</td>' +
-        '<td style="color:' + (item.cat ? '#94a3b8' : '#ef4444') + '">' + esc(item.cat || '⚠️') + '</td>' +
-        '<td style="color:' + (item.ref ? '#94a3b8' : '#f59e0b') + '">' + esc(item.ref || '—') + '</td>' +
+        '<td style="color:' + (item.aula ? 'var(--muted)' : 'var(--red)') + '">' + esc(item.aula || '⚠️') + '</td>' +
+        '<td style="color:' + (item.cat ? 'var(--muted)' : 'var(--red)') + '">' + esc(item.cat || '⚠️') + '</td>' +
+        '<td style="color:' + (item.ref ? 'var(--muted)' : 'var(--amber)') + '">' + esc(item.ref || '—') + '</td>' +
         '</tr>';
     });
     html += '</tbody></table>';
-    if (filtrados.length > 40) html += '<p style="color:#475569;font-size:10px;padding:4px 0">... y ' + (filtrados.length - 40) + ' más</p>';
-    el.panel.querySelector('#ag-audit-table').innerHTML = filtrados.length ? html : '<p style="color:#34d399;font-size:11px">✅ Sin problemas en este filtro</p>';
+    if (filtrados.length > 40) html += '<p style="color:var(--muted);font-size:10px;padding:4px 0">... y ' + (filtrados.length - 40) + ' más</p>';
+    el.panel.querySelector('#ag-audit-table').innerHTML = filtrados.length ? html : '<p style="color:var(--green);font-size:11px">✅ Sin problemas en este filtro</p>';
   }
 
   function auditAI() {
