@@ -8,6 +8,13 @@
 // futuro — solo en el que sigue justo a elegir departamento por primera vez.
 let _justSelectedDepartamento = false;
 
+// Contraseña recién tecleada en el login, solo en memoria (nunca en SESSION
+// ni localStorage) y solo mientras dura el paso de contraseña temporal
+// obligatoria (doForcePasswordChange la necesita como oldPassword). Se
+// descarta en cuanto se usa. SESSION ya no guarda la contraseña real en
+// ningún momento — usa session_token, ver doLogin()/js/api.js.
+let _pendingLoginPassword = null;
+
 // Paso final común a todos los flujos de login (usuario/contraseña, cambio
 // de contraseña obligatorio, Google) — si la cuenta no tiene departamento
 // (típico en cuentas de Google con correo @iesjuanbosco.es no mapeado en
@@ -85,7 +92,7 @@ async function doLogin(){
 
     SESSION = {
       usuario: usuario,
-      password: password,
+      session_token: res.user.session_token || '',
       nombre: res.user.nombre || usuario,
       rol: res.user.rol || 'profesor',
       email: res.user.email || '',
@@ -99,6 +106,7 @@ async function doLogin(){
     document.getElementById('loginPass').value = '';
 
     if(SESSION.passwordTemporal){
+      _pendingLoginPassword = password;
       document.getElementById('forcePass1').value = '';
       document.getElementById('forcePass2').value = '';
       document.getElementById('forcePassError').classList.remove('show');
@@ -149,9 +157,10 @@ async function doForcePasswordChange(){
 
   btn.disabled = true; btn.textContent = 'Cambiando...';
   try {
-    const res = await apiPost({ action: 'changePassword', oldPassword: SESSION.password, newPassword: n1 });
+    const res = await apiPost({ action: 'changePassword', oldPassword: _pendingLoginPassword, newPassword: n1 });
     if(!res.ok) throw new Error(res.error || 'Error al cambiar contraseña');
-    SESSION.password = n1;
+    _pendingLoginPassword = null;
+    SESSION.session_token = res.session_token || SESSION.session_token;
     SESSION.passwordTemporal = false;
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
     _proceedAfterLogin();
@@ -459,7 +468,22 @@ function _hideOverlay(){
 
 async function loadData(){
   if(!SESSION){ _hideOverlay(); show('pLogin'); setConn('','Sin sesión'); return; }
-  if(SESSION.passwordTemporal){ _hideOverlay(); show('pForcePassword'); return; }
+  if(SESSION.passwordTemporal){
+    if(!_pendingLoginPassword){
+      // La contraseña recién tecleada solo vive en memoria (nunca en
+      // localStorage) — si se pierde (recarga de página a mitad del
+      // cambio obligatorio), no hay forma de verificarla en el backend.
+      // Mejor pedir que inicie sesión de nuevo que mostrar un formulario
+      // que fallaría al enviarlo.
+      localStorage.removeItem('inv_session');
+      SESSION = null;
+      _hideOverlay();
+      show('pLogin');
+      setConn('', 'Sin sesión');
+      return;
+    }
+    _hideOverlay(); show('pForcePassword'); return;
+  }
   if(!SESSION.departamento){
     _hideOverlay();
     show('pSeleccionarDepartamento');

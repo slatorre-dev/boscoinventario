@@ -155,7 +155,7 @@ const AVISO_RESTANTES = 2;
 // todavía: nos autocuramos añadiéndolas y reintentando una vez, igual que
 // el patrón ya usado en usuarios.js para la columna `responsable`.
 async function getUserForLogin(db, usuario) {
-  const sql = 'SELECT usuario, nombre, rol, email, departamento, password_temporal, password, intentos_fallidos, bloqueado FROM usuarios WHERE usuario=?';
+  const sql = 'SELECT usuario, nombre, rol, email, departamento, password_temporal, password, intentos_fallidos, bloqueado, session_token FROM usuarios WHERE usuario=?';
   try {
     return await db.prepare(sql).bind(usuario).first();
   } catch (error) {
@@ -241,6 +241,18 @@ export async function onRequestGet({ request, env }) {
     delete row.password;
     delete row.intentos_fallidos;
     delete row.bloqueado;
+
+    // Token de sesión (mismo mecanismo que ya usa el login de Google):
+    // se reutiliza si ya existe, para no desconectar otras sesiones activas
+    // de la misma cuenta (las 48 cuentas genéricas de departamento las usan
+    // varios profesores a la vez desde dispositivos distintos). Solo se
+    // genera uno nuevo la primera vez, o al cambiar la contraseña (ver
+    // perfil.js/usuarios.js/resetPassword más abajo). Así el frontend deja
+    // de reenviar la contraseña real en cada petición tras el login.
+    if (!row.session_token) {
+      row.session_token = randomToken();
+      await env.DB.prepare('UPDATE usuarios SET session_token=? WHERE usuario=?').bind(row.session_token, row.usuario).run();
+    }
     const user = row;
     if (user.departamento) {
       const dept = await env.DB.prepare('SELECT nombre, icono FROM departamentos WHERE slug=?').bind(user.departamento).first().catch(() => null);
@@ -306,8 +318,11 @@ export async function onRequestPost({ request, env }) {
         return Response.json({ ok: false, error: 'El enlace ha caducado o no es válido' });
       }
 
-      await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
-        .bind(await hashPassword(body.newPassword), row.usuario).run();
+      // Rotar session_token: invalida cualquier sesión abierta con la
+      // contraseña/token anteriores, igual que si se hubiera cambiado la
+      // contraseña desde dentro de la app (ver auth.js action=login).
+      await env.DB.prepare('UPDATE usuarios SET password=?, session_token=? WHERE usuario=?')
+        .bind(await hashPassword(body.newPassword), randomToken(), row.usuario).run();
       await env.DB.prepare('DELETE FROM reset_tokens WHERE token=?').bind(body.token).run();
       return Response.json({ ok: true });
     } catch (error) {

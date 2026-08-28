@@ -71,6 +71,12 @@ async function hashPassword(password){
   return `pbkdf2$100000$${_pwBytesToHex(saltBytes)}$${_pwBytesToHex(new Uint8Array(bits))}`;
 }
 
+function randomToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 function normalizeText(s){
   return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 }
@@ -252,8 +258,11 @@ export async function onRequestPost({ request, env, data }) {
         return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
       }
     }
-    await env.DB.prepare('UPDATE usuarios SET password=? WHERE usuario=?')
-      .bind(await hashPassword(newPassword), body.usuario).run();
+    // Rotar session_token junto con la contraseña: cierra cualquier sesión
+    // que ese usuario tuviera abierta con el token anterior (mismo criterio
+    // que el cambio de contraseña propio, ver perfil.js changePassword).
+    await env.DB.prepare('UPDATE usuarios SET password=?, session_token=? WHERE usuario=?')
+      .bind(await hashPassword(newPassword), randomToken(), body.usuario).run();
     await auditLog(env.DB, user, 'userResetPassword', `Contraseña reseteada: ${body.usuario}`);
     return Response.json({ ok: true });
   }

@@ -9,6 +9,12 @@ async function auditLog(db, user, accion, resumen) {
   }
 }
 
+function randomToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
@@ -95,10 +101,16 @@ export async function onRequestPost({ request, env, data }) {
         return Response.json({ ok: false, error: 'La contraseña actual no es correcta' });
       }
 
-      await env.DB.prepare('UPDATE usuarios SET password=?, password_temporal=0 WHERE usuario=?')
-        .bind(await hashPassword(body.newPassword), user.usuario).run();
+      // Rotar session_token junto con la contraseña: invalida cualquier
+      // sesión abierta con el token anterior (mismo criterio que
+      // auth.js action=login / resetPassword). El nuevo token se devuelve
+      // para que la propia sesión que acaba de cambiar la contraseña siga
+      // autenticada sin tener que reenviarla.
+      const newSessionToken = randomToken();
+      await env.DB.prepare('UPDATE usuarios SET password=?, password_temporal=0, session_token=? WHERE usuario=?')
+        .bind(await hashPassword(body.newPassword), newSessionToken, user.usuario).run();
       await auditLog(env.DB, user, 'changePassword', 'Contraseña cambiada');
-      return Response.json({ ok: true });
+      return Response.json({ ok: true, session_token: newSessionToken });
     }
 
     return Response.json({ ok: false, error: 'Acción desconocida' });

@@ -5,10 +5,7 @@ async function logHistorial(accion, que, nombre = null, detalles = null) {
   if (!SESSION || !SESSION.usuario) return; // solo si hay sesión activa
 
   try {
-    const url = typeof urlWithAuth === 'function'
-      ? urlWithAuth('historial')
-      : `/api/historial?u=${encodeURIComponent(SESSION.usuario || '')}&p=${encodeURIComponent(SESSION.password || '')}`;
-    await fetch(url, {
+    await fetch(urlWithAuth('historial'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

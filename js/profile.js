@@ -94,7 +94,7 @@ async function doChangePassword() {
   try {
     const res = await apiPost({ action: 'changePassword', oldPassword: old, newPassword: n1 });
     if (!res.ok) throw new Error(res.error || 'Error al cambiar contraseña');
-    SESSION.password = n1;
+    SESSION.session_token = res.session_token || SESSION.session_token;
     localStorage.setItem('inv_session', JSON.stringify(SESSION));
     document.getElementById('profPassOld').value = '';
     document.getElementById('profPassNew').value = '';
