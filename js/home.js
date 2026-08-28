@@ -138,8 +138,7 @@ function renderHome(){
   const loading = !itemsLoaded;
   const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';
   const tieneMisAulas = esProfesor && Array.isArray(MIS_AULAS) && MIS_AULAS.length > 0;
-  const verTodasAulas = localStorage.getItem('home_ver_todas_aulas') === '1';
-  const filtrarPorMisAulas = tieneMisAulas && !verTodasAulas;
+  const filtrarPorMisAulas = debeFiltrarPorMisAulas();
 
   // Aviso descartable: sin esto, quien no abre nunca "📌 Mis Cursos/Aulas"
   // no descubre que puede elegir sus módulos/aulas — y las dos

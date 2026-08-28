@@ -36,7 +36,7 @@ const ACTION_PERMISSIONS = {
   delete: 'items.delete',
   bulkImport: 'import.write',
   restoreBackup: 'import.write',
-  fotosGet: 'items.write',
+  fotosGet: 'items.read',
   fotosSync: 'items.write',
   mantenimientosGet: 'items.write',
   buscarPorSerie: 'serie.read',
@@ -103,7 +103,7 @@ const SUPERADMIN_ONLY = ['visibility.manage'];
 
 function can(permission){
   if(!SESSION) return false;
-  if(permission === 'docs.read' || permission === 'serie.read') return true;
+  if(permission === 'docs.read' || permission === 'serie.read' || permission === 'items.read') return true;
   if(SUPERADMIN_ONLY.includes(permission)) return userRole() === 'superadmin';
   const perms = ROLE_PERMISSIONS[userRole()] || ROLE_PERMISSIONS.consulta;
   return perms.includes('*') || perms.includes(permission);

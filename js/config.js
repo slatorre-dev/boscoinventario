@@ -41,6 +41,16 @@ const TH_OPTIONS = ['th-blue','th-green','th-amber','th-teal','th-orange','th-pi
 // ═════════════════════════════════════════════════════════
 let MIS_MODULOS = []; // moduloId[] que imparte el usuario logueado (ver meta.js:misModulos)
 let MIS_AULAS = []; // aula.id[] en las que da clase el usuario logueado (ver meta.js:misAulas)
+
+// Compartido por home.js (rejilla de aulas/tarjetas) e inventory.js (getBase
+// de Stock bajo/Mantenimiento) — evita que ambos definan por separado la
+// misma condición y diverjan con el tiempo.
+function debeFiltrarPorMisAulas(){
+  const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';
+  const tieneMisAulas = esProfesor && Array.isArray(MIS_AULAS) && MIS_AULAS.length > 0;
+  const verTodasAulas = localStorage.getItem('home_ver_todas_aulas') === '1';
+  return tieneMisAulas && !verTodasAulas;
+}
 let CICLOS = [
   {
     id:'gm_telecom',

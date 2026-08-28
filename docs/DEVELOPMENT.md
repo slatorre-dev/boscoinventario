@@ -4751,4 +4751,80 @@ este trabajo).
 
 ---
 
-**Última actualización:** 28/08/2026 — tests automatizados de backend (28 tests, `npm test`) + revisión final de 4 hallazgos "Important"
+### 28/08/2026 (v647) — cuatro pendientes menores de la auditoría del 27/08/2026 (#7, #9, #18, #20)
+
+Cuatro puntos pequeños e independientes de la lista de Pendientes, a
+petición directa del usuario tras revisar qué quedaba abierto.
+
+1. **#7 — Rol `Consulta` ya ve la galería completa de fotos.** El proyecto
+   no tenía un permiso de solo-lectura para ítems: `fotosGet` exigía
+   `items.write` en `ACTION_PERMISSIONS` (`js/roles.js`), así que
+   `js/api.js` bloqueaba la llamada en el propio cliente (`canAction()`)
+   antes de que llegara al backend — el backend (`functions/api/item.js`,
+   acción `fotosGet`) nunca tuvo ninguna comprobación de permiso propia,
+   solo scoping por departamento. Fix: permiso nuevo `items.read`, con
+   vía libre para cualquier usuario logueado en `can()` — mismo patrón ya
+   usado para `docs.read`/`serie.read` (línea "cualquiera autenticado
+   puede leer, escribir sigue restringido por rol"). `fotosGet` pasa de
+   `items.write` a `items.read`. Sin cambios de backend.
+
+2. **#9 — `ia_deteccion_ejemplos` formalizada en `migrations/0038`.** La
+   tabla se autocreaba en runtime desde `ensureDeteccionLearningTable()`
+   (`functions/api/item.js:41`, con `CREATE TABLE IF NOT EXISTS`, patrón
+   ya usado también por `log`/`app_meta`) sin migración dedicada. Se
+   mantiene esa función tal cual (autosanación defensiva, igual que las
+   otras dos tablas) — la migración nueva solo documenta el esquema real
+   y lo deja trazable como el resto de tablas del proyecto. Aplicada a la
+   D1 remota (`npx wrangler d1 execute boscoinventario --remote
+   --file=migrations/0038_ia_deteccion_ejemplos.sql`): 0 filas
+   leídas/escritas, confirmando que era un no-op (la tabla ya existía).
+   Al llevar el prefijo numérico `00XX_`, `vitest.config.ts` la recoge
+   sola en la próxima corrida de `npm test` sin tocar el arnés de tests.
+
+3. **#18 — Ideas del brainstorming del 31/07/2026 volcadas a
+   `docs/IDEAS.md`.** Nunca se habían escrito; antes de copiarlas tal
+   cual se contrastó cada una contra el estado real del código para no
+   dejar entradas obsoletas:
+   - **Panel "Hoy requiere atención"** resultó ya implementado como el
+     modal "🔔 Requiere tu atención" (v641-v642) — se documentó como
+     🟡 parcial: cubre Pedidos/Solicitudes, Mantenimiento, Vencidos y
+     Accesos, pero no Stock bajo ni datos faltantes de auditoría.
+   - **Acciones en lote con preview/undo**: solo el borrado en lote tiene
+     protección real (`_bulkDelDialog()`, cuenta atrás de 5s cancelable
+     antes de ejecutar) — es un retraso previo, no una vista previa ni un
+     undo posterior, y no cubre edición en lote (aula/categoría/tags).
+   - Genuinamente sin implementar, añadidas tal cual: menú de acciones
+     compacto con texto, vistas de filtro guardadas ("Mis vistas"), modal
+     de ítem reorganizado por secciones, etiquetas de estado explícitas,
+     microcopy en vacíos/errores, accesibilidad (sin auditar nunca), y
+     niveles de severidad en Auditoría de Datos.
+   Documentación pura, sin cambios de código.
+
+4. **#20 — `goLowStock()`/`goMaintenance()` ahora sí acotan a "tus
+   aulas".** Las tarjetas de Inicio ya calculaban sus contadores acotados
+   a `MIS_AULAS` cuando aplica (v624), pero al clicarlas, `getBase()`
+   (`js/inventory.js`) filtraba `isLowStock`/`needsMaintenance` sobre
+   *todo* el departamento sin mirar `MIS_AULAS` — inconsistencia entre lo
+   que el contador prometía y lo que la vista destino mostraba. La
+   condición exacta ("¿es profesor con aulas propias elegidas y no ha
+   pulsado ver todas?") vivía duplicada en una función local de
+   `renderHome()`; para no repetirla una tercera vez (patrón de bug ya
+   visto 3 veces en este proyecto, Pendiente #17) se extrajo a
+   `debeFiltrarPorMisAulas()` en `js/config.js`, reusada ahora por
+   `home.js` e `inventory.js`.
+
+Los 4 puntos son solo frontend salvo la migración (#9, sin lógica nueva).
+Sin tests de backend afectados (`js/roles.js`, `js/config.js`,
+`js/inventory.js`, `js/home.js` no están cubiertos por la suite de
+Vitest, que es solo de `functions/api/*.js`) — no se ha podido correr
+`npm test` en esta sesión por el gotcha de siempre (repo dentro de
+Google Drive, sin `node_modules` ya instalado en este checkout; requeriría
+el worktree externo de la sesión anterior). Verificación manual: revisado
+el orden de carga de scripts en `index.html` (`config.js` antes que
+`roles.js`/`home.js`/`inventory.js`) para confirmar que
+`debeFiltrarPorMisAulas()` y el nuevo permiso están disponibles cuando se
+usan; sin verificación end-to-end con Playwright en esta sesión.
+
+---
+
+**Última actualización:** 28/08/2026 — 4 pendientes menores cerrados (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)

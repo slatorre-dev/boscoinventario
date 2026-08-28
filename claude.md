@@ -1,5 +1,20 @@
 # Nota de Trabajo - Bosco Inventario
 
+**Estado:** v647 | 28/08/2026 | Cuatro pendientes menores cerrados a
+petición del usuario (Pendiente #7/#9/#18/#20): permiso nuevo `items.read`
+(rol `Consulta` ya ve la galería completa de fotos, `fotosGet` ya no exige
+`items.write`); tabla `ia_deteccion_ejemplos` formalizada en
+`migrations/0038` (ya aplicada a la D1 remota, no-op — la tabla ya existía
+autocreada en runtime); ideas del brainstorming del 31/07/2026 volcadas a
+`docs/IDEAS.md` (contrastadas contra el código antes de escribirlas — el
+panel "Hoy requiere atención" que pedían resultó ya cubierto parcialmente
+por el modal 🔔 de v641-v642); y `goLowStock()`/`goMaintenance()` ahora
+acotan a "tus aulas" igual que ya hacían los contadores de Inicio
+(`debeFiltrarPorMisAulas()` nueva en `js/config.js`, compartida por
+`home.js`/`inventory.js`). Sin tests de backend afectados (todo frontend +
+una migración no-op); no se pudo correr `npm test` en esta sesión (mismo
+gotcha de siempre, ver Entorno). Detalle completo en `docs/DEVELOPMENT.md`
+28/08/2026 "cuatro pendientes menores".
 **Estado:** v646 | 28/08/2026 | Primer paso de la prioridad #1 de la
 auditoría del 27/08/2026 (credenciales en `?u=&p=`): el login
 usuario/contraseña ya no reenvía la contraseña real en cada petición —
@@ -582,11 +597,15 @@ Workers AI, onboarding de cámara (v543-v557).
    del usuario para que todo ítem quede clasificado en algo, aunque sea
    genérico, en vez de quedar sin ningún ciclo asociado. El usuario
    reclasificará los 899 ítems de `electricidadelectronica` a su ritmo.
-7. Rol `Consulta` (solo lectura) nunca ve la galería completa de fotos
-   (solo la principal) porque `fotosGet` exige `items.write` — el
-   proyecto no tiene hoy un permiso `items.read` más laxo.
-9. Convertir la tabla `ia_deteccion_ejemplos` en migración SQL formal
-   (`migrations/0027_...`) — hoy se autocrea en runtime en `item.js`.
+~~7. Rol `Consulta` (solo lectura) nunca ve la galería completa de fotos~~
+   ✅ resuelto (28/08/2026, v647): permiso nuevo `items.read` (vía libre
+   para cualquier usuario logueado, mismo patrón que `docs.read`/
+   `serie.read`), `fotosGet` pasa de exigir `items.write` a `items.read`.
+~~9. Convertir la tabla `ia_deteccion_ejemplos` en migración SQL formal~~
+   ✅ resuelto (28/08/2026): `migrations/0038_ia_deteccion_ejemplos.sql`,
+   aplicada a la D1 remota (no-op, la tabla ya existía). Se mantiene el
+   `CREATE TABLE IF NOT EXISTS` en runtime (`item.js`) como autosanación,
+   igual que `log`/`app_meta`.
 10. Endpoint interno de métricas de calidad de cámara por departamento
     (ratio exacto/fuzzy/sin lectura, top ambigüedades OCR) usando datos
     ya capturados en `ia_deteccion_ejemplos`.
@@ -629,15 +648,14 @@ Workers AI, onboarding de cámara (v543-v557).
     de un JOIN con un parámetro fijo) existe en algún otro sitio del
     backend además de los 2 ya corregidos (`list.js`, `notificarVencidos`
     en `prestar.js`) — no se ha auditado el resto del proyecto.
-18. Ideas de UI de un brainstorming sin cerrar (31/07/2026), nunca
-    volcadas a `docs/IDEAS.md` — algunas ya cubiertas por trabajo
-    posterior (QR unificado, vencidos más visibles), otras siguen
-    abiertas: panel "Hoy requiere atención" (stock bajo + vencidos +
-    mantenimiento + pedidos + datos faltantes en un sitio), menú de
-    acciones compacto con texto, auditoría con niveles de severidad,
-    vistas de filtro guardadas ("Mis vistas"), acciones en lote con
-    preview/undo, modal de ítem reorganizado por secciones, etiquetas
-    de estado explícitas, microcopy en vacíos/errores, accesibilidad.
+~~18. Ideas de UI de un brainstorming sin cerrar (31/07/2026), nunca
+    volcadas a `docs/IDEAS.md`~~ ✅ resuelto (28/08/2026): volcadas tras
+    contrastar cada una contra el código actual — el panel "Hoy requiere
+    atención" resultó ya cubierto (parcial) por el modal 🔔 de v641-v642,
+    el resto (menú de acciones con texto, "Mis vistas", niveles de
+    severidad en Auditoría, preview/undo en lote, modal por secciones,
+    etiquetas de estado, microcopy, accesibilidad) sigue abierto, ahora en
+    `docs/IDEAS.md`.
 ~~19. `importModulosCSV` bloqueada en el navegador para todos~~ ✅
     corregido (26/08/2026, v620-v621) — dos bugs de plumbing apilados: sin
     permiso en `ACTION_PERMISSIONS` (`js/roles.js`, v620) y, al arreglar
@@ -645,12 +663,14 @@ Workers AI, onboarding de cámara (v543-v557).
     que el bug de `userUnlock` de la sesión anterior). Verificado
     end-to-end contra producción sin atajos. Sin relación con el cambio de
     `modulo_profesores` de v619, solo se detectó al verificarlo.
-20. Las tarjetas de Stock bajo/Mantenimiento de Inicio ya se acotan a
+~~20. Las tarjetas de Stock bajo/Mantenimiento de Inicio ya se acotan a
     "tus aulas" cuando aplica (v624), pero clicarlas (`goLowStock()`/
     `goMaintenance()`) sigue abriendo la lista completa del departamento
-    sin acotar — inconsistencia menor, deliberada por ahora (acotar el
-    destino tocaría el filtro central de `js/inventory.js`, compartido
-    con más vistas).
+    sin acotar~~ ✅ resuelto (28/08/2026, v647): `getBase()`
+    (`js/inventory.js`) ya filtra por `MIS_AULAS` en `lowstock`/
+    `maintenance` con la misma condición que usan las tarjetas de Inicio
+    (`debeFiltrarPorMisAulas()`, nueva en `js/config.js`, compartida por
+    `home.js`/`inventory.js` para no duplicar la lógica).
 21. **Retomar la auditoría de código/diseño/usabilidad del 27/08/2026**
     (detalle completo con archivo:línea en `docs/DEVELOPMENT.md`, misma
     fecha). Prioridad sugerida: ~~1) credenciales en query string~~ 🟡

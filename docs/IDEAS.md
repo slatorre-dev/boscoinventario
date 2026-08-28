@@ -364,6 +364,74 @@ que ya permite ver el log de un ítem concreto a cualquier usuario de su
 departamento, no solo a jefatura/superadmin (a diferencia del historial
 completo). Esta entrada quedaba desactualizada en el roadmap.
 
+### Panel "Hoy requiere atención" — 🟡 parcialmente implementado (v641-v642)
+De un brainstorming sin cerrar del 31/07/2026. Implementado como modal
+"🔔 Requiere tu atención" (`checkAtencionHoy()` en `js/home.js`, solo
+jefe/a departamento y superadmin): agrupa Pedidos/Solicitudes,
+Mantenimiento, Préstamos vencidos y Accesos bloqueados/contraseña
+temporal, con desglose por departamento para superadmin. Se abre sola una
+vez por sesión de navegador al terminar de cargar datos.
+Falta del pedido original: **Stock bajo** (hoy solo visible como tarjeta
+aparte en Inicio) y **datos faltantes** (auditoría) no están en este
+panel — añadirlos como chips más si se retoma.
+**Prioridad:** Baja (lo grueso ya cubierto)
+
+### Menú de acciones compacto con texto
+Del mismo brainstorming del 31/07/2026, sin implementar. El menú de
+acciones por fila (`toggleActionMenu()`, `js/inventory.js`) usa solo
+iconos — un menú con icono+texto sería más descubrible para quien no ha
+memorizado qué hace cada símbolo.
+**Prioridad:** Baja
+
+### Vistas de filtro guardadas ("Mis vistas")
+Del mismo brainstorming del 31/07/2026, sin implementar. Guardar una
+combinación de filtros del inventario (categoría + estado + tipo +
+búsqueda) con un nombre, para volver a aplicarla en un clic — hoy los
+filtros de `js/inventory.js` no persisten entre sesiones salvo el término
+de búsqueda reciente (`#srch`, ya implementado arriba).
+**Prioridad:** Baja
+
+### Acciones en lote con preview/undo — parcialmente cubierto
+Del mismo brainstorming del 31/07/2026. Hoy solo el borrado en lote tiene
+protección (`_bulkDelDialog()` en `js/inventory.js`): confirmación +
+cuenta atrás de 5s cancelable antes de ejecutar — pero es un retraso
+previo a la acción, no una vista previa de los cambios ni un undo real
+tras ejecutarla, y no cubre el resto de acciones en lote (editar
+aula/categoría/tags en varios ítems a la vez, que se aplican sin ningún
+paso intermedio). Falta: previsualizar el diff antes de confirmar en
+ediciones en lote, y/o una ventana corta de deshacer tras cualquier acción
+en lote, no solo el borrado.
+**Prioridad:** Baja
+
+### Modal de ítem reorganizado por secciones
+Del mismo brainstorming del 31/07/2026, sin implementar. `modal-item.js`
+sigue siendo un formulario largo sin agrupación visual (fieldsets/
+secciones colapsables tipo "Identificación", "Ubicación", "Mantenimiento",
+"Detalles") — a día de hoy no hay ningún separador de sección en el modal.
+**Prioridad:** Media (el modal ha crecido mucho de campos desde 31/07/2026)
+
+### Etiquetas de estado explícitas
+Del mismo brainstorming del 31/07/2026, sin implementar. Estados como
+"stock bajo", "en mantenimiento", "oculto" se comunican hoy por color/icono
+en la tarjeta, pero no siempre con una etiqueta de texto explícita — relevante
+para accesibilidad (ver ítem siguiente) y para quien no reconoce el código
+de colores de un vistazo.
+**Prioridad:** Baja
+
+### Microcopy en vacíos/errores
+Del mismo brainstorming del 31/07/2026, sin implementar. Revisar mensajes
+de "sin resultados"/errores de red genéricos en toasts (`toast()`) y
+vistas vacías, para que guíen a la acción siguiente en vez de solo
+describir el problema.
+**Prioridad:** Baja
+
+### Accesibilidad
+Del mismo brainstorming del 31/07/2026, sin implementar ni auditado.
+Sin pasada de accesibilidad (contraste, `aria-label` en botones solo-icono,
+navegación por teclado en modales) en ningún punto del proyecto hasta la
+fecha.
+**Prioridad:** Baja (sin urgencia detectada, pero nunca evaluado)
+
 ---
 
 ## Volt — Agente IA
@@ -446,6 +514,15 @@ Pasar de filtros exclusivos a lógica combinada: "Sin módulo Y sin aula".
 
 **Prioridad:** Media
 
+### Niveles de Severidad
+De un brainstorming sin cerrar del 31/07/2026, sin implementar. Hoy
+`modal-auditoria.js` trata todos los campos faltantes por igual — separar
+por severidad (ej. "sin aula" bloquea más que "sin proveedor") ayudaría a
+priorizar qué corregir primero en departamentos con muchos ítems
+pendientes de auditar.
+
+**Prioridad:** Baja
+
 ### Exportar Reporte de Auditoría
 CSV o PDF con items problemáticos agrupados por aula/categoría.
 
@@ -486,8 +563,8 @@ hoy no se puede representar), no de forma especulativa.
 
 ## Estado
 
-- **Última actualización:** 02/08/2026
-- **Versión actual:** v558
+- **Última actualización:** 28/08/2026
+- **Versión actual:** v646
 - **Roadmap "Modo Cámara Inteligente":** completo — ideas #1-#8 implementadas
   y en producción, #9 resultó ya cubierta por código existente (sin
   cambios necesarios), #10 descartada por bajo valor frente a su
