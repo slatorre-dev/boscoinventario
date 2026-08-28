@@ -424,10 +424,13 @@ del proyecto.
 
 ## 🟡 Vulnerabilidades Medias
 
-### 11a. Volcados SQL completos commiteados en git — ⚠️ NUEVO HALLAZGO (28/08/2026, sin resolver)
+### 11a. Volcados SQL completos commiteados en git — 🔴 CONFIRMADO, SIN RESOLVER (28/08/2026)
 
-**Severidad:** ALTA si el repo es público, sin impacto si es privado —
-no confirmado en esta sesión.
+**Severidad:** ALTA — confirmado el 28/08/2026:
+`github.com/slatorre-dev/boscoinventario` es **público**. Cualquiera
+puede navegar a `Copias_SQL/backup_20260524_1426.sql` y descargar la
+tabla `usuarios` completa (contraseñas hasheadas PBKDF2, `session_token`
+reales) ahora mismo, sin necesitar acceso al historial de commits.
 
 **Descripción:** `Copias_SQL/backup_20260524_1426.sql` y otros 3 archivos
 de la misma carpeta están commiteados en el historial de git (commit
@@ -443,13 +446,15 @@ anteriores accesibles). Un hash PBKDF2 no es igual de grave que
 texto plano, pero sí es material para fuerza bruta offline sin límite de
 intentos (a diferencia del login real, que bloquea tras 5 intentos).
 
-**Pendiente:** confirmar visibilidad del repo. Si es público: (a) hacer
-el repo privado es la mitigación inmediata más simple, y/o (b) añadir
-`Copias_SQL/*.sql` a `.gitignore` hacia adelante, y/o (c) purgar del
-historial con `git filter-repo`/BFG si se decide que el repo debe seguir
-siendo público — esto último requiere coordinación (reescribe hashes de
-commit, invalida cualquier clon existente) y decisión explícita del
-usuario, no se ha hecho.
+**Pendiente, decisión del usuario:** (a) hacer el repo privado es la
+mitigación inmediata más simple y de menor riesgo; y/o (b) añadir
+`Copias_SQL/*.sql` a `.gitignore` hacia adelante para que no vuelva a
+pasar; y/o (c) purgar del historial con `git filter-repo`/BFG si debe
+seguir siendo público — esto último reescribe hashes de commit e invalida
+cualquier clon existente, requiere coordinación explícita. No se ha
+tocado nada todavía: cambiar visibilidad o reescribir historial son
+acciones que afectan al repositorio compartido y necesitan luz verde
+directa del usuario.
 
 ---
 

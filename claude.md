@@ -656,16 +656,17 @@ Workers AI, onboarding de cámara (v543-v557).
     (`profe1electricidadelectronica` dio "Credenciales incorrectas",
     sin insistir por riesgo de bloqueo) — confirmar si esa credencial de
     ejemplo del propio archivo sigue siendo válida.
-22. **Volcados SQL completos commiteados en git**
-    (`Copias_SQL/backup_20260524_1426.sql` y otros 3, commit `0d6e6a0`)
-    — encontrado el 28/08/2026 al hacer el backup de v646. `d1 export`
-    no filtra columnas como sí hace `backup.js`: incluyen `usuarios`
-    completa (contraseñas hasheadas, `session_token`). Sin resolver —
-    falta confirmar si `slatorre-dev/boscoinventario` es público en
-    GitHub; si lo es, decidir entre hacerlo privado, añadir
-    `Copias_SQL/*.sql` a `.gitignore` hacia adelante, o purgar del
-    historial (delicado, requiere decisión explícita del usuario). Ver
-    `docs/SECURITY.md` ítem 11a.
+22. **🔴 Volcados SQL completos commiteados en git, repo confirmado
+    público** (`Copias_SQL/backup_20260524_1426.sql` y otros 3, commit
+    `0d6e6a0`) — encontrado el 28/08/2026 al hacer el backup de v646.
+    `d1 export` no filtra columnas como sí hace `backup.js`: incluyen
+    `usuarios` completa (contraseñas hasheadas, `session_token`).
+    Confirmado que `slatorre-dev/boscoinventario` es público en GitHub
+    — cualquiera puede descargarlos ahora mismo sin necesitar el
+    historial de commits. Sin resolver, necesita decisión del usuario:
+    hacerlo privado (mitigación más simple), añadir `Copias_SQL/*.sql` a
+    `.gitignore` hacia adelante, y/o purgar del historial (delicado, más
+    trabajo). Ver `docs/SECURITY.md` ítem 11a.
 23. **No hay manejo global de 401 en `js/api.js`** — si el token de una
     pestaña queda obsoleto (dos pestañas abiertas, se cambia la
     contraseña en una), la otra ve un toast "No autorizado" sin más
