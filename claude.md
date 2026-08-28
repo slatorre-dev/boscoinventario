@@ -1,5 +1,12 @@
 # Nota de Trabajo - Bosco Inventario
 
+**Estado:** v648 | 28/08/2026 | Pestañas "🔍 Auditoría"/"📥 CSV" de Volt
+(gestión masiva de datos) ya solo visibles para `superadmin` — a petición
+directa del usuario tras revisar el Pendiente #21. `applyAgentTabGating()`
+nueva en `js/agente-widget.js`, llamada en `openPanel()` (no al construir
+el panel: eso ocurre al cargar la página, antes del login, cuando
+`userRole()` aún no refleja el rol real). Detalle en
+`docs/DEVELOPMENT.md` 28/08/2026.
 **Estado:** v647 | 28/08/2026 | Cuatro pendientes menores cerrados a
 petición del usuario (Pendiente #7/#9/#18/#20): permiso nuevo `items.read`
 (rol `Consulta` ya ve la galería completa de fotos, `fotosGet` ya no exige
@@ -689,11 +696,15 @@ Workers AI, onboarding de cámara (v543-v557).
     localizados: umbral de arrastre del FAB de Volt demasiado sensible
     en táctil (`agente-widget.js:470`); panel "🔔 Requiere tu atención"
     sin señal de reservas de hoy sin confirmar recogida
-    (`js/home.js:checkAtencionHoy`); pestañas Auditoría/CSV de Volt
-    visibles para cualquier rol sin gating; los otros 48 modales sin
-    auditar por el mismo desbordamiento móvil que v645 corrigió solo en
-    el de prácticas. Primer paso útil antes de nada: la sesión no pudo
-    probar con una cuenta `profesor` real
+    (`js/home.js:checkAtencionHoy`); ~~pestañas Auditoría/CSV de Volt
+    visibles para cualquier rol sin gating~~ ✅ resuelto (28/08/2026,
+    v648): `applyAgentTabGating()` en `js/agente-widget.js` las oculta
+    para cualquier rol que no sea `superadmin` — re-evaluado en cada
+    apertura del panel (no al construirlo, que ocurre al cargar la
+    página, antes de que exista `SESSION` con el rol real); los otros 48
+    modales sin auditar por el mismo desbordamiento móvil que v645
+    corrigió solo en el de prácticas. Primer paso útil antes de nada: la
+    sesión no pudo probar con una cuenta `profesor` real
     (`profe1electricidadelectronica` dio "Credenciales incorrectas",
     sin insistir por riesgo de bloqueo) — confirmar si esa credencial de
     ejemplo del propio archivo sigue siendo válida.

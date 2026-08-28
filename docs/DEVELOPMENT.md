@@ -4827,4 +4827,35 @@ usan; sin verificación end-to-end con Playwright en esta sesión.
 
 ---
 
-**Última actualización:** 28/08/2026 — 4 pendientes menores cerrados (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)
+### 28/08/2026 (v648) — Pestañas Auditoría/CSV de Volt solo para superadmin
+
+A petición directa del usuario, tras repasar el Pendiente #21: las
+pestañas "🔍 Auditoría" y "📥 CSV" de Volt (`js/agente-widget.js`) son
+herramientas de gestión masiva de datos (sugerir/aplicar correcciones en
+lote, importar CSV completo), no de consulta diaria — no tenían ningún
+gating de rol, cualquier usuario logueado las veía y podía usarlas.
+
+Función nueva `applyAgentTabGating()`: oculta ambos botones de pestaña si
+`userRole() !== 'superadmin'`, y si el usuario ya estaba en una de esas
+pestañas cuando deja de tener acceso (no debería pasar en la práctica,
+pero es gratis cubrirlo), lo devuelve a "💬 Chat" vía `switchTab('chat')`.
+
+**Detalle no obvio:** no se puede aplicar este gating al construir el
+panel (`buildWidget()`/`buildPanelHTML()`, línea ~504) porque esa función
+se ejecuta en `DOMContentLoaded`, es decir **al cargar la página, antes
+de que el usuario inicie sesión** — en ese momento `SESSION` no existe
+todavía y `userRole()` cae al valor por defecto `'consulta'`, lo que
+ocultaría las pestañas para todo el mundo, incluido superadmin. Se
+engancha en su lugar a `openPanel()` (se ejecuta cada vez que se abre el
+widget con el 🤖, siempre después del login) y se re-evalúa en cada
+apertura, no solo una vez.
+
+Sin cambios de backend — estas dos acciones (`auditAI`/`bulkImport` vía
+CSV) ya pasaban por los mismos endpoints con scoping de departamento de
+siempre; este cambio es puramente de visibilidad en el cliente, igual de
+alcance que el resto de gating de rol del proyecto (`js/roles.js`,
+`data-perm` en `applyRoleUI()`).
+
+---
+
+**Última actualización:** 28/08/2026 — pestañas Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores cerrados en v647 (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)

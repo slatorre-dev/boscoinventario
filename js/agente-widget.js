@@ -670,10 +670,24 @@
     state.open = true;
     el.panel.classList.add('open');
     el.fab.innerHTML = '✕ Cerrar';
+    applyAgentTabGating();
     if (!state.dataLoaded) loadData();
     else renderCurrentTab();
     if (!LEARN_LOADED) cargarAprendizajes();
     if (!FORM_CORRECTIONS_LOADED) cargarCorreccionesD1();
+  }
+
+  // Auditoría/CSV son herramientas de gestión masiva de datos, no de consulta
+  // diaria — solo superadmin las ve (Pendiente #21, hallazgo 27/08/2026).
+  // Se re-evalúa en cada apertura (no al construir el panel, que ocurre al
+  // cargar la página, antes de que exista SESSION con el rol real).
+  function applyAgentTabGating() {
+    var isSuperAdmin = typeof userRole === 'function' && userRole() === 'superadmin';
+    var auditTab = el.panel.querySelector('.ag-tab[data-tab="audit"]');
+    var csvTab = el.panel.querySelector('.ag-tab[data-tab="csv"]');
+    if (auditTab) auditTab.style.display = isSuperAdmin ? '' : 'none';
+    if (csvTab) csvTab.style.display = isSuperAdmin ? '' : 'none';
+    if (!isSuperAdmin && (state.tab === 'audit' || state.tab === 'csv')) switchTab('chat');
   }
   function closePanel() {
     state.open = false;
