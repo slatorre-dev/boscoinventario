@@ -1,5 +1,20 @@
 # Nota de Trabajo - Bosco Inventario
 
+**Estado:** v646 | 28/08/2026 | Primer paso de la prioridad #1 de la
+auditoría del 27/08/2026 (credenciales en `?u=&p=`): el login
+usuario/contraseña ya no reenvía la contraseña real en cada petición —
+extiende el `session_token` que ya usaba el login de Google a
+`auth.js`/`perfil.js`/`usuarios.js` (se reutiliza si ya existe, para no
+desconectar cuentas genéricas compartidas por varios profesores a la
+vez; rota al cambiar la contraseña). `SESSION` ya no guarda la
+contraseña real en `localStorage` en ningún momento — cierra también,
+como efecto colateral sin tocar código, el ítem 8 de `docs/SECURITY.md`
+(Volt podía enviar la contraseña real). Verificado con Playwright contra
+producción con un usuario desechable (creado y borrado en D1, sin tocar
+cuentas reales). Sigue pendiente el refactor grande (token/headers en
+vez de query string) — detalle completo, decisiones de diseño y hallazgo
+nuevo (volcados SQL con contraseñas hasheadas commiteados en git, sin
+resolver) en `docs/DEVELOPMENT.md` v646 y `docs/SECURITY.md` ítems 1/2/8/11a.
 **Estado:** v645 | 27/08/2026 | Asistente guiado para planificar
 prácticas: modo paso a paso ("🧑‍🏫 Modo guiado") dentro del modal
 "📅 Planificar práctica" ya existente (v588), y un flujo conversacional
@@ -623,23 +638,42 @@ Workers AI, onboarding de cámara (v543-v557).
     con más vistas).
 21. **Retomar la auditoría de código/diseño/usabilidad del 27/08/2026**
     (detalle completo con archivo:línea en `docs/DEVELOPMENT.md`, misma
-    fecha) — nada implementado aún, el usuario pidió guardarlo para la
-    siguiente sesión. Prioridad sugerida: 1) credenciales en query
-    string (`?u=&p=`, ya crítico en `docs/SECURITY.md`); 2) cero tests
-    automatizados en todo el repo (18.4k líneas JS + 4.6k backend, todo
-    el QA es manual en producción); 3) Volt (`js/agente-widget.js`, 36
-    hex hardcodeados, 0 `var(--...)`) no hereda el tema claro/oscuro de
-    la app. Otros hallazgos menores ya localizados: umbral de arrastre
-    del FAB de Volt demasiado sensible en táctil (`agente-widget.js:470`);
-    panel "🔔 Requiere tu atención" sin señal de reservas de hoy sin
-    confirmar recogida (`js/home.js:checkAtencionHoy`); pestañas
-    Auditoría/CSV de Volt visibles para cualquier rol sin gating; los
-    otros 48 modales sin auditar por el mismo desbordamiento móvil que
-    v645 corrigió solo en el de prácticas. Primer paso útil antes de
-    nada: la sesión no pudo probar con una cuenta `profesor` real
+    fecha). Prioridad sugerida: ~~1) credenciales en query string~~ 🟡
+    mitigado parcialmente (v646, 28/08/2026, ver Estado arriba) — falta
+    sacar el token de la URL a headers, ver `docs/SECURITY.md` ítem 1;
+    2) cero tests automatizados en todo el repo (18.4k líneas JS + 4.6k
+    backend, todo el QA es manual en producción); 3) Volt
+    (`js/agente-widget.js`, 36 hex hardcodeados, 0 `var(--...)`) no
+    hereda el tema claro/oscuro de la app. Otros hallazgos menores ya
+    localizados: umbral de arrastre del FAB de Volt demasiado sensible
+    en táctil (`agente-widget.js:470`); panel "🔔 Requiere tu atención"
+    sin señal de reservas de hoy sin confirmar recogida
+    (`js/home.js:checkAtencionHoy`); pestañas Auditoría/CSV de Volt
+    visibles para cualquier rol sin gating; los otros 48 modales sin
+    auditar por el mismo desbordamiento móvil que v645 corrigió solo en
+    el de prácticas. Primer paso útil antes de nada: la sesión no pudo
+    probar con una cuenta `profesor` real
     (`profe1electricidadelectronica` dio "Credenciales incorrectas",
     sin insistir por riesgo de bloqueo) — confirmar si esa credencial de
     ejemplo del propio archivo sigue siendo válida.
+22. **Volcados SQL completos commiteados en git**
+    (`Copias_SQL/backup_20260524_1426.sql` y otros 3, commit `0d6e6a0`)
+    — encontrado el 28/08/2026 al hacer el backup de v646. `d1 export`
+    no filtra columnas como sí hace `backup.js`: incluyen `usuarios`
+    completa (contraseñas hasheadas, `session_token`). Sin resolver —
+    falta confirmar si `slatorre-dev/boscoinventario` es público en
+    GitHub; si lo es, decidir entre hacerlo privado, añadir
+    `Copias_SQL/*.sql` a `.gitignore` hacia adelante, o purgar del
+    historial (delicado, requiere decisión explícita del usuario). Ver
+    `docs/SECURITY.md` ítem 11a.
+23. **No hay manejo global de 401 en `js/api.js`** — si el token de una
+    pestaña queda obsoleto (dos pestañas abiertas, se cambia la
+    contraseña en una), la otra ve un toast "No autorizado" sin más
+    contexto en vez de un aviso claro de "inicia sesión de nuevo". Ya
+    existía con Google OAuth, v646 (28/08/2026) lo hace algo más
+    frecuente al añadir puntos de rotación de token al login
+    tradicional. Detectado durante la verificación de v646, mejora
+    pequeña pendiente, ver `docs/DEVELOPMENT.md` v646.
 
 ---
 

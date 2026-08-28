@@ -4508,4 +4508,109 @@ visual inmediato, sin tocar backend).
 
 ---
 
+### 28/08/2026 (v646) — login tradicional deja de reenviar la contraseña real
+
+Primer paso de la prioridad #1 de la auditoría del 27/08/2026
+(credenciales en `?u=&p=`, `docs/SECURITY.md` ítem 1): no el refactor
+completo a headers/Bearer (~8h estimadas, alto riesgo sin tests), sino
+extender el mecanismo `session_token` que ya usaba el login de Google
+(`login-google.js`) al login usuario/contraseña. Decidido con
+`superpowers:brainstorming` (bounded, no architectural) — el único punto
+que necesitó decisión del usuario: ¿reutilizar el token si ya existe, o
+regenerarlo en cada login? Se eligió **reutilizar**, porque regenerar
+(como hace Google) desconectaría en silencio a un segundo profesor que
+inicia sesión en la misma cuenta genérica de departamento desde otro
+dispositivo — con 48 cuentas compartidas en producción, no es un caso de
+borde.
+
+**Backend:** `auth.js` (`action=login`) genera `session_token` con
+`randomToken()` (criptográfica, `crypto.getRandomValues` — no se copió el
+generador más débil basado en `Math.random()` de `login-google.js`) solo
+si el usuario no tiene uno ya; si existe, lo reutiliza. Se rota (nuevo
+token) en los 3 puntos donde cambia la contraseña real: `perfil.js`
+`changePassword` (devuelve el token nuevo en la respuesta, para que la
+propia sesión que cambió la contraseña no se quede fuera),
+`usuarios.js` `userResetPassword` (admin resetea a otro usuario — cierra
+cualquier sesión abierta con el token viejo) y `auth.js` `resetPassword`
+(flujo "olvidé mi contraseña"). `_middleware.js` no se tocó — ya
+aceptaba `u+t` de forma genérica, no específica de Google.
+
+**Frontend:** `js/auth.js` `doLogin()` ya no guarda `password` en
+`SESSION`/`localStorage`, guarda `session_token`. La contraseña recién
+tecleada solo se necesita un instante para el paso de contraseña
+temporal obligatoria (`doForcePasswordChange`, como `oldPassword`) — se
+guarda en `_pendingLoginPassword`, variable de módulo en memoria, nunca
+persistida, descartada en cuanto se usa. `js/profile.js`
+`doChangePassword()` actualiza `SESSION.session_token` con el que
+devuelve el backend en vez de guardar la contraseña nueva.
+
+**Bug propio encontrado y corregido antes de desplegar:** si la página
+se recargaba a mitad del paso de contraseña temporal obligatoria (antes
+de completarlo), `_pendingLoginPassword` se perdía (solo vive en
+memoria) y el formulario habría fallado al enviarse sin explicar por
+qué. `loadData()` (`js/auth.js`) ahora detecta ese caso
+(`SESSION.passwordTemporal` true sin `_pendingLoginPassword`) y fuerza
+login limpio en vez de mostrar un formulario roto. No existía antes
+porque `SESSION.password` sí persistía en localStorage — el propio bug
+es un efecto secundario directo de la mejora de seguridad.
+
+**Hallazgo colateral corregido:** `js/audit-log.js` construía su propia
+URL de fallback con `SESSION.password` si `urlWithAuth` no estaba
+definida — dead code (`api.js` siempre carga antes, ambos `defer`),
+eliminado en vez de dejarlo silenciosamente roto.
+
+**Efecto secundario positivo, sin cambio de código:** `agente-widget.js`
+(`getCreds()`) ya prefería `session_token` sobre `password` desde antes
+— en cuanto todo el mundo tenga un token (universal tras este cambio),
+Volt deja de mandar la contraseña real también, cerrando de paso el
+ítem 8 de `docs/SECURITY.md` ("Agente IA puede enviar credenciales").
+
+**Compatibilidad:** sesiones ya abiertas en el navegador antes del
+despliegue (con `password` cacheado) siguen funcionando sin corte —
+`urlWithAuth()` ya caía a `p=` si no había `session_token`. Empiezan a
+usar token en su próximo login o cambio de contraseña, no de forma
+forzada.
+
+**Límite explícito, no resuelto hoy:** el token sigue viajando en la
+query string (`t=` en vez de `p=`) — sacarlo a un header/Bearer real
+sigue pendiente, es el refactor grande descartado por ahora. Lo ganado
+es que ya no es la contraseña real reutilizable: es revocable sin que el
+usuario tenga que cambiar su contraseña.
+
+**Verificado con Playwright contra producción** (usuario de prueba
+desechable `test_token_646` creado en D1 con `password_temporal=1` y
+borrado al terminar, para no tocar cuentas reales): login tradicional →
+`session_token` presente, sin `password` en `localStorage`; recarga de
+página mantiene sesión solo con el token; cambio de contraseña
+voluntario (`Seba`, contraseña nueva = igual a la vieja para no afectar
+la cuenta real) rota el token y la misma pestaña sigue autenticada;
+llamada con el token viejo tras la rotación devuelve 401 (confirma que
+invalida sesiones antiguas, como se diseñó); flujo completo de
+contraseña temporal obligatoria de punta a punta; recarga a mitad de ese
+flujo bota a login en vez de romperse; login con la contraseña vieja
+tras el cambio falla, con la nueva funciona y reutiliza el mismo token.
+Google Sign-In sigue renderizando sin errores (ruta no tocada).
+
+**Hallazgo nuevo, sin tocar hoy:** los 4 volcados SQL completos en
+`Copias_SQL/*.sql` (`backup_20260524_1426.sql` y otros 3) están
+**commiteados en el historial de git** (commit `0d6e6a0`) — incluyen la
+tabla `usuarios` completa (contraseñas hasheadas, `session_token`).
+`d1 export` no filtra columnas como sí hace `backup.js`. Si el repo de
+GitHub es público, es una exposición real independiente de lo de hoy.
+No se tocó (reescribir historial de git es delicado, necesita decisión
+explícita del usuario) — pendiente de confirmar visibilidad del repo y
+decidir qué hacer.
+
+**Gap conocido, no cerrado hoy:** no hay manejo global de 401 en
+`js/api.js` — si el token de una pestaña queda obsoleto (p. ej. dos
+pestañas abiertas y se cambia la contraseña en una), la otra ve un toast
+"No autorizado" sin más explicación en vez de un aviso claro de "inicia
+sesión de nuevo". Ya existía este gap con Google OAuth (que ya rotaba
+token en cada login); este cambio lo hace más frecuente al añadir 3
+puntos más de rotación. Fuera de alcance de esta tarea (bounded, no se
+amplió a un interceptor global sin pedirlo el usuario), candidato para
+una mejora pequeña futura.
+
+---
+
 **Última actualización:** 27/08/2026 — v645 (fix móvil del modo guiado + auditoría código/diseño/usabilidad pendiente de implementar)

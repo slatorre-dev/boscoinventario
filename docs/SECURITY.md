@@ -17,10 +17,23 @@ Documento de seguridad: vulnerabilidades conocidas, recomendaciones y mejores pr
 
 ## 🔴 Vulnerabilidades Críticas
 
-### 1. Credenciales en URL
+### 1. Credenciales en URL — 🟡 MITIGADO PARCIALMENTE (28/08/2026, v646)
 
-**Severidad:** CRÍTICA (CVSS 9.8)  
+**Severidad:** CRÍTICA (CVSS 9.8) — mitigada para el dato más sensible (la
+contraseña real), ver estado abajo. Sigue viajando un token en la URL.
 **CWE:** CWE-598 (Use of GET Request with Sensitive Query Strings)
+
+**Estado real del código (28/08/2026):** el login tradicional
+(usuario/contraseña) ya no reenvía la contraseña real en cada petición —
+extiende el `session_token` que ya usaba el login de Google
+(`login-google.js`) a `auth.js`/`perfil.js`/`usuarios.js`. Detalle
+completo, decisiones y verificación con Playwright en
+`docs/DEVELOPMENT.md` 28/08/2026 (v646). Lo que **no** cambió: sigue
+viajando un token (`t=`) en la query string en vez de en un header — el
+refactor a Bearer/headers real (~8h estimadas) sigue pendiente, ver
+Resumen de Críticos abajo. La diferencia práctica: un token es
+revocable (rota al cambiar la contraseña) sin exponer la contraseña real
+que la persona reutiliza en otros sitios.
 
 **Descripción:**
 ```javascript
@@ -304,9 +317,16 @@ setInterval(checkSessionExpiry, 60000);
 
 ---
 
-### 8. Agente IA Puede Enviar Credenciales
+### 8. Agente IA Puede Enviar Credenciales — ✅ RESUELTO (efecto colateral de v646, 28/08/2026)
 
-**Severidad:** ALTA (CVSS 8.0)
+**Severidad original:** ALTA (CVSS 8.0) — resuelta sin tocar este archivo.
+
+**Estado real:** `agente-widget.js` (`getCreds()`) ya prefería
+`session_token` sobre `password` desde antes de este documento. Ahora
+que el login tradicional también emite `session_token` (ver ítem 1,
+`docs/DEVELOPMENT.md` v646), todo usuario tiene un token tras iniciar
+sesión — Volt deja de mandar la contraseña real en la práctica, sin
+haber tocado `agente-widget.js`.
 
 **Vulnerabilidad:**
 ```javascript
@@ -403,6 +423,35 @@ del proyecto.
 ---
 
 ## 🟡 Vulnerabilidades Medias
+
+### 11a. Volcados SQL completos commiteados en git — ⚠️ NUEVO HALLAZGO (28/08/2026, sin resolver)
+
+**Severidad:** ALTA si el repo es público, sin impacto si es privado —
+no confirmado en esta sesión.
+
+**Descripción:** `Copias_SQL/backup_20260524_1426.sql` y otros 3 archivos
+de la misma carpeta están commiteados en el historial de git (commit
+`0d6e6a0`) — son volcados de `wrangler d1 export`, que a diferencia de
+`backup.js` (ítem 5, ya auditado) **no filtra columnas**: incluyen la
+tabla `usuarios` completa, con contraseñas hasheadas (PBKDF2) y
+`session_token` reales. `*.zip` está en `.gitignore` pero `*.sql` no.
+
+**Riesgo:** si `slatorre-dev/boscoinventario` es un repo público de
+GitHub, cualquiera puede descargar esos hashes y `session_token` del
+historial (aunque se borren los archivos hoy, siguen en commits
+anteriores accesibles). Un hash PBKDF2 no es igual de grave que
+texto plano, pero sí es material para fuerza bruta offline sin límite de
+intentos (a diferencia del login real, que bloquea tras 5 intentos).
+
+**Pendiente:** confirmar visibilidad del repo. Si es público: (a) hacer
+el repo privado es la mitigación inmediata más simple, y/o (b) añadir
+`Copias_SQL/*.sql` a `.gitignore` hacia adelante, y/o (c) purgar del
+historial con `git filter-repo`/BFG si se decide que el repo debe seguir
+siendo público — esto último requiere coordinación (reescribe hashes de
+commit, invalida cualquier clon existente) y decisión explícita del
+usuario, no se ha hecho.
+
+---
 
 ### 11. CORS Permisivo Potencial
 
@@ -587,19 +636,19 @@ npm install -D eslint-plugin-security
 
 | # | Vulnerabilidad | Riesgo | Solución | Estimación |
 |---|---|---|---|---|
-| 1 | Credenciales en URL | CRÍTICA | Bearer tokens | 8h |
-| 2 | Password en localStorage | CRÍTICA | Solo token | 2h |
+| 1 | Credenciales en URL | 🟡 Mitigado parcialmente 28/08/2026 (v646) | Falta sacar el token de la URL a headers | ~6h restantes |
+| 2 | Password en localStorage | ✅ Resuelto 28/08/2026 (v646) | `SESSION` ya no escribe `password`, usa `session_token` | — (sesiones ya abiertas antes del cambio se limpian solas en su próximo login) |
 | 3 | Password sin hash | ✅ Resuelto 25/08/2026 | PBKDF2 (`crypto.subtle`) | — |
 | 4 | Permisos solo frontend | CRÍTICA | Re-validar backend | 4h |
 | 5 | Backup con passwords | ✅ Verificado sin riesgo 25/08/2026 | Ya excluía `password` | — |
 
-**Total Críticos pendientes: 3** (2 resueltos/verificados de 5)
-**Horas para resolver lo pendiente: ~14h**
+**Total Críticos pendientes: 2 de 5** (1 mitigado parcialmente, 3 resueltos/verificados)
+**Horas para resolver lo pendiente: ~10h** (4h ítem 4 + ~6h restantes del ítem 1)
 
 ---
 
-**Última actualización:** 27/08/2026 (v631) — revisión rápida de
-consistencia doc↔código: ítems 6 (rate-limiting) y 10 (logs de auditoría)
-corregidos, ambos ya resueltos en el código sin que este documento lo
-reflejara.
+**Última actualización:** 28/08/2026 (v646) — login tradicional deja de
+reenviar la contraseña real (ítem 1 mitigado parcialmente, ítem 2
+resuelto, ítem 8 resuelto como efecto colateral); nuevo hallazgo sin
+resolver: volcados SQL completos commiteados en git (ítem 11a).
 **Próxima auditoría:** Después de implementar cambios críticos
