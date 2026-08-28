@@ -7,7 +7,7 @@ export async function resetAndSeed(db: any): Promise<void> {
   await db.batch([
     db.prepare("DELETE FROM inventario WHERE id IN (9001, 9002, 9003)"),
     db.prepare(
-      "DELETE FROM usuarios WHERE usuario IN ('test-superadmin','test-jefe-a','test-profesor-a','test-profesor-b','test-profesor-temp')"
+      "DELETE FROM usuarios WHERE usuario IN ('test-superadmin','test-jefe-a','test-profesor-a','test-profesor-b','test-profesor-temp','test-profesor-selfreg')"
     ),
     db.prepare(
       "DELETE FROM departamentos WHERE slug IN ('test-dept-a','test-dept-b')"
@@ -38,6 +38,17 @@ export async function resetAndSeed(db: any): Promise<void> {
     ),
     db.prepare(
       "INSERT INTO usuarios (usuario,password,nombre,rol,email,departamento,password_temporal) VALUES ('test-profesor-temp','test-profesor-temp','Test Profesor Temp','profesor','test-profesor-temp@iesjuanbosco.es','test-dept-a',1)"
+    ),
+    // rol='Profesor/a' (mayuscula + slash) es el que asigna de verdad
+    // auth.js:371 en el autoregistro publico (action=register) — distinto
+    // de rol='profesor' (minuscula) que usan las migraciones de seed
+    // 0005/0006. isProfesor() en list.js/item.js/prestar.js compara en
+    // minusculas contra exactamente 'profesor', asi que este usuario NO
+    // matchea esa funcion pese a ser un profesor real. Sembrado aparte
+    // para pinchar esa asimetria en scoping.test.ts (ver Finding 3 de la
+    // revision final del 28/08/2026, CLAUDE.md pendiente #24).
+    db.prepare(
+      "INSERT INTO usuarios (usuario,password,nombre,rol,email,departamento) VALUES ('test-profesor-selfreg','test-profesor-selfreg','Test Profesor Selfreg','Profesor/a','test-profesor-selfreg@iesjuanbosco.es','test-dept-a')"
     ),
     db.prepare(
       "INSERT INTO inventario (id,ref,aula,mod,item,qty,min,cat,departamento) VALUES (9001,'TEST-A-001','aula-test-a','','Item de prueba A',5,1,'Test','test-dept-a')"

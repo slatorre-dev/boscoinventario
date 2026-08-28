@@ -33,6 +33,21 @@ describe("scoping por departamento", () => {
     expect(refs).not.toContain("TEST-SHARED-001");
   });
 
+  it("un profesor auto-registrado (rol 'Profesor/a', el que asigna auth.js de verdad) SI ve el departamento compartido", async () => {
+    // A diferencia de rol='profesor' (test anterior), auth.js:371 asigna
+    // 'Profesor/a' (con mayuscula y slash) a cualquiera que se registre por
+    // el formulario publico. isProfesor() en list.js/item.js/prestar.js
+    // compara en minusculas contra exactamente 'profesor', asi que
+    // 'Profesor/a' NO matchea -> isProfesor()===false -> SI recibe el bypass
+    // de iesjuanbosco que a rol='profesor' se le niega. Comportamiento real
+    // verificado en el codigo, no un bug de este test - discrepancia de la
+    // propia app entre el rol de las migraciones de seed (profesor) y el
+    // rol real de autoregistro (Profesor/a), documentada como pendiente en
+    // CLAUDE.md.
+    const refs = await itemRefs("test-profesor-selfreg", "test-profesor-selfreg");
+    expect(refs).toContain("TEST-SHARED-001");
+  });
+
   it("un jefe/a de departamento si ve el departamento compartido iesjuanbosco", async () => {
     const refs = await itemRefs("test-jefe-a", "test-jefe-a");
     expect(refs).toContain("TEST-A-001");
@@ -193,5 +208,30 @@ describe("scoping por departamento", () => {
       },
     });
     expect(res.status).toBe(403);
+  });
+
+  it("un prestamo de un item del propio departamento del actor se acepta", async () => {
+    const { res } = await callThroughMiddleware(prestarPost, {
+      method: "POST",
+      path: `/api/prestar?${authQuery("test-profesor-a", "test-profesor-a")}`,
+      body: {
+        action: "prestar",
+        prestamo: {
+          itemId: 9001,
+          itemNombre: "Item de prueba A",
+          cantidad: 1,
+          aulaOrigen: "aula-test-a",
+          profesorNombre: "Test Profesor A",
+        },
+      },
+    });
+    expect(res.status).toBe(200);
+    const body: any = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.prestamo).toBeTruthy();
+
+    const row = await env.DB.prepare("SELECT * FROM prestamos WHERE itemId=9001").first<any>();
+    expect(row).not.toBeNull();
+    expect(row.cantidad).toBe(1);
   });
 });

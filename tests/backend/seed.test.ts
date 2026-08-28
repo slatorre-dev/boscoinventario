@@ -7,7 +7,7 @@ beforeEach(async () => {
 });
 
 describe("seed de test", () => {
-  it("crea los 2 departamentos, 5 usuarios y 3 items esperados", async () => {
+  it("crea los 2 departamentos, 6 usuarios y 3 items esperados", async () => {
     const depts = await env.DB.prepare(
       "SELECT slug FROM departamentos WHERE slug LIKE 'test-dept-%' ORDER BY slug"
     ).all();
@@ -19,7 +19,7 @@ describe("seed de test", () => {
     const users = await env.DB.prepare(
       "SELECT usuario FROM usuarios WHERE usuario LIKE 'test-%' ORDER BY usuario"
     ).all();
-    expect(users.results.length).toBe(5);
+    expect(users.results.length).toBe(6);
 
     const items = await env.DB.prepare(
       "SELECT id FROM inventario WHERE id IN (9001, 9002, 9003) ORDER BY id"
@@ -32,6 +32,6 @@ describe("seed de test", () => {
     const users = await env.DB.prepare(
       "SELECT usuario FROM usuarios WHERE usuario LIKE 'test-%'"
     ).all();
-    expect(users.results.length).toBe(5);
+    expect(users.results.length).toBe(6);
   });
 });

@@ -15,6 +15,16 @@ cuentas reales). Sigue pendiente el refactor grande (token/headers en
 vez de query string) — detalle completo, decisiones de diseño y hallazgo
 nuevo (volcados SQL con contraseñas hasheadas commiteados en git, sin
 resolver) en `docs/DEVELOPMENT.md` v646 y `docs/SECURITY.md` ítems 1/2/8/11a.
+**Nota (28/08/2026):** primera suite de tests automatizados del repo —
+`npm test` (Vitest + `@cloudflare/vitest-plugin`), 28 tests solo de
+backend (auth + scoping por departamento en `functions/api/*.js`) contra
+D1 local con las migraciones reales aplicadas. No lleva número de
+versión (no toca `sw.js` ni ningún archivo de `functions/api/`, es
+tooling interno, no una funcionalidad desplegada). Requiere Node ≥22.
+Detalle completo, incluidas dos propiedades no obvias del arnés de test
+y dos hallazgos pre-existentes (Pendiente #24/#25), en
+`docs/DEVELOPMENT.md`, entrada 28/08/2026 "Tests automatizados de
+backend".
 **Estado:** v645 | 27/08/2026 | Asistente guiado para planificar
 prácticas: modo paso a paso ("🧑‍🏫 Modo guiado") dentro del modal
 "📅 Planificar práctica" ya existente (v588), y un flujo conversacional
@@ -215,6 +225,7 @@ sigue estas reglas de estilo para no gastar tokens de más:
 4. Todas las migraciones (`migrations/0001` a `0034`) ya están aplicadas en la base remota `boscoinventario` — no hace falta re-ejecutarlas salvo que se recree la base desde cero (ver [Modo de Operación](#modo-de-operación)). Nota: la tabla de aprendizaje IA (`ia_deteccion_ejemplos`) se autocrea en runtime por `functions/api/item.js` (sin migración dedicada)
 5. Credenciales de prueba: ver [Usuarios y credenciales](#usuarios-y-credenciales-actuales)
 6. Antes de cualquier comando de `git`, comprobar que no hay `desktop.ini` corrompiendo `.git/` (ver [Entorno](#entorno)) — riesgo conocido por vivir el repo dentro de una carpeta sincronizada por Google Drive
+7. `npm ci && npm test` corre la suite de tests automatizados de backend (28 tests, Vitest contra D1 local — no toca la D1 remota) — requiere Node ≥22
 
 ---
 
@@ -641,8 +652,14 @@ Workers AI, onboarding de cámara (v543-v557).
     fecha). Prioridad sugerida: ~~1) credenciales en query string~~ 🟡
     mitigado parcialmente (v646, 28/08/2026, ver Estado arriba) — falta
     sacar el token de la URL a headers, ver `docs/SECURITY.md` ítem 1;
-    2) cero tests automatizados en todo el repo (18.4k líneas JS + 4.6k
-    backend, todo el QA es manual en producción); 3) Volt
+    ~~2) cero tests automatizados en todo el repo~~ 🟡 backend cubierto
+    (28/08/2026, ver Estado arriba): 28 tests (`npm test`, Vitest +
+    `@cloudflare/vitest-plugin` contra D1 local) de auth + scoping por
+    departamento en `functions/api/*.js`, más `.github/workflows/tests.yml`
+    como check informativo en GitHub Actions (no bloquea el deploy de
+    Cloudflare Pages). Sigue sin haber tests de frontend/E2E (18.4k líneas
+    de `js/*`, sub-proyecto aparte, sin empezar — ver "Origen" en
+    `docs/superpowers/specs/2026-08-28-tests-backend-design.md`); 3) Volt
     (`js/agente-widget.js`, 36 hex hardcodeados, 0 `var(--...)`) no
     hereda el tema claro/oscuro de la app. Otros hallazgos menores ya
     localizados: umbral de arrastre del FAB de Volt demasiado sensible
@@ -675,6 +692,32 @@ Workers AI, onboarding de cámara (v543-v557).
     frecuente al añadir puntos de rotación de token al login
     tradicional. Detectado durante la verificación de v646, mejora
     pequeña pendiente, ver `docs/DEVELOPMENT.md` v646.
+24. **`isProfesor(user)` no reconoce el rol real de autoregistro.**
+    `functions/api/list.js`/`item.js`/`prestar.js` comparan en minúsculas
+    contra exactamente `'profesor'`, pero `functions/api/auth.js`
+    (`action=register`, línea ~371) asigna `rol='Profesor/a'`
+    (mayúscula + slash) a cualquier profesor que se autoregistra por el
+    formulario público. `'Profesor/a'.toLowerCase()` es `'profesor/a'`,
+    no matchea → `isProfesor()` devuelve `false` para esos usuarios → SÍ
+    reciben el bypass del departamento compartido `iesjuanbosco` que a un
+    `rol='profesor'` sembrado (migraciones 0005/0006) se le niega
+    correctamente. Asimetría real de la propia app entre el rol de seed y
+    el rol de autoregistro real, sin resolver — ahora fijada por un test
+    (`tests/backend/scoping.test.ts`, "un profesor auto-registrado...").
+    Detectado el 28/08/2026 durante la revisión final de la suite de
+    tests de backend.
+25. **`npm test` termina siempre con un aviso `close timed out after
+    10000ms`** ("Tests closed successfully but something prevents Vite
+    server from exiting") — no afecta al exit code ni a los resultados,
+    pero es ruido en cada corrida. Rastreado al binding `[ai]` (Workers
+    AI) de `wrangler.toml`, que no cierra dentro del timeout de Vitest.
+    Dos fixes candidatos identificados, no aplicados (fuera de alcance de
+    la revisión del 28/08/2026 que los encontró): 1) config de test
+    separada (`wrangler.test.toml`) con solo el binding `DB`, sin `[ai]`;
+    2) apuntar el binding de servicio `ASSETS` (`vitest.config.ts`) a un
+    directorio de fixtures pequeño en vez de la raíz del repo entero, por
+    si es esa la causa real. Detalle en `docs/DEVELOPMENT.md`, entrada
+    28/08/2026 "Tests automatizados de backend".
 
 ---
 

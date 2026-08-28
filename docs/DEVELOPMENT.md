@@ -4613,4 +4613,129 @@ una mejora pequeña futura.
 
 ---
 
-**Última actualización:** 27/08/2026 — v645 (fix móvil del modo guiado + auditoría código/diseño/usabilidad pendiente de implementar)
+### 28/08/2026 — Tests automatizados de backend (primer sub-proyecto de la prioridad #2, Pendiente #21)
+
+Primera suite de tests automatizados de todo el repo. Origen: prioridad
+#2 de la auditoría del 27/08/2026 ("cero tests automatizados"), justo
+detrás de la #1 (credenciales, ya en marcha con v646). Diseñado con
+`superpowers:brainstorming` +
+`docs/superpowers/specs/2026-08-28-tests-backend-design.md`, ejecutado
+con `superpowers:subagent-driven-development` a partir de
+`docs/superpowers/plans/2026-08-28-tests-backend.md` (6 tasks), y
+cerrado con un pase de revisión final que corrigió 4 hallazgos
+"Important" (documentado abajo). Alcance v1: solo backend
+(`functions/api/*.js`, auth + scoping por departamento) — el frontend
+(`js/*`, 18.4k líneas) queda como sub-proyecto 2, sin empezar.
+
+**Stack:** Vitest 4 + `@cloudflare/vitest-plugin` (paquete oficial,
+sucesor de `@cloudflare/vitest-pool-workers` para Vitest 4) contra un
+binding D1 local (Miniflare/workerd), nunca la D1 remota
+`boscoinventario`. Los handlers de `functions/api/*.js` se invocan por
+import directo (`createPagesEventContext()`), no por HTTP — Pages
+Functions no tiene un `main` único que compilar. Las migraciones reales
+de `migrations/00XX_*.sql` se re-aplican contra la D1 local en cada
+corrida (`tests/backend/apply-migrations.ts`), así un test roto por una
+migración nueva con SQL inválido es señal, no ruido. `package.json`
+nuevo en la raíz (no existía). Resultado: 5 archivos de test, 28 tests
+(`npm test`), `.github/workflows/tests.yml` como check informativo en
+cada push/PR a `main` — no bloquea el deploy automático de Cloudflare
+Pages (decisión explícita, revisable después sin rehacer los tests).
+Requiere Node ≥22 (`vitest@4.1.11`), ahora declarado en
+`package.json`'s `engines`.
+
+**Dos propiedades no obvias de este arnés, necesarias antes de tocarlo:**
+
+1. **El aislamiento de storage entre tests es por ARCHIVO de test, no
+   por cada `it()` individual** — confirmado empíricamente con un
+   prototipo antes de escribir el plan (ver "Global Constraints" en
+   `docs/superpowers/plans/2026-08-28-tests-backend.md`): una fila
+   insertada/editada en un test seguía visible en el siguiente `it()`
+   del mismo archivo. Por eso todo archivo de test que muta datos lleva
+   su propio `beforeEach(() => resetAndSeed(env.DB))`
+   (`tests/backend/seed.ts`) — un `beforeAll` no basta.
+2. **`tests/backend/apply-migrations.ts` inyecta dos `ALTER TABLE`
+   manuales justo después de aplicar la migración `0018`**
+   (`inventario.tipo_material`, `inventario.parent_id`) — replican el
+   self-heal que `list.js`/`item.js` hacen en runtime contra producción
+   (`ALTER TABLE ... ADD COLUMN`, nunca vía una migración formal). Las
+   migraciones numeradas `0019`/`0020` asumen que esas columnas ya
+   existen (ciertas en producción, donde la app ya corrió antes de que
+   se escribieran esas migraciones) pero un replay desde cero como el de
+   este arnés no las tiene por sí solo. Si `migrations/` gana una
+   migración nueva numerada por debajo de `19` que también necesite una
+   de esas dos columnas, este punto de inyección puede necesitar
+   revisarse.
+
+**Revisión final (28/08/2026) — 4 hallazgos "Important" corregidos en un
+único pase de fix, sin tocar `functions/api/*` en ningún caso:**
+
+- **Documentación desactualizada** (este propio hallazgo): `CLAUDE.md`
+  nunca se actualizó durante las 6 tasks pese a la regla del propio
+  archivo. Corregido: Pendiente #21 punto 2 marcado 🟡 (backend
+  cubierto, frontend/E2E sigue sin empezar), nota de Estado añadida sin
+  número de versión (tooling interno, no funcionalidad desplegada),
+  paso 7 añadido a "Para retomar desde un PC nuevo" (`npm ci && npm
+  test`), y esta misma entrada.
+- **`package.json` sin `engines`**: Node ≥22 es un requisito real
+  (`vitest@4.1.11`) pero nada lo comunicaba a quien corriera `npm
+  install`/`test` con una versión más vieja — solo un fallo confuso.
+  Añadido `"engines": { "node": ">=22" }`.
+- **`scoping.test.ts` solo cubría un deletreo real del rol "profesor"**:
+  el seed (`tests/backend/seed.ts`) solo sembraba `rol='profesor'`
+  (igual que las migraciones 0005/0006), pero `auth.js:371`
+  (autoregistro público, `action=register`) asigna `rol='Profesor/a'`
+  (mayúscula + slash) a cualquier profesor real que se registra por el
+  formulario. `isProfesor()` (duplicada en `list.js`/`item.js`/
+  `prestar.js`) compara en minúsculas contra exactamente `'profesor'` —
+  `'Profesor/a'.toLowerCase()` es `'profesor/a'`, no matchea. Efecto
+  real: un profesor autoregistrado SÍ recibe el bypass del departamento
+  compartido `iesjuanbosco` que un `rol='profesor'` sembrado NO recibe —
+  asimetría real de la app, ahora pinneada por un test nuevo (usuario
+  `test-profesor-selfreg`, `tests/backend/seed.ts`; test "un profesor
+  auto-registrado (rol 'Profesor/a'...) SI ve el departamento
+  compartido", `tests/backend/scoping.test.ts`) en vez de arreglada — el
+  fix de `isProfesor()` en sí queda fuera de alcance de esta revisión,
+  pasa a Pendiente #24 de `CLAUDE.md`.
+- **`prestar.js` sin test positivo**: `scoping.test.ts` solo probaba que
+  un préstamo de un ítem de OTRO departamento se rechaza (403) — nunca
+  que un préstamo del propio departamento se acepta de verdad.
+  Relevante porque `prestar.js` resuelve el actor con `data?.user ||
+  request.user` sin fallback a base de datos (a diferencia de
+  `getAuditActor` en `item.js`, que re-consulta por `?u=` si `data.user`
+  falta): si el paso de `data` por el arnés de test se rompiera en
+  silencio, `user` sería `undefined`, el departamento de un usuario
+  `undefined` sería `''` (no matchea nada) y el test negativo existente
+  seguiría en verde sin haber verificado nada real de la cadena de auth.
+  Añadido "un prestamo de un item del propio departamento del actor se
+  acepta" (`tests/backend/scoping.test.ts`), verificado contra
+  `crearPrestamoDesdeLinea()` (`functions/api/prestar.js:107`) antes de
+  escribirlo — status 200, `body.ok===true`, fila real insertada en
+  `prestamos` con la cantidad esperada.
+
+Total tras el fix: 28 tests (27 de scoping+auth+middleware+seed+smoke
+tras sumar el de rol `Profesor/a`, +1 del préstamo positivo). `git diff
+functions/api/` vacío — el fix wave completo es aditivo (tests + docs +
+`package.json`), cero cambios de comportamiento de producción.
+
+**Dos hallazgos pre-existentes que esta suite dejó al descubierto, no
+causados por este trabajo, documentados como Pendiente #24/#25 de
+`CLAUDE.md`:**
+
+1. La asimetría `isProfesor()` vs `rol='Profesor/a'` de autoregistro
+   (detallada arriba) — el test la fija/pinea como comportamiento
+   conocido, pero el bug de fondo en `list.js`/`item.js`/`prestar.js`
+   sigue sin resolver.
+2. `npm test` termina siempre con `close timed out after 10000ms`
+   ("Tests closed successfully but something prevents Vite server from
+   exiting") — no afecta exit code ni resultados, pero es ruido en cada
+   corrida. Rastreado al binding `[ai]` (Workers AI) de `wrangler.toml`,
+   que no cierra dentro del timeout de Vitest. Candidatos identificados,
+   deliberadamente no aplicados en esta revisión (fuera del alcance
+   acotado del fix wave): 1) `wrangler.test.toml` separado con solo el
+   binding `DB`, sin `[ai]`; 2) apuntar el binding `ASSETS`
+   (`vitest.config.ts`) a un directorio de fixtures pequeño en vez de la
+   raíz del repo, por si esa es la causa real.
+
+---
+
+**Última actualización:** 28/08/2026 — tests automatizados de backend (28 tests, `npm test`) + revisión final de 4 hallazgos "Important"
