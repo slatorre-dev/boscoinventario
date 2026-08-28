@@ -1,5 +1,26 @@
 # Nota de Trabajo - Bosco Inventario
 
+**Nota (28/08/2026):** diseño completo (sin implementar) del proceso de
+modularización de los JS grandes, a petición del usuario tras revisar el
+Pendiente #21/`docs/ROADMAP.md` [2.2] — solo análisis y spec, ningún
+código tocado, sin `VERSION` nueva. Con datos reales del repo: los 4 JS
+más grandes (`agente-widget.js` 4397 líneas, `modal-item.js` 1900,
+`inventory.js` 1818, `prestamos.js` 1372) cruzados con frecuencia de
+cambio y acoplamiento real entre archivos (`grep -l` de quién llama a
+quién) — `agente-widget.js` es el más grande pero con 0 dependientes
+externos (piloto ideal), `modal-item.js` el más acoplado (7 dependientes,
+se deja para el final). Enfoque elegido: `<script type="module">` nativo
+**sin bundler** (Cloudflare Pages sigue desplegando sin build step), ritmo
+**oportunista** (se aplica la próxima vez que una tarea real toque uno de
+esos archivos, una pieza cada vez, nunca el archivo entero de golpe).
+Hallazgo que fija el diseño: varios `onclick=` se generan dentro de
+plantillas JS con `innerHTML` (no solo en `index.html` estático), así que
+cualquier función así referenciada debe seguir siendo global
+(`window.fn`) tras modularizar. Alcance descartado por ahora: `index.html`
+y `css/styles.css` (sin forma nativa de trocear HTML sin build step).
+Checklist paso a paso, tabla de prioridad y piloto concreto
+(`js/agente-widget.js` → `js/agente-voz.js`) en
+`docs/superpowers/specs/2026-08-28-modularizacion-js-design.md`.
 **Estado:** v648 | 28/08/2026 | Pestañas "🔍 Auditoría"/"📥 CSV" de Volt
 (gestión masiva de datos) ya solo visibles para `superadmin` — a petición
 directa del usuario tras revisar el Pendiente #21. `applyAgentTabGating()`
@@ -753,6 +774,16 @@ Workers AI, onboarding de cámara (v543-v557).
     directorio de fixtures pequeño en vez de la raíz del repo entero, por
     si es esa la causa real. Detalle en `docs/DEVELOPMENT.md`, entrada
     28/08/2026 "Tests automatizados de backend".
+26. **Modularización de los JS grandes — diseñada, sin implementar**
+    (28/08/2026): proceso completo, con checklist paso a paso, tabla de
+    prioridad (`agente-widget.js` → `prestamos.js` → `inventory.js` →
+    `modal-item.js`, de menos a más acoplado) y piloto concreto
+    (`js/agente-widget.js` → `js/agente-voz.js`, bloque de reconocimiento
+    de voz) en
+    `docs/superpowers/specs/2026-08-28-modularizacion-js-design.md`.
+    Ritmo oportunista a propósito — no requiere una sesión dedicada,
+    aplicar la próxima vez que una tarea real toque uno de esos 4
+    archivos, extrayendo una sola pieza cada vez.
 
 ---
 

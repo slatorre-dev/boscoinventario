@@ -205,20 +205,18 @@ FROM usuarios`), no hizo falta tocar código. Detalle en
 
 **Problema:** 20+ scripts globales sin dependencias claras
 
-**Solución:**
-- Convertir a ES6 modules
-- Tree-shaking en build
-- Lazy loading de modales
+**Solución (revisada 28/08/2026):** sin bundler — `<script type="module">`
+nativo, archivo por archivo, ritmo oportunista. Diseño completo con
+proceso paso a paso, orden de prioridad basado en tamaño/commits/
+acoplamiento real, y piloto concreto en
+[`docs/superpowers/specs/2026-08-28-modularizacion-js-design.md`](superpowers/specs/2026-08-28-modularizacion-js-design.md).
+Sin bundler ni lazy loading de modales (fuera de alcance, ver "No
+objetivos" del diseño).
 
-**Cambios:**
-- `js/main.js` - Punto de entrada
-- Convertir todos a `export/import`
-- Bundler: esbuild (optional)
-
-**Estimación:** 10 horas
+**Estimación:** sin estimar — es un proceso continuo, no una tarea de
+alcance fijo.
 **Impacto:** 📈 Mantenibilidad
-**Dependencias:** [1.6] Modal genérico
-**Estado:** ⏳ NO INICIADO
+**Estado:** 🟡 DISEÑADO, sin implementar — ver spec enlazada arriba
 
 ---
 

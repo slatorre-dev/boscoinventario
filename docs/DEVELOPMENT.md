@@ -4858,4 +4858,58 @@ alcance que el resto de gating de rol del proyecto (`js/roles.js`,
 
 ---
 
-**Última actualización:** 28/08/2026 — pestañas Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores cerrados en v647 (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)
+---
+
+### 28/08/2026 — Diseño del proceso de modularización de JS (sin implementar)
+
+A petición del usuario, sesión de análisis (con `superpowers:brainstorming`)
+sobre el Pendiente #21 de `docs/ROADMAP.md` [2.2] "Modularizar JavaScript" —
+un pendiente que llevaba desde antes de la migración multi-departamento sin
+un proceso concreto detrás. Solo diagnóstico y diseño, **nada de código
+tocado**, sin `VERSION` nueva.
+
+Análisis con datos reales del repo (no solo intuición): los 4 archivos JS
+más grandes (`agente-widget.js` 4397 líneas, `modal-item.js` 1900,
+`inventory.js` 1818, `prestamos.js` 1372) cruzados con frecuencia de
+cambio (`git log --oneline -- js/<archivo> | wc -l`) y acoplamiento real
+(qué otros `.js` llaman a sus funciones vía `grep -l`). Resultado:
+`agente-widget.js` es el más grande con diferencia pero tiene **0**
+dependientes externos (ya es un IIFE autocontenido) — mejor candidato a
+piloto; `modal-item.js` es el más acoplado (7 dependientes externos) —
+el más arriesgado, se deja para el final.
+
+**Hallazgo que fija el enfoque técnico:** varios `onclick="..."` de la app
+no están en el HTML estático de `index.html`, se generan dentro de
+plantillas JS inyectadas con `innerHTML` (ej. `js/inventory.js:8`, dentro
+de `renderSubStats()`). Cualquier función así referenciada tiene que
+seguir siendo global (`window.fn`) pase lo que pase con la técnica de
+modularización elegida — no es una preferencia, es una restricción real
+del código actual.
+
+**Enfoque elegido:** `<script type="module">` nativo, **sin bundler**
+(esbuild/Vite quedó descartado — añadiría un paso de build nuevo al
+despliegue, hoy "`git push` → Cloudflare Pages despliega solo", riesgo
+desproporcionado para un proyecto mantenido por una persona). Los módulos
+nuevos pueden seguir leyendo los globales existentes (`SESSION`, `CATS`,
+`apiCall`...) sin convertir `config.js`/`state.js`/`api.js`, lo que
+permite hacerlo archivo por archivo en vez de una migración de golpe.
+
+**Ritmo: oportunista**, decisión explícita del usuario — no es un proyecto
+dedicado, se aplica la próxima vez que una tarea real toque uno de los
+archivos grandes, extrayendo una sola pieza cohesionada cada vez (nunca el
+archivo entero de una sesión). Alcance explícitamente descartado por ahora:
+`index.html` y `css/styles.css` (sin forma nativa de trocear HTML sin JS
+ni build step), TypeScript, y no resuelve la falta de tests de
+frontend/E2E (Pendiente #21 original, sigue abierto aparte).
+
+Diseño completo, con el checklist paso a paso del proceso, la tabla de
+prioridad y un piloto concreto detallado (`js/agente-widget.js` →
+`js/agente-voz.js`, el bloque de reconocimiento de voz, ~130 líneas
+autocontenidas) en
+[`docs/superpowers/specs/2026-08-28-modularizacion-js-design.md`](superpowers/specs/2026-08-28-modularizacion-js-design.md).
+`docs/ROADMAP.md` [2.2] actualizado para enlazar a este diseño en vez de
+la propuesta antigua (bundler + `js/main.js`, nunca detallada).
+
+---
+
+**Última actualización:** 28/08/2026 — diseño del proceso de modularización de JS (sin implementar, ritmo oportunista), + pestañas Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores cerrados en v647 (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)
