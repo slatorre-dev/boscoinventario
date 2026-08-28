@@ -768,20 +768,22 @@ Workers AI, onboarding de cámara (v543-v557).
     frecuente al añadir puntos de rotación de token al login
     tradicional. Detectado durante la verificación de v646, mejora
     pequeña pendiente, ver `docs/DEVELOPMENT.md` v646.
-24. **`isProfesor(user)` no reconoce el rol real de autoregistro.**
-    `functions/api/list.js`/`item.js`/`prestar.js` comparan en minúsculas
-    contra exactamente `'profesor'`, pero `functions/api/auth.js`
-    (`action=register`, línea ~371) asigna `rol='Profesor/a'`
-    (mayúscula + slash) a cualquier profesor que se autoregistra por el
-    formulario público. `'Profesor/a'.toLowerCase()` es `'profesor/a'`,
-    no matchea → `isProfesor()` devuelve `false` para esos usuarios → SÍ
-    reciben el bypass del departamento compartido `iesjuanbosco` que a un
-    `rol='profesor'` sembrado (migraciones 0005/0006) se le niega
-    correctamente. Asimetría real de la propia app entre el rol de seed y
-    el rol de autoregistro real, sin resolver — ahora fijada por un test
-    (`tests/backend/scoping.test.ts`, "un profesor auto-registrado...").
-    Detectado el 28/08/2026 durante la revisión final de la suite de
-    tests de backend.
+~~24. `isProfesor(user)` no reconoce el rol real de autoregistro~~ ✅
+    resuelto (28/08/2026): `isProfesor()` (duplicada en `item.js`/
+    `list.js`/`meta.js`/`prestar.js`/`historial.js`) solo comparaba en
+    exacto contra `'profesor'`, pero esa resultó ser la forma
+    minoritaria — el alta manual desde Usuarios, la importación CSV y el
+    autoregistro público (`auth.js action=register`) asignan
+    `'Profesor/a'` (mayúscula + slash); solo las 24 cuentas sembradas por
+    migración y Google OAuth usan `'profesor'` a secas. Ahora
+    `isProfesor()` reconoce `'profesor'`, `'profesor/a'` y `'profesora'`
+    por igual. Test actualizado en `tests/backend/scoping.test.ts` (28/28
+    en verde). Detectado el 28/08/2026 durante una sesión de creación del
+    manual de usuario (`docs/manuales/`), a raíz de una pregunta del
+    usuario sobre el rol por defecto de Google OAuth — sin relación con
+    esa tarea, hallazgo colateral. Verificado en un worktree fuera de
+    Google Drive (`C:\ClaudeWork\worktrees\...`) por el problema de
+    corrupción de `node_modules` ya documentado en Entorno.
 25. **`npm test` termina siempre con un aviso `close timed out after
     10000ms`** ("Tests closed successfully but something prevents Vite
     server from exiting") — no afecta al exit code ni a los resultados,
