@@ -781,9 +781,12 @@ Workers AI, onboarding de cámara (v543-v557).
     (`js/agente-widget.js` → `js/agente-voz.js`, bloque de reconocimiento
     de voz) en
     `docs/superpowers/specs/2026-08-28-modularizacion-js-design.md`.
-    Ritmo oportunista a propósito — no requiere una sesión dedicada,
-    aplicar la próxima vez que una tarea real toque uno de esos 4
-    archivos, extrayendo una sola pieza cada vez.
+    Ritmo oportunista a propósito — no requiere una sesión dedicada.
+    **Aplicar sin preguntar** la próxima vez que una tarea real toque uno
+    de esos 4 archivos (decisión explícita del usuario, 28/08/2026):
+    extraer la pieza correspondiente como commit `refactor:` aparte,
+    sin pedir confirmación previa — solo una pieza por vez, y solo
+    cuando el archivo ya se está tocando por otro motivo real.
 
 ---
 

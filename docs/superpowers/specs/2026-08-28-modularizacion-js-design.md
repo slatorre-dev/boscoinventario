@@ -4,6 +4,12 @@
 **Estado:** Diseño aprobado, sin implementar. Ritmo de ejecución: **oportunista**
 (no es un proyecto dedicado — se aplica la próxima vez que una tarea real
 toque uno de los archivos grandes, extrayendo una sola pieza cada vez).
+**Autonomía (decisión del usuario, 28/08/2026):** aplicar el checklist
+**sin pedir confirmación cada vez** cuando una tarea real ya vaya a tocar
+uno de los 4 archivos — no es necesario preguntar "¿extraigo esto también
+aparte?" antes de hacerlo. Sigue aplicando: una sola pieza por vez, commit
+de extracción siempre separado del commit de la tarea, y verificación
+dirigida del flujo tocado antes de dar la extracción por buena.
 **Origen:** Pendiente histórico en `docs/ROADMAP.md` [2.2] "Modularizar
 JavaScript (ES6 modules)" y `docs/superpowers/plans/2026-08-24-mejoras-codigo-ux-ui.md`
 Fase 7 "Modularización progresiva" — ninguno de los dos llegó a detallarse
