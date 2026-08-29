@@ -137,8 +137,9 @@ export async function onRequestGet({ request, env, data }) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run().catch(() => {});
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))").run().catch(() => {});
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS aula_profesores (aula TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (aula, usuario))").run().catch(() => {});
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS mantenimiento_responsables (categoria TEXT NOT NULL DEFAULT '', departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (categoria, departamento, usuario))").run().catch(() => {});
 
-  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows, profesRows, misAulasRows] = await Promise.all([
+  const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows, profesRows, misAulasRows, misMantRows] = await Promise.all([
     superadmin
       ? env.DB.prepare("SELECT * FROM aulas ORDER BY orden, id").all()
       : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY orden, id`).bind(dept).all(),
@@ -162,6 +163,7 @@ export async function onRequestGet({ request, env, data }) {
       ? env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario').all()
       : env.DB.prepare(`SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario WHERE mp.departamento=? OR mp.departamento='${genericDept}'`).bind(dept).all(),
     env.DB.prepare('SELECT aula FROM aula_profesores WHERE usuario=?').bind(user.usuario).all(),
+    env.DB.prepare('SELECT categoria FROM mantenimiento_responsables WHERE usuario=? AND departamento=?').bind(user.usuario, dept).all(),
   ]);
 
   const emailsPorModulo = {};
@@ -198,6 +200,7 @@ export async function onRequestGet({ request, env, data }) {
     ciclos: cicloOrder.map(id => cicloMap[id]),
     misModulos,
     misAulas: (misAulasRows.results || []).map(r => r.aula),
+    misMantenimiento: (misMantRows.results || []).map(r => r.categoria),
     departamentos: superadmin ? departamentosRows.results : undefined,
     user
   });
