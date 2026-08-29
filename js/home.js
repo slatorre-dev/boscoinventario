@@ -82,8 +82,13 @@ function closeAtencionHoyModal(){
 // itemsLoaded=true) — espera a las 4 señales, incluida Accesos (única que
 // pide datos nuevos), antes de decidir si hay algo que mostrar.
 async function checkAtencionHoy(){
-  if(typeof can !== 'function' || !can('config.manage')) return;
+  if(typeof can !== 'function' || !SESSION) return;
   if(sessionStorage.getItem('atencion_hoy_cerrado') === '1') return;
+
+  if(!can('config.manage')){
+    await _checkAtencionHoyProfesor();
+    return;
+  }
 
   const isSuperAdmin = typeof userRole === 'function' && userRole() === 'superadmin';
   const deptOfItem = id => items.find(x => String(x.id) === String(id))?.departamento || '';
@@ -95,7 +100,7 @@ async function checkAtencionHoy(){
     _atencionAgrupar(solicitudesPendientes, s => s.departamento)
   ) : null;
 
-  const mantLista = items.filter(needsMaintenance);
+  const mantLista = items.filter(needsAnyMaintenance);
   const mantPorDepto = isSuperAdmin ? _atencionAgrupar(mantLista, x => x.departamento) : null;
 
   const vencLista = typeof getVencidos === 'function' ? getVencidos() : [];
@@ -127,6 +132,27 @@ async function checkAtencionHoy(){
   const modal = document.getElementById('mAtencionHoy');
   if(!body || !modal) return;
   body.innerHTML = `<div class="atencion-strip">${html}</div>`;
+  modal.classList.add('open');
+}
+
+// Rama reducida para profesorado sin config.manage: solo revisiones
+// preventivas de sus propias categorías de mantenimiento asignadas
+// (MIS_MANT_CATEGORIAS) — sin desglose por departamento (ya está acotado
+// a lo suyo). Si no tiene categorías asignadas o no hay nada vencido, no
+// se abre nada (mismo criterio que la rama de jefatura).
+async function _checkAtencionHoyProfesor(){
+  if(!Array.isArray(MIS_MANT_CATEGORIAS) || !MIS_MANT_CATEGORIAS.length) return;
+  const propias = items.filter(x => needsPreventiveMaintenance(x) && x.departamento === SESSION.departamento
+    && (MIS_MANT_CATEGORIAS.includes('') || MIS_MANT_CATEGORIAS.includes(x.cat)));
+  if(!propias.length) return;
+  if(sessionStorage.getItem('atencion_hoy_cerrado') === '1') return;
+
+  const chip = _atencionChip('🛠️', propias.length, null, 'Revisiones preventivas pendientes', 'goMaintenance()', 'warn');
+  if(!chip) return;
+  const body = document.getElementById('atencionHoyBody');
+  const modal = document.getElementById('mAtencionHoy');
+  if(!body || !modal) return;
+  body.innerHTML = `<div class="atencion-strip">${chip}</div>`;
   modal.classList.add('open');
 }
 
@@ -162,7 +188,7 @@ function renderHome(){
   const total=items.length;
   const itemsParaAlertas = filtrarPorMisAulas ? items.filter(x=>MIS_AULAS.includes(x.aula)) : items;
   const low=itemsParaAlertas.filter(isLowStock).length;
-  const mant=itemsParaAlertas.filter(needsMaintenance).length;
+  const mant=itemsParaAlertas.filter(needsAnyMaintenance).length;
   const units=items.reduce((a,x)=>a+(Number(x.qty)||0),0);
   const oc = (typeof can==='function' && can('visibility.manage')) ? items.filter(x=>x.oculto==1).length : 0;
   const ocCard = (typeof can==='function' && can('visibility.manage'))
