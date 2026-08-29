@@ -1040,6 +1040,13 @@ async function marcarRevisadoPreventivo(){
       _renderMantPlanEstado(items[i]);
     }
     _mantHistorial = null;
+    if(cf){
+      const all = getBase();
+      renderInvKeepPage();
+      renderSubStats(all, all.filter(isLowStock).length);
+    } else {
+      renderHome();
+    }
     toast('Revisión preventiva registrada','ok');
   } catch(err){ toast(friendlyError(err),'err'); }
   finally{ btn.disabled=false; btn.textContent='✅ Marcar revisado hoy'; }
@@ -1130,7 +1137,7 @@ function openModal(id=null, src=null){
     planOtro.style.display = 'none';
   }
   document.getElementById('f_mantPlanNota').value = m?.mantPlanNota || '';
-  _renderMantPlanEstado(m);
+  _renderMantPlanEstado(existing ? m : null);
   document.getElementById('f_mantFechaCierre').value='';
   document.getElementById('f_mantNotaCierre').value='';
   const noneOption = document.querySelector('#f_mantEstado option[value=""]');
@@ -1336,7 +1343,12 @@ async function saveItem(cerrarTrasGuardar = true){
     modVal = 'iesjuanbosco__M01';
   }
   const refRaw = document.getElementById('f_ref').value.trim();
+  const planSelValue = document.getElementById('f_mantPlanIntervalo').value;
   const nuevoIntervalo = getMantPlanIntervaloValue();
+  if(planSelValue === '__otro' && !nuevoIntervalo){
+    toast('Indica un número de días válido para el plan de mantenimiento preventivo, o vuelve a "— Sin plan —"','err');
+    return;
+  }
   let mantPlanProximaRevision;
   if(!nuevoIntervalo){
     mantPlanProximaRevision = '';

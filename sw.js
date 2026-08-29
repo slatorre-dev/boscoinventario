@@ -53,6 +53,7 @@ const SHELL = [
   './js/modal-accesos.js',
   './js/modal-mis-modulos.js',
   './js/modal-mis-aulas.js',
+  './js/modal-mis-mantenimiento.js',
   './js/modal-auditoria.js',
   './js/dept-game.js',
   './js/agente-widget.js',

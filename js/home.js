@@ -142,8 +142,9 @@ async function checkAtencionHoy(){
 // se abre nada (mismo criterio que la rama de jefatura).
 async function _checkAtencionHoyProfesor(){
   if(!Array.isArray(MIS_MANT_CATEGORIAS) || !MIS_MANT_CATEGORIAS.length) return;
-  const propias = items.filter(x => needsPreventiveMaintenance(x) && x.departamento === SESSION.departamento
-    && (MIS_MANT_CATEGORIAS.includes('') || MIS_MANT_CATEGORIAS.includes(x.cat)));
+  const propias = items.filter(x => needsPreventiveMaintenance(x)
+    && (MIS_MANT_CATEGORIAS.includes('') || MIS_MANT_CATEGORIAS.includes(x.cat))
+    && (!debeFiltrarPorMisAulas() || MIS_AULAS.includes(x.aula)));
   if(!propias.length) return;
   if(sessionStorage.getItem('atencion_hoy_cerrado') === '1') return;
 

@@ -19,7 +19,7 @@ function _renderMisMantList(query){
     </label>` : '';
   const filas = nombres.map(n => `
     <label class="mod-check-row">
-      <input type="checkbox" value="${escHtml(n)}" ${_misMantSeleccionadas.has(n)?'checked':''} onchange="_toggleMisMant('${escHtml(n)}',this.checked)">
+      <input type="checkbox" value="${escHtml(n)}" ${_misMantSeleccionadas.has(n)?'checked':''} onchange="_toggleMisMant(this.value,this.checked)">
       <span class="mod-check-name">${CATS[n]?.i?escHtml(CATS[n].i)+' ':''}${escHtml(n)}</span>
     </label>`).join('');
   body.innerHTML = filaTodo + filas || '<p style="color:var(--muted);font-size:13px">Sin resultados.</p>';
