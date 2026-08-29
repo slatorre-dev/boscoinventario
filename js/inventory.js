@@ -921,7 +921,8 @@ async function toggleOcultoItem(id){
 function ocultoBtnHtml(x){
   if(!can('visibility.manage')) return '';
   const oc = x.oculto == 1;
-  return `<button class="btn btn-sm" onclick="event.stopPropagation();toggleOcultoItem(${x.id})" title="${oc?'Oculto al resto — clic para mostrar':'Visible — clic para ocultar al resto'}">${oc?'🙈':'👁️'}</button>`;
+  const label = oc?'Mostrar':'Ocultar';
+  return `<button class="btn btn-sm" onclick="event.stopPropagation();toggleOcultoItem(${x.id})" title="${oc?'Oculto al resto — clic para mostrar':'Visible — clic para ocultar al resto'}" aria-label="${oc?'Mostrar ítem oculto':'Ocultar ítem al resto'}">${oc?'🙈':'👁️'} ${label}</button>`;
 }
 
 function itemActiveLoans(id){
@@ -1014,14 +1015,14 @@ function rTable(data,mc){
         <td>${x.est?`<span class="edot"><span class="dot" style="background:${ec}"></span>${escHtml(x.est)}</span>`:'—'}</td>
         <td style="color:var(--muted);font-size:12px" title="${escHtml(utilTitle)}"><span class="table-util-text">${escHtml(utilVisible)}</span></td>
         <td><div style="display:flex;gap:6px;position:relative">
-          <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
+          <button class="btn btn-sm icon-btn" onclick="openModal(${x.id})" title="Editar" aria-label="Editar ítem">✏️ <span class="btn-text">Editar</span></button>
           ${esContenedor
-            ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
-            : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
+            ? `<button class="btn btn-sm btn-loan icon-btn" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" aria-label="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛ <span class="btn-text" style="font-size:12px">Prestar</span></button>`
+            : `<button class="btn btn-sm btn-loan icon-btn" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" aria-label="Prestar o devolver" style="font-size:16px;line-height:1">⌛ <span class="btn-text" style="font-size:12px">Prestar</span></button>`
           }
-          <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
+          <button class="btn btn-sm btn-d icon-btn" onclick="openDelModal(${x.id})" title="Baja / Eliminar" aria-label="Dar de baja o eliminar">🗑️ <span class="btn-text">Eliminar</span></button>
           <div style="position:relative">
-            <button class="btn btn-sm" onclick="toggleActionMenu(event,${x.id})" title="Más acciones">⋯</button>
+            <button class="btn btn-sm icon-btn" onclick="toggleActionMenu(event,${x.id})" title="Más acciones" aria-label="Más acciones">⋯ <span class="btn-text">Más</span></button>
             <div id="am-${x.id}" class="action-menu" style="display:none;position:absolute;right:0;top:100%;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:1000;min-width:180px">
               <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
               <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
@@ -1092,14 +1093,14 @@ function rCards(data,mc){
         ${x.obs?`<div class="cobs">💬 ${escHtml(x.obs)}</div>`:''}
       </div>
       <div class="cfoot" style="position:relative">
-        <button class="btn btn-sm" onclick="openModal(${x.id})" title="Editar">✏️</button>
+        <button class="btn btn-sm icon-btn" onclick="openModal(${x.id})" title="Editar" aria-label="Editar ítem">✏️ <span class="btn-text">Editar</span></button>
         ${esContenedor2
-          ? `<button class="btn btn-sm btn-loan" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛</button>`
-          : `<button class="btn btn-sm btn-loan" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" style="font-size:16px;line-height:1">⌛</button>`
+          ? `<button class="btn btn-sm btn-loan icon-btn" onclick="openPrestarCaja(${x.id})" title="Prestar caja completa" aria-label="Prestar caja completa" style="font-size:16px;line-height:1">📦⌛ <span class="btn-text" style="font-size:12px">Prestar</span></button>`
+          : `<button class="btn btn-sm btn-loan icon-btn" onclick="openPresDevModal(${x.id})" title="Prestar / Devolver" aria-label="Prestar o devolver" style="font-size:16px;line-height:1">⌛ <span class="btn-text" style="font-size:12px">Prestar</span></button>`
         }
-        <button class="btn btn-sm btn-d" onclick="openDelModal(${x.id})" title="Baja / Eliminar">🗑️</button>
+        <button class="btn btn-sm btn-d icon-btn" onclick="openDelModal(${x.id})" title="Baja / Eliminar" aria-label="Dar de baja o eliminar">🗑️ <span class="btn-text">Eliminar</span></button>
         <div style="position:relative">
-          <button class="btn btn-sm" onclick="toggleActionMenu(event,${x.id})" title="Más acciones">⋯</button>
+          <button class="btn btn-sm icon-btn" onclick="toggleActionMenu(event,${x.id})" title="Más acciones" aria-label="Más acciones">⋯ <span class="btn-text">Más</span></button>
           <div id="am-${x.id}" class="action-menu" style="display:none;position:absolute;right:0;top:100%;background:white;border:1px solid #ddd;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:1000;min-width:180px">
             <button class="action-menu-item" onclick="event.stopPropagation();duplicateItem(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Duplicar">⧉ Duplicar</button>
             <button class="action-menu-item" onclick="event.stopPropagation();abrirMantenimientoRapido(${x.id});document.getElementById('am-${x.id}').style.display='none'" title="Marcar mantenimiento">🛠️ Marcar mantenimiento</button>
@@ -1164,7 +1165,7 @@ function rList(data,mc){
         `<div class="list-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" style="cursor:pointer">📷</div>`}
       <div class="list-info">
         <div class="list-name item-title-link" onclick="openModal(${x.id})">${parentItem?'↳ ':''}${escHtml(x.item)}${esContenedor?` 📦${numHijos}`:''}</div>
-        <div class="list-meta">${x.ref?`<span class="list-badge">${escHtml(x.ref)}</span>`:''}${x.cat?` <span class="list-cat">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">●</span>`:''}${mantPrev?` <span title="Revisión preventiva pendiente" style="color:var(--teal)">🛡️</span>`:''}</div>
+        <div class="list-meta">${x.ref?`<span class="list-badge">${escHtml(x.ref)}</span>`:''}${x.cat?` <span class="list-cat">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">● ${escHtml(x.est)}</span>`:''}${mantPrev?` <span title="Revisión preventiva pendiente" style="color:var(--teal)">🛡️ Revisión</span>`:''}</div>
       </div>
       <div class="list-footer">
         <div class="list-qty ${low?'low':''}">
@@ -1172,11 +1173,11 @@ function rList(data,mc){
           <div class="list-qty-min">mín.${x.min}</div>
         </div>
         <div class="list-actions">
-          <button class="list-action-btn" onclick="openModal(${x.id})" title="Editar">✏️</button>
-          <button class="list-action-btn" onclick="openPresDevModal(${x.id})" title="Prestar">⌛</button>
-          <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Reponer stock">🛒</button>
-          ${can('visibility.manage')?`<button class="list-action-btn" onclick="event.stopPropagation();toggleOcultoItem(${x.id})" title="${x.oculto==1?'Oculto al resto':'Ocultar al resto'}">${x.oculto==1?'🙈':'👁️'}</button>`:''}
-          <button class="list-action-btn list-delete" onclick="openDelModal(${x.id})" title="Eliminar">🗑️</button>
+          <button class="list-action-btn" onclick="openModal(${x.id})" title="Editar" aria-label="Editar ítem">✏️</button>
+          <button class="list-action-btn" onclick="openPresDevModal(${x.id})" title="Prestar" aria-label="Prestar o devolver">⌛</button>
+          <button class="list-action-btn${isPedido(x.id)?' list-active':''}" onclick="togglePedido(${x.id})" title="Reponer stock" aria-label="Reponer stock">🛒</button>
+          ${can('visibility.manage')?`<button class="list-action-btn" onclick="event.stopPropagation();toggleOcultoItem(${x.id})" title="${x.oculto==1?'Oculto al resto':'Ocultar al resto'}" aria-label="${x.oculto==1?'Mostrar ítem oculto':'Ocultar ítem al resto'}">${x.oculto==1?'🙈':'👁️'}</button>`:''}
+          <button class="list-action-btn list-delete" onclick="openDelModal(${x.id})" title="Eliminar" aria-label="Dar de baja o eliminar">🗑️</button>
         </div>
       </div>
     </div>`;
