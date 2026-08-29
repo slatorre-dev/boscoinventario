@@ -906,7 +906,7 @@ async function openUsuariosModal(){
     const res = await apiPost({ action: 'getUsers' });
     if(!res.ok) throw new Error(res.error);
     _todosModulos = res.todosModulos || [];
-    _usuariosEditing = res.usuarios.map(u=>({...u, _nuevo:false, _resetPass:'', _modulos: u.modulos || [], _aulas: u.aulas || []}));
+    _usuariosEditing = res.usuarios.map(u=>({...u, _nuevo:false, _resetPass:'', _modulos: u.modulos || [], _aulas: u.aulas || [], _mant: u.mantenimiento || []}));
     _usuariosOriginal = res.usuarios.map(u=>u.usuario);
     _renderUsuariosList();
   } catch(e) {
@@ -953,6 +953,7 @@ function _renderUsuariosList(){
       }
       <button class="btn btn-sm usr-mods-btn" onclick="openModulosUsuario(${i})" title="Asignar módulos que imparte">📚 Módulos${nMods>0?` (${nMods})`:''}</button>
       <button class="btn btn-sm usr-mods-btn" onclick="openAulasUsuario(${i})" title="Asignar aulas en las que da clase">🏫 Aulas${nAulas>0?` (${nAulas})`:''}</button>
+      <button class="btn btn-sm usr-mods-btn" onclick="openMantenimientoUsuario(${i})" title="Asignar categorías de mantenimiento">🛠️ Mantenimiento${(u._mant||[]).length>0?` (${(u._mant||[]).length})`:''}</button>
       ${bloqueadoBadge}
       ${u.bloqueado && !u._nuevo ? `<button class="btn btn-sm" onclick="_desbloquearUsuario(${i})" title="Desbloquear cuenta">🔓 Desbloquear</button>` : ''}
       <button class="del-btn${selfClass}" onclick="_removeUsuarioRow(${i})" title="${esSelf?'No puedes eliminarte':'Eliminar usuario'}">🗑</button>
@@ -1209,6 +1210,73 @@ async function saveAulasUsuario(){
     closeAulasUsuario();
   } catch(e){ toast('Error: '+e.message,'err'); }
   finally { btn.disabled=false; btn.textContent='💾 Guardar aulas'; }
+}
+
+// ─── CATEGORÍAS DE MANTENIMIENTO POR USUARIO ──────────────
+// Admin: superadmin/jefe de departamento asigna a cualquier usuario del
+// departamento qué categorías de mantenimiento le corresponden. Mismo
+// patrón que openAulasUsuario/saveAulasUsuario de arriba, contra CATS en
+// vez de AULAS, y con la fila especial "Todo el departamento" (valor '').
+let _mantUsuarioIdx = null;
+let _mantUsuarioSeleccionadas = new Set();
+
+function openMantenimientoUsuario(i){
+  _mantUsuarioIdx = i;
+  const u = _usuariosEditing[i];
+  _mantUsuarioSeleccionadas = new Set(u._mant || []);
+  document.getElementById('mMantenimientoUsuarioTitle').textContent = `🛠️ Mantenimiento de ${u.nombre||u.usuario}`;
+  document.getElementById('mantUsuarioSearch').value = '';
+  _renderMantUsuarioList('');
+  document.getElementById('mMantenimientoUsuario').classList.add('open');
+}
+
+function _renderMantUsuarioList(query){
+  const q = normalizeStr(query || '');
+  const body = document.getElementById('mMantenimientoUsuarioBody');
+  if(!body) return;
+  const nombres = Object.keys(CATS || {}).filter(n => !q || normalizeStr(n).includes(q));
+  const filaTodo = !q ? `
+    <label class="mod-check-row">
+      <input type="checkbox" value="" ${_mantUsuarioSeleccionadas.has('')?'checked':''} onchange="_toggleMantUsuario('',this.checked)">
+      <span class="mod-check-name">🏷️ Todo el departamento</span>
+    </label>` : '';
+  const filas = nombres.map(n => `
+    <label class="mod-check-row">
+      <input type="checkbox" value="${escHtml(n)}" ${_mantUsuarioSeleccionadas.has(n)?'checked':''} onchange="_toggleMantUsuario('${escHtml(n)}',this.checked)">
+      <span class="mod-check-name">${CATS[n]?.i?escHtml(CATS[n].i)+' ':''}${escHtml(n)}</span>
+    </label>`).join('');
+  body.innerHTML = filaTodo + filas || '<p style="color:var(--muted);font-size:13px">Sin resultados.</p>';
+}
+
+function _toggleMantUsuario(cat, checked){
+  if(checked) _mantUsuarioSeleccionadas.add(cat);
+  else _mantUsuarioSeleccionadas.delete(cat);
+}
+
+function filterMantUsuario(){
+  _renderMantUsuarioList(document.getElementById('mantUsuarioSearch')?.value || '');
+}
+
+function closeMantenimientoUsuario(){
+  document.getElementById('mMantenimientoUsuario').classList.remove('open');
+  _renderUsuariosList();
+}
+
+async function saveMantenimientoUsuario(){
+  if(_mantUsuarioIdx === null) return;
+  const u = _usuariosEditing[_mantUsuarioIdx];
+  if(!u.nombre.trim()){ toast('Guarda primero el nombre del usuario antes de asignar mantenimiento','err'); return; }
+  const btn = document.getElementById('btnSaveMantenimientoUsuario');
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+  try {
+    const categorias = [..._mantUsuarioSeleccionadas];
+    const res = await apiPost({ action:'userAssignMantenimiento', usuario: u.usuario, categorias });
+    if(!res.ok) throw new Error(res.error);
+    u._mant = categorias;
+    toast(`Mantenimiento actualizado para ${u.nombre}`,'ok');
+    closeMantenimientoUsuario();
+  } catch(e){ toast('Error: '+e.message,'err'); }
+  finally { btn.disabled=false; btn.textContent='💾 Guardar mantenimiento'; }
 }
 
 function importUsuariosCSV(input) {
