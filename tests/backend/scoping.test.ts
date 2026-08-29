@@ -234,4 +234,34 @@ describe("scoping por departamento", () => {
     expect(row).not.toBeNull();
     expect(row.cantidad).toBe(1);
   });
+
+  it("mantenimientoMarcarRevisado: un profesor no puede marcar la revision de un item de otro departamento (403)", async () => {
+    await env.DB.prepare("UPDATE inventario SET mantPlanIntervaloDias=90 WHERE id=9002").run();
+    const { res } = await callThroughMiddleware(itemPost, {
+      method: "POST",
+      path: `/api/item?${authQuery("test-profesor-a", "test-profesor-a")}`,
+      body: { action: "mantenimientoMarcarRevisado", itemId: 9002, nota: "hackeado" },
+    });
+    expect(res.status).toBe(403);
+    const row = await env.DB.prepare("SELECT mantPlanUltimaRevision FROM inventario WHERE id=9002").first<{ mantPlanUltimaRevision: string }>();
+    expect(row!.mantPlanUltimaRevision || "").toBe("");
+  });
+
+  it("mantenimientoMarcarRevisado: un profesor si puede marcar la revision de un item de su propio departamento", async () => {
+    await env.DB.prepare("UPDATE inventario SET mantPlanIntervaloDias=90 WHERE id=9001").run();
+    const { res } = await callThroughMiddleware(itemPost, {
+      method: "POST",
+      path: `/api/item?${authQuery("test-profesor-a", "test-profesor-a")}`,
+      body: { action: "mantenimientoMarcarRevisado", itemId: 9001, nota: "revisado ok" },
+    });
+    expect(res.status).toBe(200);
+    const body: any = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.mantPlanUltimaRevision).toBeTruthy();
+    expect(body.mantPlanProximaRevision > body.mantPlanUltimaRevision).toBe(true);
+
+    const mant = await env.DB.prepare("SELECT tipo, estado FROM mantenimientos WHERE item_id=9001 ORDER BY id DESC LIMIT 1").first<{ tipo: string; estado: string }>();
+    expect(mant!.tipo).toBe("preventivo");
+    expect(mant!.estado).toBe("Resuelto");
+  });
 });

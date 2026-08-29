@@ -1,5 +1,5 @@
 // Mantener sincronizado con el HEADERS_INV de list.js — ver CLAUDE.md, bug recurrente de columnas divergentes (mismo orden, mismas columnas, en ambos archivos)
-const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','fecha_adquisicion','precio','mant','mantFecha','mantNota','mantResp','mantEstado','mantCoste','mantSolicitante','mantSolicitanteEmail','foto','obs','code','serie','es_contenedor','parent_id','tipo_material','oculto'];
+const HEADERS_INV = ['id','ref','aula','mod','item','qty','min','cat','loc','est','util','proveedor','tags','fecha','fecha_adquisicion','precio','mant','mantFecha','mantNota','mantResp','mantEstado','mantCoste','mantSolicitante','mantSolicitanteEmail','foto','obs','code','serie','es_contenedor','parent_id','tipo_material','oculto','mantPlanIntervaloDias','mantPlanUltimaRevision','mantPlanProximaRevision','mantPlanNota'];
 const FIELDS_UPD  = HEADERS_INV.filter(h => h !== 'id');
 
 const GENERIC_DEPT = 'iesjuanbosco'; // "IES Juan Bosco": bolsa compartida, visible/editable por cualquier departamento
@@ -294,9 +294,36 @@ export async function onRequestPost({ request, env, data }) {
       }
     }
     const rows = await env.DB.prepare(
-      'SELECT id, estado, fecha_apertura, nota_apertura, responsable, coste, fecha_cierre, nota_cierre FROM mantenimientos WHERE item_id=? ORDER BY id DESC'
+      'SELECT id, estado, fecha_apertura, nota_apertura, responsable, coste, fecha_cierre, nota_cierre, tipo FROM mantenimientos WHERE item_id=? ORDER BY id DESC'
     ).bind(itemId).all();
     return Response.json({ ok: true, mantenimientos: rows.results || [] });
+  }
+
+  if (action === 'mantenimientoMarcarRevisado') {
+    const itemId = body.itemId;
+    if (!superadmin) {
+      const currentDept = await itemDept(env.DB, itemId);
+      if (currentDept !== dept && currentDept !== genericDept) {
+        return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+      }
+    }
+    const row = await env.DB.prepare('SELECT mantPlanIntervaloDias FROM inventario WHERE id=?').bind(itemId).first();
+    if (!row || !row.mantPlanIntervaloDias) {
+      return Response.json({ ok: false, error: 'Este ítem no tiene un plan de mantenimiento activo' });
+    }
+    const hoy = new Date().toISOString().slice(0, 10);
+    const proxima = new Date();
+    proxima.setDate(proxima.getDate() + row.mantPlanIntervaloDias);
+    const proximaStr = proxima.toISOString().slice(0, 10);
+    const nota = String(body.nota || '').trim();
+    await env.DB.prepare(
+      `INSERT INTO mantenimientos (item_id, estado, fecha_apertura, nota_apertura, responsable, fecha_cierre, nota_cierre, tipo, creado_por, creado_en)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`
+    ).bind(itemId, 'Resuelto', hoy, 'Revisión preventiva', user?.usuario || '', hoy, nota, 'preventivo', user?.usuario || '', new Date().toISOString()).run();
+    await env.DB.prepare(
+      'UPDATE inventario SET mantPlanUltimaRevision=?, mantPlanProximaRevision=? WHERE id=?'
+    ).bind(hoy, proximaStr, itemId).run();
+    return Response.json({ ok: true, mantPlanUltimaRevision: hoy, mantPlanProximaRevision: proximaStr });
   }
 
   if (action === 'fotosGet') {
