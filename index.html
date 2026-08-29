@@ -90,6 +90,7 @@
         <div class="dept-menu" id="misCursosMenu">
           <button class="dept-menu-item" onclick="closeMisCursosMenu();openMisModulosModal()">📚 Módulos</button>
           <button class="dept-menu-item" onclick="closeMisCursosMenu();openMisAulasModal()">🏫 Aulas</button>
+          <button class="dept-menu-item" onclick="closeMisCursosMenu();openMisMantModal()">🛠️ Mantenimiento</button>
         </div>
       </div>
       <div class="dept-menu-wrap" id="deptMenuWrap" style="display:none">
@@ -1681,6 +1682,23 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
   </div>
 </div>
 
+<!-- MODAL "MIS CATEGORÍAS DE MANTENIMIENTO" (autoservicio, cualquier rol) -->
+<div class="mbg" id="mMisMant" style="z-index:600" onclick="if(event.target===this)closeMisMantModal()">
+  <div class="modal" style="width:min(520px,100%)">
+    <div class="mh"><div class="mt">🛠️ Mis categorías de mantenimiento</div><button class="mx" onclick="closeMisMantModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px">Marca las categorías de material de las que te encargas del mantenimiento preventivo.</p>
+    <input type="text" id="misMantSearch" class="fi-w" placeholder="🔍 Buscar categoría..." oninput="filterMisMant()" style="margin-bottom:12px">
+    <div id="mMisMantBody" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <div class="mf" style="margin-top:18px">
+      <div></div>
+      <div class="mf-right">
+        <button class="btn" onclick="closeMisMantModal()">Cancelar</button>
+        <button class="btn btn-p" id="btnGuardarMisMant" onclick="guardarMisMantModal()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL GESTIÓN DE AULAS -->
 <div class="mbg" id="mAulas" onclick="if(event.target===this)closeAulasModal()">
   <div class="modal">
@@ -2307,6 +2325,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/modal-accesos.js"></script>
 <script defer src="js/modal-mis-modulos.js"></script>
 <script defer src="js/modal-mis-aulas.js"></script>
+<script defer src="js/modal-mis-mantenimiento.js"></script>
 <script defer src="js/modal-auditoria.js"></script>
 <script defer src="js/dept-game.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
