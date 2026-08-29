@@ -41,6 +41,7 @@ const TH_OPTIONS = ['th-blue','th-green','th-amber','th-teal','th-orange','th-pi
 // ═════════════════════════════════════════════════════════
 let MIS_MODULOS = []; // moduloId[] que imparte el usuario logueado (ver meta.js:misModulos)
 let MIS_AULAS = []; // aula.id[] en las que da clase el usuario logueado (ver meta.js:misAulas)
+let MIS_MANT_CATEGORIAS = []; // categoria[] de mantenimiento asignadas al usuario logueado (ver meta.js:misMantenimiento); '' = todo el departamento
 
 // Compartido por home.js (rejilla de aulas/tarjetas) e inventory.js (getBase
 // de Stock bajo/Mantenimiento) — evita que ambos definan por separado la

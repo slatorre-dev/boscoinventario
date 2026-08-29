@@ -74,3 +74,25 @@ function needsMaintenance(item){
   if(status === 'resuelto' || status === 'reparado') return false;
   return item?.mant === true || item?.mant === 1 || String(item?.mant || '').trim() === '1' || item?.est === 'Avería';
 }
+
+function needsPreventiveMaintenance(item){
+  const proxima = item?.mantPlanProximaRevision;
+  if(!item?.mantPlanIntervaloDias || !proxima) return false;
+  const hoy = new Date().toISOString().slice(0,10);
+  return proxima <= hoy;
+}
+
+function needsAnyMaintenance(item){
+  return needsMaintenance(item) || needsPreventiveMaintenance(item);
+}
+
+// Intervalos fijos del plan preventivo + "Otro…" — compartido por el
+// modal de ítem (js/modal-item.js) y la acción de lote (js/inventory.js)
+// para no repetir la lista de <option> en dos sitios.
+const MANT_PLAN_INTERVALOS = [30, 90, 180, 365, 730];
+function mantPlanIntervaloOptionsHtml(selected){
+  const sel = selected == null ? '' : String(selected);
+  return '<option value="">— Sin plan —</option>'
+    + MANT_PLAN_INTERVALOS.map(d => `<option value="${d}"${sel===String(d)?' selected':''}>${d} días</option>`).join('')
+    + `<option value="__otro"${sel==='__otro'?' selected':''}>Otro…</option>`;
+}

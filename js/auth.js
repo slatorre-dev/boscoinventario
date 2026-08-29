@@ -523,6 +523,7 @@ async function loadData(){
     showUserChip();
     if(meta.aulas && meta.aulas.length) AULAS = meta.aulas;
     MIS_AULAS = Array.isArray(meta.misAulas) ? meta.misAulas : [];
+    MIS_MANT_CATEGORIAS = Array.isArray(meta.misMantenimiento) ? meta.misMantenimiento : [];
     if(meta.cats && meta.cats.length) setCatsFromEntries(meta.cats.map(c=>[c.name,{c:c.c,bg:c.bg,i:c.i}]));
     if(Array.isArray(meta.catsCrudo)) catsCrudo = meta.catsCrudo;
     if(meta.ubicaciones) UBICACIONES = meta.ubicaciones;
