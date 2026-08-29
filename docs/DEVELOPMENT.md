@@ -4981,4 +4981,102 @@ Sin cambios de backend ni de esquema — puramente CSS/JS de presentación,
 
 ---
 
-**Última actualización:** 28/08/2026 — Volt hereda el tema claro/oscuro de la app (v649, cierra el hallazgo #3 de la auditoría del 27/08/2026), + diseño del proceso de modularización de JS (sin implementar, ritmo oportunista), + pestañas Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores cerrados en v647 (#7 permiso `items.read`, #9 migración `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus aulas" en Stock bajo/Mantenimiento)
+### 29/08/2026 (v650): Mantenimiento preventivo — implementación completa
+
+Implementa el diseño de
+[`docs/superpowers/specs/2026-08-28-mantenimiento-preventivo-design.md`](superpowers/specs/2026-08-28-mantenimiento-preventivo-design.md)
+(escrito el día anterior, sin código). Ejecutado con
+`superpowers:writing-plans` +
+[`docs/superpowers/plans/2026-08-28-mantenimiento-preventivo.md`](superpowers/plans/2026-08-28-mantenimiento-preventivo.md)
++ `superpowers:subagent-driven-development` (13 tareas, un subagente
+implementador + un revisor por tarea, directamente sobre `main` — este
+proyecto no usa feature branches).
+
+**Modelo de datos (migración `0039`):** 4 columnas planas en `inventario`
+(`mantPlanIntervaloDias`, `mantPlanUltimaRevision`, `mantPlanProximaRevision`,
+`mantPlanNota` — `mantPlanIntervaloDias IS NULL` = sin plan activo, sin
+columna `activo` aparte), columna `tipo` (`'correctivo'`/`'preventivo'`)
+en `mantenimientos` para distinguir avería real de revisión rutinaria, y
+tabla nueva `mantenimiento_responsables(categoria, departamento, usuario)`
+— mismo patrón puente que `aula_profesores`/`modulo_profesores`
+(migraciones `0032`/`0033`), `categoria=''` significa "todo el
+departamento".
+
+**Backend:** acción nueva `mantenimientoMarcarRevisado` en
+`functions/api/item.js` (única lógica de servidor genuinamente nueva —
+inserta una fila `mantenimientos` con `tipo='preventivo'`/`estado='Resuelto'`
+y actualiza las 2 fechas del plan); las 4 columnas nuevas viajan solas por
+`add`/`update`/`bulkImport`/`restoreBackup` al añadirlas a `HEADERS_INV`
+(mismo mecanismo que ya usaba `mantCoste`, sin tocar esas 4 acciones).
+`functions/api/usuarios.js` gana `reemplazarMantenimientoUsuario` (helper
+de diff-sync, calco de `reemplazarAulasUsuario`) y dos acciones
+(`selectMantenimientoCategorias` autoservicio, `userAssignMantenimiento`
+admin) — `getUsers` devuelve `mantenimiento: string[]` por usuario.
+`functions/api/meta.js` expone `misMantenimiento` para que `js/auth.js`
+rellene `MIS_MANT_CATEGORIAS` (declarada en `js/config.js`, junto a
+`MIS_AULAS` — el diseño original decía `js/state.js`, corregido al
+escribir el plan de implementación tras comprobar la ubicación real).
+
+**Frontend:** bloque "🛡️ Plan preventivo" nuevo dentro de la sección
+🛠️ Mantenimiento del modal de ítem (`js/modal-item.js`/`index.html`) —
+desplegable de intervalo (30/90/180/365/730 días + "Otro…", opciones
+generadas por `mantPlanIntervaloOptionsHtml()` en `js/state.js`, mismo
+patrón "Otra…" que ya usaba la franja horaria de reservas v631), nota
+libre, y un botón "✅ Marcar revisado hoy" que solo aparece si el ítem ya
+tiene un plan activo. Vista "Mantenimiento" de Inventario y contadores de
+Inicio pasan de `needsMaintenance` a `needsAnyMaintenance` (OR de
+correctivo+preventivo, ambos en `js/state.js`) — una sola vista mezcla los
+dos motivos, cada fila con su propio badge (🔧/🛡️) en `rTable`/`rCards`/
+`rList`. Acciones de lote nuevas `plan-set`/`plan-off` en Inventario
+(mismo mecanismo de N llamadas `update` que ya usa el resto del bulk-edit,
+sin endpoint de lote real). "🔔 Requiere tu atención" gana una segunda
+rama: cualquier profesor sin `config.manage` pero con categorías de
+mantenimiento autoasignadas ve una versión reducida del modal (un solo
+chip, sin desglose por departamento) si tiene revisiones vencidas en las
+categorías de las que se ha hecho responsable — antes la función
+retornaba inmediatamente para cualquiera sin `config.manage`.
+Autoservicio de categorías nuevo en "📌 Mis Cursos/Aulas" → "🛠️
+Mantenimiento" (`js/modal-mis-mantenimiento.js`, calco casi literal de
+`js/modal-mis-aulas.js`), y su equivalente admin en 🔐 Usuarios
+(`js/prestamos.js`, calco de la asignación de aulas ya existente ahí).
+
+**Bug real encontrado y corregido durante la revisión de tarea (no en
+producción):** duplicar un ítem que ya tenía un plan preventivo activo
+(botón "⧉ Duplicar") sin tocar el intervalo dejaba `mantPlanIntervaloDias`
+puesto pero `mantPlanProximaRevision=''` en el ítem nuevo — la rama
+"preservar valor existente" de `saveItem()` asumía `eid` (id del ítem que
+se está editando), pero un duplicado va por la acción `add`, con `eid`
+nulo. El ítem nuevo quedaba con un plan que `needsPreventiveMaintenance()`
+nunca marcaría como vencido, sin ningún error visible. Corregido añadiendo
+`!eid ||` a la condición que recalcula la fecha (si no hay `eid`, no hay
+nada que preservar — siempre se recalcula desde hoy).
+
+**Tests:** 2 tests nuevos de scoping por departamento para
+`mantenimientoMarcarRevisado` y 1 para `userAssignMantenimiento`
+(`tests/backend/scoping.test.ts`, mismo patrón que los 28 ya existentes)
+— 31/31 en verde. Hecho en un worktree fuera de Google Drive
+(`C:\ClaudeWork\worktrees\mantenimiento-preventivo`, detached HEAD,
+mismo object database que el checkout principal — commits visibles sin
+merge, sincronizados a `main` con `git merge --ff-only` tras cada tarea)
+por el bug ya documentado de `node_modules`/Google Drive.
+
+**Alcance descartado a propósito (YAGNI, ya en el diseño):** checklist
+estructurado de pasos (nota en texto libre, igual que el mantenimiento
+reactivo), aviso "próximo a vencer" (solo estado binario vencida/no
+vencida, igual que `getVencidos()` de préstamos), mantenimiento por uso/
+ciclos, coste obligatorio del cierre preventivo.
+
+`sw.js` → v650.
+
+---
+
+**Última actualización:** 29/08/2026 — Mantenimiento preventivo
+implementado completo (v650: plan por ítem, responsables por categoría
+autoservicio+admin, vista/contadores/aviso mezclando correctivo y
+preventivo), + Volt hereda el tema claro/oscuro de la app (v649, cierra
+el hallazgo #3 de la auditoría del 27/08/2026), + diseño del proceso de
+modularización de JS (sin implementar, ritmo oportunista), + pestañas
+Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores
+cerrados en v647 (#7 permiso `items.read`, #9 migración
+`ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus
+aulas" en Stock bajo/Mantenimiento)

@@ -1,5 +1,17 @@
 # Nota de Trabajo - Bosco Inventario
 
+**Estado:** v650 | 29/08/2026 | Mantenimiento preventivo implementado
+completo: plan por ítem (intervalo + próxima revisión, en la sección 🛠️
+Mantenimiento del modal), responsables por categoría (autoservicio desde
+"📌 Mis Cursos/Aulas" + asignación admin desde 🔐 Usuarios), y la vista
+"Mantenimiento"/contadores de Inicio/"🔔 Requiere tu atención" ya mezclan
+correctivo y preventivo con badge propio (🔧/🛡️) — implementa el diseño
+de la nota anterior (28/08/2026), ejecutado con `superpowers:writing-plans`
++ `superpowers:subagent-driven-development` (13 tareas, un implementador +
+un revisor por tarea). Migración `0039` aplicada a D1 remoto. Detalle
+técnico completo (modelo de datos, un bug real encontrado y corregido
+durante la revisión de una tarea, tests nuevos) en `docs/DEVELOPMENT.md`
+29/08/2026.
 **Nota (28/08/2026):** diseño completo (sin implementar) del proceso de
 modularización de los JS grandes, a petición del usuario tras revisar el
 Pendiente #21/`docs/ROADMAP.md` [2.2] — solo análisis y spec, ningún
