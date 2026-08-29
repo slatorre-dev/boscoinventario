@@ -3,7 +3,7 @@
 // ═════════════════════════════════════════════════════════
 function renderSubStats(data,low){
   const units=data.reduce((a,x)=>a+(Number(x.qty)||0),0);
-  const mant=data.filter(needsMaintenance).length;
+  const mant=data.filter(needsAnyMaintenance).length;
   document.getElementById('sStats').innerHTML=`
     <div class="scard-compact" onclick="_subFilter=null;renderInv()" title="Ver todos los ítems"><span class="icon">📋</span><span class="num" id="sst-tipos">0</span></div>
     <div class="scard-compact" title="Unidades en stock"><span class="icon">🔢</span><span class="num" id="sst-units">0</span></div>
@@ -43,7 +43,7 @@ function getBase(){
     if(cf.type==='aula') return x.aula===cf.id;
     if(cf.type==='cat') return x.cat===cf.id;
     if(cf.type==='lowstock') return isLowStock(x) && (!debeFiltrarPorMisAulas() || MIS_AULAS.includes(x.aula));
-    if(cf.type==='maintenance') return needsMaintenance(x) && (!debeFiltrarPorMisAulas() || MIS_AULAS.includes(x.aula));
+    if(cf.type==='maintenance') return needsAnyMaintenance(x) && (!debeFiltrarPorMisAulas() || MIS_AULAS.includes(x.aula));
     if(cf.type==='ocultos') return x.oculto==1;
     if(cf.type==='caja') return Number(x.parent_id)===Number(cf.id);
     if(cf.type==='search') return fuzzyMatch(cf.id, itemSearchText(x));
@@ -58,7 +58,7 @@ function getFiltered(){
   const ft=document.getElementById('fTipo').value;
   return getBase().filter(x=>{
     if(_subFilter==='lowstock' && !isLowStock(x)) return false;
-    if(_subFilter==='maintenance' && !needsMaintenance(x)) return false;
+    if(_subFilter==='maintenance' && !needsAnyMaintenance(x)) return false;
     if(fc&&x.cat!==fc)return false;
     if(fe&&x.est!==fe)return false;
     if(ft&&x.tipo_material!==ft)return false;
@@ -963,7 +963,7 @@ function rTable(data,mc){
   mc.innerHTML=`<div class="tw"><div class="tw-scroll"><table>
     <thead><tr><th><input type="checkbox" onchange="toggleBulkPage(this.checked)" title="Seleccionar pagina"></th><th>Foto</th>${th2('ref','Ref.')}${th2('aula','Aula')}${th2('item','Ítem')}${th2('qty','Cant.')}<th>Mín.</th>${th2('cat','Categoría')}${th2('loc','Ubicación')}${th2('est','Estado')}${th2('util','Utilidad')}<th>Acciones</th></tr></thead>
     <tbody>${data.map(x=>{
-      const low=isLowStock(x),mant=needsMaintenance(x),mantInfo=[x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · '),cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',tipo=materialType(x);
+      const low=isLowStock(x),mant=needsMaintenance(x),mantPrev=needsPreventiveMaintenance(x),mantInfo=[x.mantEstado,x.mantFecha,x.mantResp].filter(Boolean).join(' · '),cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',tipo=materialType(x);
       const esContenedor = x.es_contenedor == 1;
       const parentItem = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
       const numHijos = esContenedor ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
@@ -983,6 +983,7 @@ function rTable(data,mc){
             ${esContenedor?`<span title="Ver componentes" onclick="goCaja(${x.id})" style="cursor:pointer;font-size:10px;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 5px;margin-left:4px">📦 ${numHijos}</span>`:''}
             ${parentItem?`<span style="font-size:10px;background:#f0fdf4;color:#15803d;border-radius:4px;padding:1px 5px;margin-left:4px" title="En caja: ${escHtml(parentItem.item)}">📦 ${escHtml(parentItem.ref||parentItem.item)}</span>`:''}
             <button type="button" class="qr-name-btn" onclick="event.stopPropagation();openItemQr(${x.id})" title="Ver QR" aria-label="Ver QR"><img class="qr-name-icon" src="icons/qr-code.svg" alt=""></button>
+            ${mantPrev?`<span title="Revisión preventiva pendiente" style="font-size:10px;background:var(--teal-l);color:var(--teal);border-radius:4px;padding:1px 5px;margin-left:4px">🛡️ Revisión</span>`:''}
           </div>
         </td>
         <td><span class="qval ${low?'qlow':'qok'}">${x.qty}${low?' ⚠':''}</span></td>
@@ -1017,7 +1018,7 @@ function rTable(data,mc){
 
 function rCards(data,mc){
   mc.innerHTML=`<div class="cgrid">${data.map(x=>{
-    const low=isLowStock(x),mant=needsMaintenance(x),mantStatus=x.mantEstado||'Pendiente',cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',mod=findModulo(x.mod),tipo=materialType(x),tags=itemTags(x);
+    const low=isLowStock(x),mant=needsMaintenance(x),mantPrev=needsPreventiveMaintenance(x),mantStatus=x.mantEstado||'Pendiente',cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',mod=findModulo(x.mod),tipo=materialType(x),tags=itemTags(x);
     const esContenedor2 = x.es_contenedor == 1;
     const parentItem2 = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     const numHijos2 = esContenedor2 ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
@@ -1052,6 +1053,7 @@ function rCards(data,mc){
         <div class="cpills">
           ${x.est?`<span class="edot" style="font-size:12px"><span class="dot" style="background:${ec}"></span>${escHtml(x.est)}</span>`:''}
           ${mant?`<span class="cpill maintenance-pill">🛠️ ${escHtml(mantStatus)}</span>`:''}
+          ${mantPrev?`<span class="cpill maintenance-pill-preventive">🛡️ Revisión pendiente</span>`:''}
           ${x.cat?`<span class="cpill" style="background:${cat.bg};color:${cat.c};font-size:11px">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:''}
           <span class="cpill" style="background:${tipo==='inventariable'?'#f5f3ff':'#ecfdf5'};color:${tipo==='inventariable'?'#7c3aed':'#059669'};font-size:11px">${tipo==='inventariable'?'Inventariable':'Consumible'}</span>
           ${mod?`<span class="cpill" style="background:#eff6ff;color:#1d4ed8;font-size:11px">${escHtml(mod.ciclo.icon||'📚')} ${escHtml(mod.name)}</span>`:''}
@@ -1128,7 +1130,7 @@ function toggleCardExtra(btn){
 
 function rList(data,mc){
   mc.innerHTML=`<div class="list-view">${data.map(x=>{
-    const low=isLowStock(x),mant=needsMaintenance(x),cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',tipo=materialType(x),tags=itemTags(x);
+    const low=isLowStock(x),mant=needsMaintenance(x),mantPrev=needsPreventiveMaintenance(x),cat=CATS[x.cat]||CATS['Otros']||{c:'#6b7280',bg:'#f9fafb',i:'🔧'},ec=ESTC[x.est]||'#6b7280',tipo=materialType(x),tags=itemTags(x);
     const esContenedor = x.es_contenedor == 1;
     const parentItem = x.parent_id ? items.find(p=>Number(p.id)===Number(x.parent_id)) : null;
     const numHijos = esContenedor ? items.filter(h=>Number(h.parent_id)===Number(x.id)).length : 0;
@@ -1141,7 +1143,7 @@ function rList(data,mc){
         `<div class="list-photo-empty quick-item-trigger" onclick="showQuickItem(${x.id},event)" style="cursor:pointer">📷</div>`}
       <div class="list-info">
         <div class="list-name item-title-link" onclick="openModal(${x.id})">${parentItem?'↳ ':''}${escHtml(x.item)}${esContenedor?` 📦${numHijos}`:''}</div>
-        <div class="list-meta">${x.ref?`<span class="list-badge">${escHtml(x.ref)}</span>`:''}${x.cat?` <span class="list-cat">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">●</span>`:''}</div>
+        <div class="list-meta">${x.ref?`<span class="list-badge">${escHtml(x.ref)}</span>`:''}${x.cat?` <span class="list-cat">${escHtml(cat.i)} ${escHtml(x.cat)}</span>`:''}${x.est?` <span class="list-status" style="color:${ec}">●</span>`:''}${mantPrev?` <span title="Revisión preventiva pendiente" style="color:var(--teal)">🛡️</span>`:''}</div>
       </div>
       <div class="list-footer">
         <div class="list-qty ${low?'low':''}">
