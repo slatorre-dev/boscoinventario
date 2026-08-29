@@ -39,6 +39,7 @@ const ACTION_PERMISSIONS = {
   fotosGet: 'items.read',
   fotosSync: 'items.write',
   mantenimientosGet: 'items.write',
+  mantenimientoMarcarRevisado: 'items.write',
   buscarPorSerie: 'serie.read',
   detectarMultiples: 'serie.read',
   buscarSeriePorCodigo: 'serie.read',
@@ -68,6 +69,7 @@ const ACTION_PERMISSIONS = {
   selectDepartamento: 'profile.write',
   selectModulos: 'profile.write',
   selectAulas: 'profile.write',
+  selectMantenimientoCategorias: 'profile.write',
   pedidoAdd: 'orders.write',
   pedidoUpdate: 'orders.write',
   pedidoRemove: 'orders.write',
@@ -82,6 +84,7 @@ const ACTION_PERMISSIONS = {
   userUnlock: 'config.manage',
   userAssignModulos: 'config.manage',
   userAssignAulas: 'config.manage',
+  userAssignMantenimiento: 'config.manage',
   importModulosCSV: 'config.manage',
   toggleOculto: 'visibility.manage'
 };
