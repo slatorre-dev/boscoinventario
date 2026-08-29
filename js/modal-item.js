@@ -1340,7 +1340,7 @@ async function saveItem(cerrarTrasGuardar = true){
   let mantPlanProximaRevision;
   if(!nuevoIntervalo){
     mantPlanProximaRevision = '';
-  } else if(!_mantPlanIntervaloOriginal || nuevoIntervalo !== _mantPlanIntervaloOriginal){
+  } else if(!eid || !_mantPlanIntervaloOriginal || nuevoIntervalo !== _mantPlanIntervaloOriginal){
     const fecha = new Date();
     fecha.setDate(fecha.getDate() + nuevoIntervalo);
     mantPlanProximaRevision = fecha.toISOString().slice(0,10);
