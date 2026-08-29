@@ -664,6 +664,14 @@ function renderBulkActionControl(){
     box.innerHTML = '<input id="bulkRef" type="text" placeholder="Nueva referencia (vacío para borrar)">';
   } else if(action === 'mant'){
     box.innerHTML = '<div style="font-size:12px;color:var(--muted)">Marca los ítems seleccionados como pendientes de mantenimiento.</div>';
+  } else if(action === 'plan-set'){
+    box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="bulkPlanIntervalo" onchange="onBulkPlanIntervaloChange()">${mantPlanIntervaloOptionsHtml('')}</select>
+      <input id="bulkPlanIntervaloOtro" type="number" min="1" placeholder="Días" style="display:none;width:90px">
+      <input id="bulkPlanNota" type="text" placeholder="Qué revisar (opcional)" style="flex:1;min-width:160px">
+    </div>`;
+  } else if(action === 'plan-off'){
+    box.innerHTML = '<div style="font-size:12px;color:var(--muted)">Quita el plan de mantenimiento preventivo de los ítems seleccionados (no borra la última revisión ya hecha).</div>';
   } else if(action === 'foto'){
     box.innerHTML = `<div style="display:flex;gap:8px;align-items:center">
       <input id="bulkFotoUrl" type="url" placeholder="URL de la imagen (Drive, etc.)" style="flex:1">
@@ -685,6 +693,11 @@ function renderBulkModOptions(){
   const ciclo = CICLOS.find(c=>c.id===cid);
   if(!modSel || !ciclo) return;
   modSel.innerHTML = ciclo.modulos.map(m=>`<option value="${ciclo.id}__${m.cod}">${escHtml(m.cod)} - ${escHtml(m.name)}</option>`).join('');
+}
+
+function onBulkPlanIntervaloChange(){
+  const esOtro = document.getElementById('bulkPlanIntervalo').value === '__otro';
+  document.getElementById('bulkPlanIntervaloOtro').style.display = esOtro ? '' : 'none';
 }
 
 function mergeTags(current, incoming, replace=false){
@@ -776,6 +789,14 @@ async function applyBulkAction(){
   else if(action === 'tipo') patch = { tipo_material: document.getElementById('bulkTipo').value };
   else if(action === 'ref') patch = { ref: document.getElementById('bulkRef').value.trim() };
   else if(action === 'mant') patch = { mantEstado: 'Pendiente' };
+  else if(action === 'plan-set') {
+    const sel = document.getElementById('bulkPlanIntervalo').value;
+    const intervalo = sel === '__otro' ? parseInt(document.getElementById('bulkPlanIntervaloOtro').value,10) : parseInt(sel,10);
+    if(!intervalo || intervalo < 1){ toast('Indica un intervalo válido','err'); return; }
+    const fecha = new Date(); fecha.setDate(fecha.getDate()+intervalo);
+    patch = { mantPlanIntervaloDias: intervalo, mantPlanProximaRevision: fecha.toISOString().slice(0,10), mantPlanNota: document.getElementById('bulkPlanNota').value.trim() };
+  }
+  else if(action === 'plan-off') patch = { mantPlanIntervaloDias: null, mantPlanProximaRevision: '' };
   else if(action === 'foto') {
     const url = document.getElementById('bulkFotoUrl').value.trim();
     if(!url){ toast('Indica una URL o carga una imagen','err'); return; }
