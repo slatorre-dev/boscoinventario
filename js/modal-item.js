@@ -4,8 +4,9 @@
 let modalHasChanges = false;
 let modalOriginalValues = {};
 let _isBlankNewItemSession = false;
+let _mantPlanIntervaloOriginal = null;
 
-const MODAL_TRACKED_FIELDS = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
+const MODAL_TRACKED_FIELDS = ['f_ref', 'f_aula', 'f_item', 'f_qty', 'f_min', 'f_tipo_material', 'f_cat', 'f_ciclo', 'f_mod', 'f_loc', 'f_est', 'f_util', 'f_proveedor', 'f_serie', 'f_tags', 'f_fecha', 'f_mantFecha', 'f_mantEstado', 'f_mantResp', 'f_mantNota', 'f_mantCoste', 'f_mantFechaCierre', 'f_mantNotaCierre', 'f_mantPlanIntervalo', 'f_mantPlanIntervaloOtro', 'f_mantPlanNota', 'f_obs', 'f_es_contenedor', 'f_parent_id'];
 
 // Campos que cuentan para el indicador "X/N campos completados" — la
 // ficha "core" del ítem, sin mantenimiento/contenedor (condicionales,
@@ -213,6 +214,7 @@ function fillModalSelects(){
   document.getElementById('f_ciclo').innerHTML='<option value="">Sin asignar</option>'+CICLOS.map(c=>`<option value="${c.id}" data-alias="${cicloAlias(c)}" data-full="${escHtml(c.icon+' '+c.name)}">${escHtml(c.icon+' '+c.name)}</option>`).join('');
   syncCicloLabels();
   document.getElementById('f_cat').innerHTML='<option value="">Sin categoría</option>' + sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('') + '<option value="__new_category__">＋ Añadir categoría...</option>';
+  document.getElementById('f_mantPlanIntervalo').innerHTML = mantPlanIntervaloOptionsHtml('');
   fillLocationSuggestions();
   fillTagSuggestions();
 }
@@ -942,13 +944,15 @@ async function saveHijosCaja(){
 function setItemModalReadonly(readonly){
   const modal = document.querySelector('#mItem .modal');
   modal?.classList.toggle('item-readonly', !!readonly);
-  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_serie','f_tags','f_fecha','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_mantCoste','f_mantFechaCierre','f_mantNotaCierre','f_obs','f_es_contenedor','f_parent_id']
+  ['f_ref','f_aula','f_item','f_qty','f_min','f_tipo_material','f_cat','f_ciclo','f_mod','f_loc','f_est','f_util','f_proveedor','f_serie','f_tags','f_fecha','f_mantFecha','f_mantEstado','f_mantResp','f_mantNota','f_mantCoste','f_mantFechaCierre','f_mantNotaCierre','f_mantPlanIntervalo','f_mantPlanIntervaloOtro','f_mantPlanNota','f_obs','f_es_contenedor','f_parent_id']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el) el.disabled = !!readonly;
     });
   const btnSerie = document.getElementById('btnSerieDesdeCamara');
   if(btnSerie) btnSerie.disabled = !!readonly;
+  const btnMarcarRevisado = document.getElementById('btnMarcarRevisado');
+  if(btnMarcarRevisado) btnMarcarRevisado.disabled = !!readonly;
 }
 
 function capturarSerieEnFormulario(){
@@ -992,6 +996,53 @@ function abrirMantenimientoRapido(id){
   if(!requirePerm('items.write', 'No tienes permisos para editar mantenimiento')) return;
   openModal(id);
   setTimeout(_enfocarMantenimientoEnModal, 50);
+}
+
+function onMantPlanIntervaloChange(){
+  const esOtro = document.getElementById('f_mantPlanIntervalo').value === '__otro';
+  document.getElementById('f_mantPlanIntervaloOtro').style.display = esOtro ? '' : 'none';
+  if(esOtro) document.getElementById('f_mantPlanIntervaloOtro').focus();
+}
+
+function getMantPlanIntervaloValue(){
+  const sel = document.getElementById('f_mantPlanIntervalo').value;
+  if(!sel) return null;
+  if(sel === '__otro'){
+    const n = parseInt(document.getElementById('f_mantPlanIntervaloOtro').value, 10);
+    return n > 0 ? n : null;
+  }
+  return parseInt(sel, 10);
+}
+
+function _renderMantPlanEstado(m){
+  const wrap = document.getElementById('mantPlanEstadoWrap');
+  const text = document.getElementById('mantPlanEstadoText');
+  if(!wrap || !text) return;
+  if(!m || !m.mantPlanIntervaloDias){ wrap.style.display = 'none'; return; }
+  const vencida = needsPreventiveMaintenance(m);
+  const ultima = m.mantPlanUltimaRevision ? formatFechaEs(m.mantPlanUltimaRevision) : 'nunca';
+  const proxima = m.mantPlanProximaRevision ? formatFechaEs(m.mantPlanProximaRevision) : '—';
+  text.innerHTML = `Última revisión: ${escHtml(ultima)} · Próxima: <span style="color:${vencida?'var(--red)':'var(--muted)'};font-weight:600">${escHtml(proxima)}</span>`;
+  wrap.style.display = '';
+}
+
+async function marcarRevisadoPreventivo(){
+  if(!eid) return;
+  const btn = document.getElementById('btnMarcarRevisado');
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+  try{
+    const res = await apiPost({action:'mantenimientoMarcarRevisado', itemId:eid, nota:document.getElementById('f_mantPlanNota').value.trim()});
+    if(!res.ok) throw new Error(res.error);
+    const i = items.findIndex(x=>Number(x.id)===Number(eid));
+    if(i>=0){
+      items[i].mantPlanUltimaRevision = res.mantPlanUltimaRevision;
+      items[i].mantPlanProximaRevision = res.mantPlanProximaRevision;
+      _renderMantPlanEstado(items[i]);
+    }
+    _mantHistorial = null;
+    toast('Revisión preventiva registrada','ok');
+  } catch(err){ toast(friendlyError(err),'err'); }
+  finally{ btn.disabled=false; btn.textContent='✅ Marcar revisado hoy'; }
 }
 
 function openModal(id=null, src=null){
@@ -1062,6 +1113,24 @@ function openModal(id=null, src=null){
   document.getElementById('f_mantResp').value=m?.mantResp||'';
   document.getElementById('f_mantNota').value=m?.mantNota||'';
   document.getElementById('f_mantCoste').value=m?.mantCoste ?? '';
+  const planIntervalo = m?.mantPlanIntervaloDias || null;
+  _mantPlanIntervaloOriginal = planIntervalo;
+  const planSel = document.getElementById('f_mantPlanIntervalo');
+  const planOtro = document.getElementById('f_mantPlanIntervaloOtro');
+  if(planIntervalo && MANT_PLAN_INTERVALOS.includes(planIntervalo)){
+    planSel.value = String(planIntervalo);
+    planOtro.style.display = 'none';
+  } else if(planIntervalo){
+    planSel.value = '__otro';
+    planOtro.value = planIntervalo;
+    planOtro.style.display = '';
+  } else {
+    planSel.value = '';
+    planOtro.value = '';
+    planOtro.style.display = 'none';
+  }
+  document.getElementById('f_mantPlanNota').value = m?.mantPlanNota || '';
+  _renderMantPlanEstado(m);
   document.getElementById('f_mantFechaCierre').value='';
   document.getElementById('f_mantNotaCierre').value='';
   const noneOption = document.querySelector('#f_mantEstado option[value=""]');
@@ -1267,6 +1336,17 @@ async function saveItem(cerrarTrasGuardar = true){
     modVal = 'iesjuanbosco__M01';
   }
   const refRaw = document.getElementById('f_ref').value.trim();
+  const nuevoIntervalo = getMantPlanIntervaloValue();
+  let mantPlanProximaRevision;
+  if(!nuevoIntervalo){
+    mantPlanProximaRevision = '';
+  } else if(!_mantPlanIntervaloOriginal || nuevoIntervalo !== _mantPlanIntervaloOriginal){
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() + nuevoIntervalo);
+    mantPlanProximaRevision = fecha.toISOString().slice(0,10);
+  } else {
+    mantPlanProximaRevision = (eid ? (items.find(x=>x.id===eid)?.mantPlanProximaRevision || '') : '');
+  }
   const v={
     code: eid ? itemCode(items.find(x=>x.id===eid) || eid) : '',
     ref: refRaw || _autoRef(name),
@@ -1294,6 +1374,9 @@ async function saveItem(cerrarTrasGuardar = true){
     mantCoste: document.getElementById('f_mantCoste').value === '' ? null : parseFloat(document.getElementById('f_mantCoste').value),
     mantFechaCierre: document.getElementById('f_mantFechaCierre').value,
     mantNotaCierre: document.getElementById('f_mantNotaCierre').value.trim(),
+    mantPlanIntervaloDias: nuevoIntervalo,
+    mantPlanProximaRevision,
+    mantPlanNota: document.getElementById('f_mantPlanNota').value.trim(),
     obs:document.getElementById('f_obs').value.trim(),
     es_contenedor: document.getElementById('f_es_contenedor').checked ? 1 : 0,
     parent_id: document.getElementById('f_parent_id').value ? Number(document.getElementById('f_parent_id').value) : null,
@@ -1680,8 +1763,9 @@ function _formatMantRow(m){
   const coste = (m.coste !== null && m.coste !== undefined && m.coste !== '') ? ` · ${Number(m.coste).toFixed(2)}€` : '';
   const resp = m.responsable ? ` · ${escHtml(m.responsable)}` : '';
   const notaCierre = m.nota_cierre ? `<div>✅ ${escHtml(m.nota_cierre)}</div>` : '';
+  const tipoIcon = m.tipo === 'preventivo' ? '🛡️' : '🔧';
   return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
-    <div><b>${escHtml(m.estado)}</b> · ${escHtml(rango)}${coste}${resp}</div>
+    <div>${tipoIcon} <b>${escHtml(m.estado)}</b> · ${escHtml(rango)}${coste}${resp}</div>
     <div>${escHtml(m.nota_apertura || '')}</div>
     ${notaCierre}
   </div>`;
