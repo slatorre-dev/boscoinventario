@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { onRequestPost as itemPost } from "../../functions/api/item.js";
 import { onRequestGet as listGet } from "../../functions/api/list.js";
 import { onRequestPost as prestarPost } from "../../functions/api/prestar.js";
+import { onRequestPost as usuariosPost } from "../../functions/api/usuarios.js";
 import { authQuery, callThroughMiddleware } from "./harness";
 import { resetAndSeed } from "./seed";
 
@@ -263,5 +264,14 @@ describe("scoping por departamento", () => {
     const mant = await env.DB.prepare("SELECT tipo, estado FROM mantenimientos WHERE item_id=9001 ORDER BY id DESC LIMIT 1").first<{ tipo: string; estado: string }>();
     expect(mant!.tipo).toBe("preventivo");
     expect(mant!.estado).toBe("Resuelto");
+  });
+
+  it("userAssignMantenimiento: un jefe/a de departamento no puede asignar categorias a un usuario de otro departamento (403)", async () => {
+    const { res } = await callThroughMiddleware(usuariosPost, {
+      method: "POST",
+      path: `/api/usuarios?${authQuery("test-jefe-a", "test-jefe-a")}`,
+      body: { action: "userAssignMantenimiento", usuario: "test-profesor-b", categorias: ["Herramientas"] },
+    });
+    expect(res.status).toBe(403);
   });
 });

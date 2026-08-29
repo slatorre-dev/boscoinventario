@@ -58,6 +58,26 @@ async function reemplazarAulasUsuario(db, usuarioLogin, aulasNuevas) {
   }
 }
 
+// Diff completo entre las categorías de mantenimiento que el usuario tiene
+// hoy en `mantenimiento_responsables` (para su departamento) y
+// `categoriasNuevas` — mismo patrón que reemplazarModulosUsuario/
+// reemplazarAulasUsuario. '' en categoriasNuevas significa "todo el
+// departamento", no una categoría real.
+async function reemplazarMantenimientoUsuario(db, usuarioLogin, departamento, categoriasNuevas) {
+  await db.prepare('CREATE TABLE IF NOT EXISTS mantenimiento_responsables (categoria TEXT NOT NULL DEFAULT \'\', departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (categoria, departamento, usuario))').run().catch(() => {});
+  const actuales = await db.prepare('SELECT categoria FROM mantenimiento_responsables WHERE usuario=? AND departamento=?').bind(usuarioLogin, departamento).all();
+  const catsActuales = new Set((actuales.results || []).map(r => r.categoria));
+  const catsNuevas = new Set(categoriasNuevas);
+  for (const cat of catsNuevas) {
+    if (catsActuales.has(cat)) continue;
+    await db.prepare('INSERT OR IGNORE INTO mantenimiento_responsables (categoria, departamento, usuario) VALUES (?,?,?)').bind(cat, departamento, usuarioLogin).run();
+  }
+  for (const cat of catsActuales) {
+    if (catsNuevas.has(cat)) continue;
+    await db.prepare('DELETE FROM mantenimiento_responsables WHERE categoria=? AND departamento=? AND usuario=?').bind(cat, departamento, usuarioLogin).run();
+  }
+}
+
 // ── Hashing de contraseñas (PBKDF2 vía Web Crypto) — duplicado en cada
 // functions/api/*.js que toca contraseñas, ver _middleware.js/docs/SECURITY.md.
 // Aquí solo se necesita hashear (alta y reseteo de contraseña de otro
@@ -153,7 +173,8 @@ export async function onRequestPost({ request, env, data }) {
     await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN bloqueado INTEGER DEFAULT 0').run().catch(() => {});
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))').run().catch(() => {});
     await env.DB.prepare('CREATE TABLE IF NOT EXISTS aula_profesores (aula TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (aula, usuario))').run().catch(() => {});
-    const [usuariosRows, ciclosRows, profesRows, aulasProfesRows] = await Promise.all([
+    await env.DB.prepare('CREATE TABLE IF NOT EXISTS mantenimiento_responsables (categoria TEXT NOT NULL DEFAULT \'\', departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (categoria, departamento, usuario))').run().catch(() => {});
+    const [usuariosRows, ciclosRows, profesRows, aulasProfesRows, mantResponsablesRows] = await Promise.all([
       superadmin
         ? env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado, password_temporal FROM usuarios ORDER BY usuario').all()
         : env.DB.prepare('SELECT usuario, nombre, rol, email, departamento, bloqueado, password_temporal FROM usuarios WHERE departamento=? ORDER BY usuario').bind(dept).all(),
@@ -166,6 +187,9 @@ export async function onRequestPost({ request, env, data }) {
       superadmin
         ? env.DB.prepare('SELECT ap.aula, ap.usuario FROM aula_profesores ap JOIN usuarios u ON u.usuario = ap.usuario').all()
         : env.DB.prepare('SELECT ap.aula, ap.usuario FROM aula_profesores ap JOIN usuarios u ON u.usuario = ap.usuario WHERE u.departamento=?').bind(dept).all(),
+      superadmin
+        ? env.DB.prepare('SELECT mr.categoria, mr.usuario FROM mantenimiento_responsables mr JOIN usuarios u ON u.usuario = mr.usuario').all()
+        : env.DB.prepare('SELECT mr.categoria, mr.usuario FROM mantenimiento_responsables mr JOIN usuarios u ON u.usuario = mr.usuario WHERE mr.departamento=?').bind(dept).all(),
     ]);
     const ciclos = ciclosRows?.results || [];
     const profes = profesRows?.results || [];
@@ -185,6 +209,11 @@ export async function onRequestPost({ request, env, data }) {
       if (!aulasPorUsuario[row.usuario]) aulasPorUsuario[row.usuario] = [];
       aulasPorUsuario[row.usuario].push(row.aula);
     }
+    const mantPorUsuario = {};
+    for (const row of (mantResponsablesRows?.results || [])) {
+      if (!mantPorUsuario[row.usuario]) mantPorUsuario[row.usuario] = [];
+      mantPorUsuario[row.usuario].push(row.categoria);
+    }
     const todosModulos = ciclos.map(r => ({
       id: moduloId(r), cicloId: r.cicloId, cod: String(r.modCod), nombre: r.modNombre || '',
       responsablesEmails: emailsPorModulo[moduloId(r)] || [],
@@ -196,6 +225,7 @@ export async function onRequestPost({ request, env, data }) {
         rol: rolNorm === 'superadmin' ? 'Jefe/a Departamento' : u.rol,
         modulos: modulosPorUsuario[u.usuario] || [],
         aulas: aulasPorUsuario[u.usuario] || [],
+        mantenimiento: mantPorUsuario[u.usuario] || [],
       };
     });
     return Response.json({ ok: true, usuarios, todosModulos });
@@ -324,6 +354,32 @@ export async function onRequestPost({ request, env, data }) {
     const aulas = Array.isArray(body.aulas) ? body.aulas.map(String) : [];
     await reemplazarAulasUsuario(env.DB, user.usuario, aulas);
     await auditLog(env.DB, user, 'selectAulas', `Aulas propias actualizadas: ${aulas.join(',')}`);
+    return Response.json({ ok: true });
+  }
+
+  if (action === 'selectMantenimientoCategorias') {
+    // Autoservicio: de qué categorías es responsable de mantenimiento el
+    // usuario logueado — mismo criterio que selectModulos/selectAulas,
+    // siempre el propio actor. Admin equivalente para asignar a cualquier
+    // usuario: ver `userAssignMantenimiento` abajo.
+    const categorias = Array.isArray(body.categorias) ? body.categorias.map(String) : [];
+    if (!dept) return Response.json({ ok: false, error: 'Selecciona primero tu departamento' });
+    await reemplazarMantenimientoUsuario(env.DB, user.usuario, dept, categorias);
+    await auditLog(env.DB, user, 'selectMantenimientoCategorias', `Categorías de mantenimiento propias actualizadas: ${categorias.join(',')}`);
+    return Response.json({ ok: true });
+  }
+
+  if (action === 'userAssignMantenimiento') {
+    const usuarioDestino = String(body.usuario || '').trim();
+    const categorias = Array.isArray(body.categorias) ? body.categorias.map(String) : [];
+    if (!usuarioDestino) return Response.json({ ok: false, error: 'Usuario requerido' });
+    const targetRow = await env.DB.prepare('SELECT departamento FROM usuarios WHERE usuario=?').bind(usuarioDestino).first();
+    if (!targetRow) return Response.json({ ok: false, error: 'Usuario no encontrado' });
+    if (!superadmin && targetRow.departamento !== dept) {
+      return Response.json({ ok: false, error: 'No autorizado' }, { status: 403 });
+    }
+    await reemplazarMantenimientoUsuario(env.DB, usuarioDestino, targetRow.departamento || '', categorias);
+    await auditLog(env.DB, user, 'userAssignMantenimiento', `Categorías de mantenimiento asignadas a ${usuarioDestino}: ${categorias.join(',')}`);
     return Response.json({ ok: true });
   }
 
