@@ -9,7 +9,12 @@ if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     loadAppVersion();
 
-    navigator.serviceWorker.register('./sw.js')
+    // updateViaCache:'none' — el navegador nunca usa su caché HTTP para la
+    // comprobación de versión de sw.js, solo para sus importScripts (que no
+    // usamos). Sin esto, con el default 'imports' algunos navegadores
+    // pueden servir el sw.js cacheado y no detectar nunca la VERSION nueva
+    // (ver _headers, que cubre el mismo problema del lado del servidor).
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
       .then(reg => {
         console.log('[PWA] Service worker registrado:', reg.scope);
 
@@ -29,6 +34,18 @@ if('serviceWorker' in navigator){
               showUpdateToast();
             }
           });
+        });
+
+        // El navegador solo comprueba sw.js por su cuenta en cada
+        // navegación y como mucho una vez cada 24h en segundo plano — en
+        // una pestaña que se queda abierta todo el día (típico en un
+        // ordenador de aula) eso puede tardar de más en notar un deploy
+        // nuevo. Se fuerza la comprobación al cargar, al volver a la
+        // pestaña y cada hora mientras siga abierta.
+        reg.update().catch(() => {});
+        setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+        document.addEventListener('visibilitychange', () => {
+          if(document.visibilityState === 'visible') reg.update().catch(() => {});
         });
       })
       .catch(err => console.warn('[PWA] Error al registrar SW:', err));

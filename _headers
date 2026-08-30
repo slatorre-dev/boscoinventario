@@ -1,0 +1,18 @@
+# El Service Worker (sw.js) solo detecta una versión nueva si el navegador
+# consigue un byte distinto al hacer la comprobación de actualización — si
+# Cloudflare (o el propio navegador) sirve una copia en caché de sw.js o de
+# index.html, la app se queda pegada en la versión vieja aunque el deploy ya
+# esté hecho (ver VERSION en sw.js). Sin cabeceras explícitas, ese caching
+# queda a criterio del CDN/navegador, así que se fuerza aquí a que ambos
+# archivos se revaliden siempre contra origen.
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/manifest.json
+  Cache-Control: no-cache
