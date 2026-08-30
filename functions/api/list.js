@@ -220,9 +220,12 @@ export async function onRequestGet({ request, env, data }) {
     await env.DB.prepare("INSERT OR REPLACE INTO app_meta (key,value) VALUES ('tipo_material_migrated', datetime('now'))").run().catch(() => {});
   }
 
+  // Los ítems del departamento compartido SÍ son visibles para profesor (solo
+  // lectura) — a diferencia de `genericDept`, que sigue sentinel'ado para el
+  // desplegable de ciclos más abajo, evitando que puedan crear ítems nuevos ahí.
   const itemsQuery = superadmin
     ? 'SELECT * FROM inventario ORDER BY id'
-    : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${genericDept}') ORDER BY id`;
+    : `SELECT * FROM inventario WHERE (oculto IS NULL OR oculto != 1) AND (departamento=? OR departamento='${GENERIC_DEPT}') ORDER BY id`;
 
   const [items, profesores, usuarios, prestamos, aulas, cats, ciclosRows, reservasRows, reservaItemsRows, pedidosRows, solicitudesRows] = await Promise.all([
     superadmin ? env.DB.prepare(itemsQuery).all() : env.DB.prepare(itemsQuery).bind(dept).all(),
@@ -234,10 +237,10 @@ export async function onRequestGet({ request, env, data }) {
       : env.DB.prepare("SELECT usuario, nombre, email FROM usuarios WHERE nombre != '' AND departamento=? ORDER BY nombre").bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM prestamos ORDER BY id').all()
-      : env.DB.prepare(`SELECT p.* FROM prestamos p JOIN inventario i ON i.id=p.itemId WHERE i.departamento=? OR i.departamento='${genericDept}' ORDER BY p.id`).bind(dept).all(),
+      : env.DB.prepare(`SELECT p.* FROM prestamos p JOIN inventario i ON i.id=p.itemId WHERE i.departamento=? OR i.departamento='${GENERIC_DEPT}' ORDER BY p.id`).bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT * FROM aulas ORDER BY orden, id").all()
-      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY orden, id`).bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${GENERIC_DEPT}' ORDER BY orden, id`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all()
       : env.DB.prepare('SELECT * FROM categorias WHERE departamento=? ORDER BY orden').bind(dept).all(),
@@ -246,10 +249,10 @@ export async function onRequestGet({ request, env, data }) {
       : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${genericDept}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT * FROM reservas_practica WHERE estado != 'cancelada' ORDER BY fecha, id").all()
-      : env.DB.prepare(`SELECT * FROM reservas_practica WHERE (departamento=? OR departamento='${genericDept}') AND estado != 'cancelada' ORDER BY fecha, id`).bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM reservas_practica WHERE (departamento=? OR departamento='${GENERIC_DEPT}') AND estado != 'cancelada' ORDER BY fecha, id`).bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT ri.* FROM reserva_items ri JOIN reservas_practica rp ON rp.id=ri.reservaId WHERE rp.estado != 'cancelada'").all()
-      : env.DB.prepare(`SELECT ri.* FROM reserva_items ri JOIN reservas_practica rp ON rp.id=ri.reservaId WHERE (rp.departamento=? OR rp.departamento='${genericDept}') AND rp.estado != 'cancelada'`).bind(dept).all(),
+      : env.DB.prepare(`SELECT ri.* FROM reserva_items ri JOIN reservas_practica rp ON rp.id=ri.reservaId WHERE (rp.departamento=? OR rp.departamento='${GENERIC_DEPT}') AND rp.estado != 'cancelada'`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM pedidos ORDER BY id').all()
       : env.DB.prepare('SELECT * FROM pedidos WHERE departamento=? ORDER BY id').bind(dept).all(),
