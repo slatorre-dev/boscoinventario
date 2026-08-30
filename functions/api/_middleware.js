@@ -43,8 +43,9 @@ export async function onRequest({ request, env, next, data }) {
 
   if (u && p) {
     // Método 1: Username + Password (login tradicional)
+    await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN onboarding_pendiente INTEGER DEFAULT 0').run().catch(() => {});
     const row = await env.DB.prepare(
-      'SELECT usuario, nombre, rol, email, departamento, password FROM usuarios WHERE usuario=?'
+      'SELECT usuario, nombre, rol, email, departamento, password, onboarding_pendiente FROM usuarios WHERE usuario=?'
     ).bind(u.trim()).first();
     if (row && await verifyPassword(p, row.password)) {
       const storedPassword = row.password;
@@ -60,8 +61,9 @@ export async function onRequest({ request, env, next, data }) {
     }
   } else if (u && t) {
     // Método 2: Username + Session Token (Google OAuth)
+    await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN onboarding_pendiente INTEGER DEFAULT 0').run().catch(() => {});
     user = await env.DB.prepare(
-      'SELECT usuario, nombre, rol, email, departamento FROM usuarios WHERE usuario=? AND session_token=?'
+      'SELECT usuario, nombre, rol, email, departamento, onboarding_pendiente FROM usuarios WHERE usuario=? AND session_token=?'
     ).bind(u.trim(), t).first();
   }
 

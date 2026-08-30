@@ -1,0 +1,12 @@
+-- Flag por usuario para el paso de onboarding (elegir módulos y aulas
+-- propios) en el primer login. Antes este paso solo se disparaba si la
+-- cuenta se creaba sin departamento asignado (típico de Google con un
+-- correo @iesjuanbosco.es no mapeado en EMAIL_DEPT_MAP, ver
+-- oauth/login-google.js) — un profesor de alta pública o dado de alta por
+-- un admin, que ya trae departamento desde el principio, nunca lo veía ni
+-- por Google ni por login normal. Ahora se marca explícitamente al crear
+-- la cuenta (solo para rol profesor, el único que usa el filtro "Mis
+-- Cursos/Aulas") y se limpia al terminar la cadena completa de onboarding
+-- (ver functions/api/usuarios.js: acción completarOnboarding). Default 0
+-- para no afectar a ninguna cuenta ya existente.
+ALTER TABLE usuarios ADD COLUMN onboarding_pendiente INTEGER DEFAULT 0;

@@ -206,9 +206,10 @@ async function ensureUser(db, email, name) {
   const departamento = EMAIL_DEPT_MAP[baseUsuario.toLowerCase()] || '';
 
   try {
+    await db.prepare('ALTER TABLE usuarios ADD COLUMN onboarding_pendiente INTEGER DEFAULT 0').run().catch(() => {});
     await db.prepare(`
-      INSERT INTO usuarios (usuario, nombre, email, password, rol, google_id, auth_method, session_token, created_at, departamento)
-      VALUES (?, ?, ?, ?, 'profesor', ?, 'google', ?, datetime('now'), ?)
+      INSERT INTO usuarios (usuario, nombre, email, password, rol, google_id, auth_method, session_token, created_at, departamento, onboarding_pendiente)
+      VALUES (?, ?, ?, ?, 'profesor', ?, 'google', ?, datetime('now'), ?, 1)
     `).bind(usuario, name || email, email, await hashPassword(randomPass), email, sessionToken, departamento).run();
 
     console.log('Usuario creado exitosamente:', usuario);

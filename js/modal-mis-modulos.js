@@ -95,9 +95,7 @@ function abrirSeleccionModulosOnboarding(){
 }
 
 function saltarSeleccionModulos(){
-  showUserChip();
-  _showOverlay();
-  loadData();
+  abrirSeleccionAulasOnboarding();
 }
 
 async function guardarSeleccionModulosOnboarding(){
@@ -107,9 +105,7 @@ async function guardarSeleccionModulosOnboarding(){
     const res = await apiPost({ action:'selectModulos', modulos:[..._misModulosSeleccionados] });
     if(!res.ok) throw new Error(res.error || 'Error al guardar los módulos');
     MIS_MODULOS = [..._misModulosSeleccionados];
-    showUserChip();
-    _showOverlay();
-    loadData();
+    abrirSeleccionAulasOnboarding();
   } catch(err){
     toast('Error: '+(err.message||'error de conexión'), 'err');
   } finally {

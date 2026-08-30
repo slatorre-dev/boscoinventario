@@ -70,6 +70,7 @@ const ACTION_PERMISSIONS = {
   selectModulos: 'profile.write',
   selectAulas: 'profile.write',
   selectMantenimientoCategorias: 'profile.write',
+  completarOnboarding: 'profile.write',
   pedidoAdd: 'orders.write',
   pedidoUpdate: 'orders.write',
   pedidoRemove: 'orders.write',

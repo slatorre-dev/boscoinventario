@@ -10,7 +10,7 @@ const ENDPOINT_MAP = {
   aulasSync:'config', catsSync:'config', normalizeCategoriesTags:'config', normalizeTagsCanonical:'config', renameTag:'config', deleteTag:'config', ciclosSync:'config', ubicacionesSync:'config',
   updateProfile:'perfil', changePassword:'perfil', selectDepartamento:'perfil',
   getUsers:'usuarios', userAdd:'usuarios', userUpdate:'usuarios',
-  userDelete:'usuarios', userResetPassword:'usuarios', userAssignModulos:'usuarios', userAssignAulas:'usuarios', userAssignMantenimiento:'usuarios', userUnlock:'usuarios', selectModulos:'usuarios', importModulosCSV:'usuarios', selectAulas:'usuarios', selectMantenimientoCategorias:'usuarios',
+  userDelete:'usuarios', userResetPassword:'usuarios', userAssignModulos:'usuarios', userAssignAulas:'usuarios', userAssignMantenimiento:'usuarios', userUnlock:'usuarios', selectModulos:'usuarios', importModulosCSV:'usuarios', selectAulas:'usuarios', selectMantenimientoCategorias:'usuarios', completarOnboarding:'usuarios',
   getDocs:'docs', uploadDoc:'docs', deleteDoc:'docs',
   pedidoAdd:'pedidos', pedidoUpdate:'pedidos', pedidoRemove:'pedidos', pedidoClear:'pedidos',
   solicitudCrear:'solicitudes', solicitudUpdate:'solicitudes',

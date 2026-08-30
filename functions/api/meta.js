@@ -202,6 +202,10 @@ export async function onRequestGet({ request, env, data }) {
     misAulas: (misAulasRows.results || []).map(r => r.aula),
     misMantenimiento: (misMantRows.results || []).map(r => r.categoria),
     departamentos: superadmin ? departamentosRows.results : undefined,
+    // Onboarding de módulos/aulas pendiente en el primer login (ver
+    // migrations/0040) — solo tiene sentido para el rol profesor, el único
+    // que usa el filtro "Mis Cursos/Aulas" en Inicio.
+    onboardingPendiente: isProfesor(user) && !!user.onboarding_pendiente,
     user
   });
 }

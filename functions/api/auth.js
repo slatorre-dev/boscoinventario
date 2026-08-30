@@ -366,9 +366,10 @@ export async function onRequestPost({ request, env }) {
       // siempre elige la suya de verdad vía el enlace de bienvenida (abajo).
       // Se hashea igual que cualquier otra, por consistencia.
       const randomPass = Math.random().toString(36).slice(2, 15) + Math.random().toString(36).slice(2, 15);
+      await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN onboarding_pendiente INTEGER DEFAULT 0').run().catch(() => {});
       await env.DB.prepare(`
-        INSERT INTO usuarios (usuario, nombre, email, password, rol, auth_method, created_at, departamento)
-        VALUES (?, ?, ?, ?, 'Profesor/a', 'local', datetime('now'), ?)
+        INSERT INTO usuarios (usuario, nombre, email, password, rol, auth_method, created_at, departamento, onboarding_pendiente)
+        VALUES (?, ?, ?, ?, 'Profesor/a', 'local', datetime('now'), ?, 1)
       `).bind(usuario, nombre, email, await hashPassword(randomPass), departamento).run();
 
       const token = randomToken();

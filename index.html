@@ -348,6 +348,23 @@
   </div>
 </div>
 
+<!-- ══ SELECCIÓN DE AULAS (opcional, tras elegir módulos) ══ -->
+<div class="page" id="pSeleccionarAulas">
+  <div class="login-wrap">
+    <div class="login-card" style="width:min(560px,100%)">
+      <div class="login-icon" style="font-size:30px">🏫</div>
+      <h1>¿En qué aulas das clase?</h1>
+      <p class="login-sub">Opcional — puedes hacerlo ahora o más tarde desde el botón "📌 Mis Cursos/Aulas" de la barra superior. Así verás solo lo tuyo en Inicio.</p>
+      <input type="text" id="onboardingAulasSearch" class="fi-w" placeholder="🔍 Buscar aula..." style="margin-bottom:12px">
+      <div id="onboardingAulasBody" style="max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:16px;text-align:left"></div>
+      <button class="login-btn" id="onboardingAulasBtn" onclick="guardarSeleccionAulasOnboarding()">💾 Guardar y continuar</button>
+      <div class="login-footer">
+        <button class="login-link" onclick="saltarSeleccionAulas()">Recordar más tarde</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ HOME ══ -->
 <div class="page" id="pH">
   <div class="home-hero">

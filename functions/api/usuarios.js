@@ -158,6 +158,15 @@ function isSuperAdmin(user){
   return String(user?.rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === 'superadmin';
 }
 
+// Mismo criterio que isProfesor() de meta.js/list.js/item.js/prestar.js —
+// duplicada aquí porque solo el rol profesor usa el filtro "Mis
+// Cursos/Aulas", así que es el único al que tiene sentido pedirle el
+// onboarding de módulos/aulas en su primer login.
+function isProfesorRole(rol){
+  const r = String(rol || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return r === 'profesor' || r === 'profesor/a' || r === 'profesora';
+}
+
 export async function onRequestPost({ request, env, data }) {
   const body = await request.json();
   const { action } = body;
@@ -234,8 +243,14 @@ export async function onRequestPost({ request, env, data }) {
   if (action === 'userAdd') {
     const u = body.usuario;
     const nuevoDept = superadmin ? (u.departamento || dept || '') : dept;
-    await env.DB.prepare('INSERT INTO usuarios (usuario,password,nombre,rol,email,departamento) VALUES (?,?,?,?,?,?)')
-      .bind(u.usuario.trim(), await hashPassword(u.password||'cambiar123'), u.nombre.trim(), u.rol.trim(), u.email||'', nuevoDept).run();
+    // Onboarding de módulos/aulas pendiente para cualquier profesor nuevo,
+    // sin importar si ya se le asigna departamento aquí mismo — antes solo
+    // se disparaba en cuentas de Google sin departamento, dejando fuera a
+    // todo el alta manual/CSV (login normal), ver migrations/0040.
+    const onboardingPendiente = isProfesorRole(u.rol) ? 1 : 0;
+    await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN onboarding_pendiente INTEGER DEFAULT 0').run().catch(() => {});
+    await env.DB.prepare('INSERT INTO usuarios (usuario,password,nombre,rol,email,departamento,onboarding_pendiente) VALUES (?,?,?,?,?,?,?)')
+      .bind(u.usuario.trim(), await hashPassword(u.password||'cambiar123'), u.nombre.trim(), u.rol.trim(), u.email||'', nuevoDept, onboardingPendiente).run();
     await auditLog(env.DB, user, 'userAdd', `Nuevo usuario: ${u.usuario} (${u.rol})`);
     return Response.json({ ok: true });
   }
@@ -354,6 +369,18 @@ export async function onRequestPost({ request, env, data }) {
     const aulas = Array.isArray(body.aulas) ? body.aulas.map(String) : [];
     await reemplazarAulasUsuario(env.DB, user.usuario, aulas);
     await auditLog(env.DB, user, 'selectAulas', `Aulas propias actualizadas: ${aulas.join(',')}`);
+    return Response.json({ ok: true });
+  }
+
+  if (action === 'completarOnboarding') {
+    // Cierra el paso de onboarding de módulos/aulas del primer login (ver
+    // meta.js:onboardingPendiente) — se llama una sola vez, al final de la
+    // cadena completa (módulos + aulas), haya guardado selección o la haya
+    // saltado con "Recordar más tarde". Nunca a mitad de la cadena, para
+    // que una recarga a medias vuelva a preguntar en vez de dejar el paso
+    // de aulas sin mostrar nunca.
+    await env.DB.prepare('ALTER TABLE usuarios ADD COLUMN onboarding_pendiente INTEGER DEFAULT 0').run().catch(() => {});
+    await env.DB.prepare('UPDATE usuarios SET onboarding_pendiente=0 WHERE usuario=?').bind(user.usuario).run();
     return Response.json({ ok: true });
   }
 
