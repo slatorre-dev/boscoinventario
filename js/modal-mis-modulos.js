@@ -138,6 +138,10 @@ async function guardarMisModulosModal(){
     MIS_MODULOS = [..._misModulosSeleccionados];
     toast('Módulos actualizados', 'ok');
     closeMisModulosModal();
+    // Ver el mismo comentario en modal-mis-aulas.js:guardarMisAulasModal —
+    // el aviso "configura tus cursos" de Inicio usa MIS_MODULOS y no se
+    // actualiza solo.
+    if(typeof renderHome === 'function') renderHome();
   } catch(err){
     toast('Error: '+(err.message||'error de conexión'), 'err');
   } finally {

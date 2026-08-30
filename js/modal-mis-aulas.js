@@ -98,6 +98,11 @@ async function guardarMisAulasModal(){
     MIS_AULAS = [..._misAulasSeleccionadas];
     toast('Aulas actualizadas', 'ok');
     closeMisAulasModal();
+    // Sin esto, Inicio se queda con el filtro/aviso viejo hasta que el
+    // usuario navega a otra pantalla y vuelve — el cambio de MIS_AULAS de
+    // arriba no se ve reflejado por sí solo (ver debeFiltrarPorMisAulas()
+    // en js/config.js, que usa esta misma variable).
+    if(typeof renderHome === 'function') renderHome();
   } catch(err){
     toast('Error: '+(err.message||'error de conexión'), 'err');
   } finally {
