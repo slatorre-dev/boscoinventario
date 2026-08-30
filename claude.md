@@ -1,5 +1,28 @@
 # Nota de Trabajo - Bosco Inventario
 
+**Nota (30/08/2026):** fix de scoping — `profesor`/`Profesor/a` había dejado
+de ver los ítems del departamento compartido `iesjuanbosco` (pizarras/
+pantallas de las aulas genéricas, etc.) en el listado de un aula, mientras
+que superadmin sí los veía. Causa: la restricción de acceso a `iesjuanbosco`
+para el rol profesor, implementada el 30/07/2026 y ampliada el 28/08/2026
+(commit `5a87bb5`, pendiente #24) para reconocer también la forma
+`Profesor/a`, bloqueaba tanto lectura como escritura — el diseño original
+pretendía bloquear solo edición/préstamo/historial, pero también tapó la
+query de lectura de `list.js`/`meta.js` sin que se reportara hasta ahora.
+Fix: `list.js`/`meta.js` vuelven a usar `GENERIC_DEPT` (sin centinela) en
+las queries de solo lectura (ítems, préstamos, aulas, reservas, categorías/
+ubicaciones/módulos) — profesor ya ve esos ítems de nuevo. `item.js`/
+`prestar.js`/`historial.js` (editar/eliminar/prestar/devolver/historial) y
+la query de `ciclos` (desplegable de "Nuevo ítem") siguen sentinel'ados:
+profesor ve pero no puede crear/editar/prestar/eliminar en `iesjuanbosco`,
+tal y como se pretendía originalmente. Tests actualizados en
+`tests/backend/scoping.test.ts`. `claude.md` (sección "Gap sin scoping")
+corregido para reflejar el comportamiento real. Sin entorno con
+`CLOUDFLARE_API_TOKEN` en esta sesión para correr `npm test`
+(`@cloudflare/vitest-plugin` necesita el binding remoto `AI`) — verificado
+con `node --check` en los 2 archivos backend tocados; pendiente correr la
+suite completa antes de dar el fix por cerrado.
+
 **Estado:** v650 | 29/08/2026 | Mantenimiento preventivo implementado
 completo: plan por ítem (intervalo + próxima revisión, en la sección 🛠️
 Mantenimiento del modal), responsables por categoría (autoservicio desde
@@ -409,11 +432,20 @@ hace falta tener presentes al tocar código:
   **Gap sin scoping (intencional):** `backup.js` — ver Pendiente #1.
 - `GENERIC_DEPT = 'iesjuanbosco'` (constante duplicada en `list.js`,
   `meta.js`, `item.js`, `prestar.js`, `historial.js`): departamento
-  compartido — cualquier jefe/a de departamento o profesor (no solo
-  superadmin) puede ver/crear/editar/eliminar ítems ahí y hacer
-  préstamos, se suma a su propio departamento sin sustituirlo.
-  `js/modal-ciclos.js`/`js/modal-aulas.js` excluyen el ciclo/aula
-  compartidos (y las aulas globales) de sus listas editables.
+  compartido, se suma a su propio departamento sin sustituirlo.
+  Jefe/a de departamento y superadmin pueden ver/crear/editar/eliminar
+  ítems ahí y hacer préstamos. El rol `profesor` (y `Profesor/a`, forma
+  mayoritaria — ver `isProfesor()`) solo tiene acceso de **lectura**:
+  ve los ítems/aulas/préstamos/reservas de `iesjuanbosco` en `list.js`/
+  `meta.js`, pero no puede crearlos/editarlos/eliminarlos (`item.js`),
+  prestarlos/devolverlos (`prestar.js`) ni ver su historial
+  (`historial.js`) — esas rutas siguen devolviendo 403 vía el
+  centinela `genericDept='__none__'`. Tampoco puede crear ítems nuevos
+  ahí: la query de `ciclos` sigue sentinel'ada para él, así que el
+  desplegable "Ciclo/Departamento" de "Nuevo ítem" no le ofrece
+  `iesjuanbosco` como destino. `js/modal-ciclos.js`/`js/modal-aulas.js`
+  excluyen el ciclo/aula compartidos (y las aulas globales) de sus
+  listas editables para todos los roles.
 - Selector `#deptActivoSelect` (solo superadmin, persistido en
   `localStorage` `dept_activo_superadmin` — `js/config.js:deptActivo`)
   desbloquea ⚙️ Gestionar aulas/categorías/ciclos para un departamento

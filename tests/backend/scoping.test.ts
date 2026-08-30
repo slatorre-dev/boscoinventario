@@ -21,32 +21,32 @@ async function itemRefs(u: string, p: string): Promise<string[]> {
 }
 
 describe("scoping por departamento", () => {
-  it("un profesor (rol profesor) solo ve los items de su propio departamento", async () => {
+  it("un profesor (rol profesor) ve los items de su propio departamento y los del departamento compartido (solo lectura)", async () => {
     const refs = await itemRefs("test-profesor-a", "test-profesor-a");
     expect(refs).toContain("TEST-A-001");
     expect(refs).not.toContain("TEST-B-001");
-    // isProfesor(user) hace que list.js excluya el departamento compartido
-    // iesjuanbosco para el rol "profesor" (genericDept='__none__' en vez de
-    // GENERIC_DEPT) — solo jefe/a departamento y superadmin lo ven, ver el
-    // siguiente test. Comportamiento real verificado en el codigo, no lo
-    // que sugiere la wording de CLAUDE.md ("cualquier jefe/a de
-    // departamento o profesor") — el codigo manda.
-    expect(refs).not.toContain("TEST-SHARED-001");
+    // list.js ya no excluye el departamento compartido iesjuanbosco para el
+    // rol "profesor" en la lectura (itemsQuery usa siempre GENERIC_DEPT) —
+    // profesor puede VER esos items igual que jefe/a departamento y
+    // superadmin, pero sigue sin poder editarlos/prestarlos/borrarlos (eso
+    // lo bloquean item.js/prestar.js via el genericDept sentinel, ver los
+    // tests de edicion mas abajo). Solo la query de "ciclos" sigue
+    // sentinel'ada para que el desplegable de "Nuevo item" no le ofrezca
+    // crear items nuevos en iesjuanbosco.
+    expect(refs).toContain("TEST-SHARED-001");
   });
 
-  it("un profesor auto-registrado (rol 'Profesor/a', el que asigna auth.js de verdad) NO ve el departamento compartido", async () => {
+  it("un profesor auto-registrado (rol 'Profesor/a', el que asigna auth.js de verdad) tambien ve el departamento compartido", async () => {
     // auth.js:371 asigna 'Profesor/a' (mayuscula y slash) a cualquiera que
     // se registre por el formulario publico, igual que el alta manual desde
     // Usuarios y la importacion CSV (ROLES_DISPONIBLES en prestamos.js) —
     // es la forma mayoritaria en la app real, no 'profesor' a secas (esa
     // solo la usan las 24 cuentas sembradas por migracion y Google OAuth).
-    // isProfesor() en list.js/item.js/prestar.js/meta.js/historial.js
-    // reconoce ambas formas para que el bypass de iesjuanbosco se aplique
-    // igual sin importar por que via se creo la cuenta. Antes de este fix
-    // 'Profesor/a' no matcheaba y SI recibia el bypass (pendiente #24 de
-    // CLAUDE.md, ya resuelto).
+    // isProfesor() reconoce ambas formas por igual en list.js/meta.js
+    // (lectura) e item.js/prestar.js/historial.js (edicion/prestamo/
+    // historial, que se mantienen bloqueados).
     const refs = await itemRefs("test-profesor-selfreg", "test-profesor-selfreg");
-    expect(refs).not.toContain("TEST-SHARED-001");
+    expect(refs).toContain("TEST-SHARED-001");
   });
 
   it("un jefe/a de departamento si ve el departamento compartido iesjuanbosco", async () => {

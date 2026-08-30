@@ -133,6 +133,11 @@ export async function onRequestGet({ request, env, data }) {
   const user = data?.user || request.user;
   const dept = data?.departamento || '';
   const superadmin = isSuperAdmin(user);
+  // Igual que en list.js: `genericDept` solo sentinel'a el desplegable de
+  // ciclos (evita que profesor pueda crear ítems nuevos en iesjuanbosco);
+  // las demás lecturas (aulas/categorías/ubicaciones/módulos) usan siempre
+  // GENERIC_DEPT para que profesor pueda ver el material del departamento
+  // compartido, solo sin poder editarlo/prestarlo (eso lo bloquean item.js/prestar.js).
   const genericDept = isProfesor(user) ? '__none__' : GENERIC_DEPT;
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS ubicaciones (name TEXT PRIMARY KEY, orden INTEGER DEFAULT 0)").run().catch(() => {});
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS modulo_profesores (cicloId TEXT NOT NULL, modCod TEXT NOT NULL, departamento TEXT NOT NULL, usuario TEXT NOT NULL, PRIMARY KEY (cicloId, modCod, departamento, usuario))").run().catch(() => {});
@@ -142,17 +147,17 @@ export async function onRequestGet({ request, env, data }) {
   const [aulas, cats, invCats, ubicaciones, invLocs, ciclosRows, departamentosRows, profesRows, misAulasRows, misMantRows] = await Promise.all([
     superadmin
       ? env.DB.prepare("SELECT * FROM aulas ORDER BY orden, id").all()
-      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${genericDept}' ORDER BY orden, id`).bind(dept).all(),
+      : env.DB.prepare(`SELECT * FROM aulas WHERE departamento=? OR departamento='' OR departamento IS NULL OR departamento='${GENERIC_DEPT}' ORDER BY orden, id`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM categorias ORDER BY orden').all()
       : env.DB.prepare("SELECT * FROM categorias WHERE departamento=? ORDER BY orden").bind(dept).all(),
     superadmin
       ? env.DB.prepare("SELECT DISTINCT cat FROM inventario WHERE cat IS NOT NULL AND trim(cat) != '' ORDER BY cat").all()
-      : env.DB.prepare(`SELECT DISTINCT cat FROM inventario WHERE cat IS NOT NULL AND trim(cat) != '' AND (departamento=? OR departamento='${genericDept}') ORDER BY cat`).bind(dept).all(),
+      : env.DB.prepare(`SELECT DISTINCT cat FROM inventario WHERE cat IS NOT NULL AND trim(cat) != '' AND (departamento=? OR departamento='${GENERIC_DEPT}') ORDER BY cat`).bind(dept).all(),
     env.DB.prepare('SELECT * FROM ubicaciones ORDER BY orden, name').all().catch(() => ({ results: [] })),
     superadmin
       ? env.DB.prepare("SELECT DISTINCT loc FROM inventario WHERE loc IS NOT NULL AND trim(loc) != '' ORDER BY loc").all()
-      : env.DB.prepare(`SELECT DISTINCT loc FROM inventario WHERE loc IS NOT NULL AND trim(loc) != '' AND (departamento=? OR departamento='${genericDept}') ORDER BY loc`).bind(dept).all(),
+      : env.DB.prepare(`SELECT DISTINCT loc FROM inventario WHERE loc IS NOT NULL AND trim(loc) != '' AND (departamento=? OR departamento='${GENERIC_DEPT}') ORDER BY loc`).bind(dept).all(),
     superadmin
       ? env.DB.prepare('SELECT * FROM ciclos ORDER BY cicloOrden, modOrden').all()
       : env.DB.prepare(`SELECT * FROM ciclos WHERE departamento=? OR departamento='${genericDept}' ORDER BY cicloOrden, modOrden`).bind(dept).all(),
@@ -161,7 +166,7 @@ export async function onRequestGet({ request, env, data }) {
       : Promise.resolve({ results: [] }),
     superadmin
       ? env.DB.prepare('SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario').all()
-      : env.DB.prepare(`SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario WHERE mp.departamento=? OR mp.departamento='${genericDept}'`).bind(dept).all(),
+      : env.DB.prepare(`SELECT mp.cicloId, mp.modCod, mp.usuario, u.email FROM modulo_profesores mp JOIN usuarios u ON u.usuario = mp.usuario WHERE mp.departamento=? OR mp.departamento='${GENERIC_DEPT}'`).bind(dept).all(),
     env.DB.prepare('SELECT aula FROM aula_profesores WHERE usuario=?').bind(user.usuario).all(),
     env.DB.prepare('SELECT categoria FROM mantenimiento_responsables WHERE usuario=? AND departamento=?').bind(user.usuario, dept).all(),
   ]);
