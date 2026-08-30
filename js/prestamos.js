@@ -874,6 +874,7 @@ function closePresDevModal(){
 // ─── GESTIÓN DE USUARIOS ──────────────────────────────────
 let _usuariosEditing = [];
 let _usuariosOriginal = [];
+let _usuariosFiltro = '';
 let _todosModulos = []; // módulos de la hoja Modulos con responsable actual
 const ROLES_DISPONIBLES = [
   'Jefe/a Departamento',
@@ -901,6 +902,9 @@ async function openUsuariosModal(){
   document.getElementById('usuariosList').innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center">Cargando...</p>';
   const inactEl = document.getElementById('inactivityMinInput');
   if(inactEl) inactEl.value = (typeof getInactivityMinutes === 'function') ? getInactivityMinutes() : 5;
+  _usuariosFiltro = '';
+  const searchEl = document.getElementById('usuariosSearch');
+  if(searchEl) searchEl.value = '';
   document.getElementById('mUsuarios').classList.add('open');
   try {
     const res = await apiPost({ action: 'getUsers' });
@@ -918,14 +922,27 @@ function closeUsuariosModal(){
   document.getElementById('mUsuarios').classList.remove('open');
 }
 
+function filterUsuarios(){
+  _usuariosFiltro = document.getElementById('usuariosSearch')?.value || '';
+  _renderUsuariosList();
+}
+
 function _renderUsuariosList(){
   const el = document.getElementById('usuariosList');
   if(!_usuariosEditing.length){
     el.innerHTML='<div class="empty" style="padding:20px"><div class="et" style="font-size:13px">Sin usuarios registrados.</div></div>';
     return;
   }
+  const q = normalizeStr(_usuariosFiltro);
+  const entradas = _usuariosEditing
+    .map((u,i)=>({u,i}))
+    .filter(({u}) => !q || normalizeStr(`${u.nombre||''} ${u.usuario||''} ${u.email||''}`).includes(q));
+  if(!entradas.length){
+    el.innerHTML = '<div class="empty" style="padding:20px"><div class="et" style="font-size:13px">Sin resultados para tu búsqueda.</div></div>';
+    return;
+  }
   const puedeAsignarDept = String(SESSION?.rol||'').trim().toLowerCase() === 'superadmin' && typeof DEPARTAMENTOS !== 'undefined' && DEPARTAMENTOS.length;
-  el.innerHTML = _usuariosEditing.map((u,i)=>{
+  el.innerHTML = entradas.map(({u,i})=>{
     const esSelf = u.usuario === SESSION?.usuario;
     const selfClass = esSelf ? ' usr-self' : '';
     const nMods = (u._modulos||[]).length;
@@ -963,6 +980,11 @@ function _renderUsuariosList(){
 
 function addUsuarioRow(){
   _usuariosEditing.push({ usuario:'', nombre:'', email:'', rol:'Profesor/a', _nuevo:true, _resetPass:'', _modulos:[], _aulas:[] });
+  // Limpia el buscador: si no, la fila recién añadida (todavía vacía) no
+  // coincide con el filtro activo y desaparece nada más crearla.
+  _usuariosFiltro = '';
+  const searchEl = document.getElementById('usuariosSearch');
+  if(searchEl) searchEl.value = '';
   _renderUsuariosList();
 }
 
@@ -1315,6 +1337,11 @@ function importUsuariosCSV(input) {
       importados++;
     });
 
+    // Limpia el buscador: si no, un filtro activo puede ocultar filas recién
+    // importadas que no coincidan con el texto buscado.
+    _usuariosFiltro = '';
+    const searchEl = document.getElementById('usuariosSearch');
+    if(searchEl) searchEl.value = '';
     _renderUsuariosList();
     input.value = '';
     const msg = `${importados} usuario(s) importado(s)${omitidos ? `, ${omitidos} omitido(s) por duplicado` : ''}. Revisa y pulsa Guardar.`;
