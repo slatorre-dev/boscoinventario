@@ -207,8 +207,16 @@ function renderHome(){
     <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
     <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">${lblMant}</div></div></div>${ocCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
-  let aulaEntries = loading ? AULAS : AULAS.filter(a=>items.some(x=>x.aula===a.id));
-  if(filtrarPorMisAulas) aulaEntries = aulaEntries.filter(a=>MIS_AULAS.includes(a.id));
+  // Con el filtro "solo mis aulas" activo se muestran TODAS las aulas que
+  // el profesor eligió en "Mis Cursos/Aulas", tengan ítems o no — si no,
+  // alguien que acaba de elegirlas y todavía no cargó material ve "No hay
+  // ítems clasificados por aula aún" en vez de sus propias aulas (vacías,
+  // pero suyas). Sin el filtro (vista global/"Ver todas las aulas") se
+  // mantiene el criterio de siempre: solo aulas con ítems, para no llenar
+  // Inicio de tarjetas vacías en departamentos grandes.
+  let aulaEntries = loading ? AULAS
+    : filtrarPorMisAulas ? AULAS.filter(a=>MIS_AULAS.includes(a.id))
+    : AULAS.filter(a=>items.some(x=>x.aula===a.id));
   const misAulasToggleWrap = document.getElementById('misAulasToggleWrap');
   if(misAulasToggleWrap){
     misAulasToggleWrap.style.display = tieneMisAulas ? 'inline' : 'none';
