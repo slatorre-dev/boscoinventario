@@ -5115,6 +5115,26 @@ Cambios (solo ≤1024px, escritorio intacto — verificado con Playwright a
 
 `sw.js` → v660.
 
+### 30/09/2026 (v661): Inicio móvil, segunda pasada de limpieza visual
+
+Solo ≤1024px, escritorio verificado sin cambios (Playwright 390/1400px):
+- Fuera el título del hero y parte de su margen superior; el buscador
+  queda arriba del todo.
+- Placeholder corto "Buscar material, ref o S/N…" (listener
+  `matchMedia` al final de `js/home.js`, restaura el largo al ensanchar).
+- "⚙️ Gestionar aulas/categorías/ciclos" fuera de las cabeceras de
+  sección: solo los ven jefe/a y superadmin, que ya los tienen en el menú
+  ⚙️ Departamento (`can('config.manage')`).
+- Badge de versión (`#appVersion`) oculto en la barra superior.
+- "Hoy" y su tira ocultos mientras cargan (clase `.cargando` desde
+  `renderHome()`).
+- FAB de Volt: círculo de 48px abajo a la derecha, vía `body #agente-fab`
+  en `css/styles.css` (sin tocar `js/agente-widget.js`); si el usuario ya
+  lo había arrastrado, su posición guardada (`volt_fab_pos`, inline)
+  sigue mandando.
+
+`sw.js` → v661.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo

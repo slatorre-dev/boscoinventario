@@ -612,6 +612,27 @@ body.dark .home-quick-btn.rose{border-color:rgba(244,114,182,.35);background:lin
 @media (max-width:640px){
   .home-quick-btn small{display:none}
 }
+/* Inicio móvil/tablet, segunda pasada (v661): menos ruido visual.
+   - Título del hero fuera (el buscador ya dice lo mismo).
+   - "⚙️ Gestionar aulas/categorías/ciclos" fuera de las cabeceras de
+     sección: solo los ven jefe/a y superadmin (config.manage /
+     categories.manage), que ya los tienen en el menú ⚙️ Departamento.
+     !important por el display inline que pone applyPermissions().
+   - Badge de versión fuera de la barra superior.
+   - "Hoy" y su tira ocultos mientras cargan (clase .cargando, home.js).
+   - FAB de Volt: círculo abajo a la derecha. `body #agente-fab` gana al
+     <style> que inyecta js/agente-widget.js; si el usuario ya lo arrastró,
+     su posición guardada va inline y sigue mandando. */
+@media (max-width:1024px){
+  .home-hero h1{display:none}
+  .home-hero{padding-top:14px!important}
+  .gsearch-wrap{margin-top:0!important}
+  #pH .home-body .sec-label .mini-btn[data-perm]{display:none!important}
+  #appVersion{display:none!important}
+  .home-hoy-label.cargando,#hStats.cargando{display:none!important}
+  body #agente-fab{top:auto;bottom:18px;right:16px;width:48px;height:48px;padding:0;border-radius:50%;font-size:20px}
+  body #agente-fab .fab-txt{display:none}
+}
 @media (max-width:360px){
   .home-quick-btn{padding:10px 8px;gap:7px}
   .home-quick-ico{width:28px;height:28px;font-size:15px;border-radius:10px}

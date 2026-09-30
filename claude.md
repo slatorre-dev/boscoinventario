@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v660 | 30/09/2026 | Alta de usuario con nombre ya existente ya no da "HTTP 500" (aviso claro, front+back) y ❓ de ayuda compacto junto a la cámara en Inicio. v659 | Inicio simplificado en móvil/tablet
+**Estado:** v661 | 30/09/2026 | Inicio móvil más limpio: sin título, buscador con texto corto, sin botones de gestión en las secciones (siguen en ⚙️ Departamento), sin badge de versión, Volt como círculo abajo a la derecha. v660 | Alta de usuario con nombre ya existente ya no da "HTTP 500" (aviso claro, front+back) y ❓ de ayuda compacto junto a la cámara en Inicio. v659 | Inicio simplificado en móvil/tablet
 (≤1024px): 4 acciones principales con texto (Añadir, Préstamo, Práctica,
 Stock) + "⋯ Más acciones", cabecera mínima, bloque "Hoy" solo con alertas
 no nulas (incluye préstamos vencidos) y categorías/ciclos plegados.

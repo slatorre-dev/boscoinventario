@@ -164,6 +164,8 @@ function renderHome(){
   renderFavoritos();
 
   const loading = !itemsLoaded;
+  document.querySelector('.home-hoy-label')?.classList.toggle('cargando', loading);
+  document.getElementById('hStats')?.classList.toggle('cargando', loading);
   const esProfesor = typeof roleLabel === 'function' && roleLabel() === 'Profesor/a';
   const tieneMisAulas = esProfesor && Array.isArray(MIS_AULAS) && MIS_AULAS.length > 0;
   const filtrarPorMisAulas = debeFiltrarPorMisAulas();
@@ -333,3 +335,17 @@ function renderFavoritos(){
     </span>`;
   }).join('');
 }
+
+// Placeholder del buscador de Inicio: el largo se corta en móvil
+// ("Buscar por nombre, ref, tags, S…"); por debajo de 1024px, uno corto.
+(function(){
+  const mq = window.matchMedia('(max-width:1024px)');
+  const aplicar = () => {
+    const el = document.getElementById('gsInput');
+    if(!el) return;
+    if(!el.dataset.phLargo) el.dataset.phLargo = el.placeholder;
+    el.placeholder = mq.matches ? 'Buscar material, ref o S/N…' : el.dataset.phLargo;
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aplicar); else aplicar();
+  mq.addEventListener ? mq.addEventListener('change', aplicar) : mq.addListener(aplicar);
+})();
