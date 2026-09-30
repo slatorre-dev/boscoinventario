@@ -1276,6 +1276,21 @@
 </div>
 
 <!-- MODAL ELEGIR TIPO DE STOCK (Reponer vs Pedir algo nuevo) -->
+<div class="mbg" id="mAddChoice" onclick="if(event.target===this)closeAddChoiceModal()">
+  <div class="modal" style="max-width:380px">
+    <div class="mh"><div class="mt">＋ Añadir</div><button class="mx" onclick="closeAddChoiceModal()">✕</button></div>
+    <p style="font-size:13px;color:var(--muted);margin:12px 0 18px;padding:0 20px">¿Cómo quieres añadir el material?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:0 20px 20px">
+      <button class="btn btn-p" onclick="closeAddChoiceModal();openCamaraUnificada()" style="width:100%;padding:12px;font-size:14px;text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">🎥</span>Con cámara<br><small style="font-size:11px;color:rgba(255,255,255,.85);font-weight:400">QR, código de barras, nº de serie o foto del objeto</small>
+      </button>
+      <button class="btn" onclick="closeAddChoiceModal();openModal()" style="width:100%;padding:12px;font-size:14px;border-color:var(--accent);color:var(--accent);text-align:left;display:block;white-space:normal;height:auto;line-height:1.4">
+        <span style="font-size:18px;margin-right:8px">✍️</span>Manual<br><small style="font-size:11px;color:var(--muted);font-weight:400">Rellenar la ficha a mano</small>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="mbg" id="mStockChoice" onclick="if(event.target===this)closeStockChoiceModal()">
   <div class="modal" style="max-width:380px">
     <div class="mh"><div class="mt">📦 Stock</div><button class="mx" onclick="closeStockChoiceModal()">✕</button></div>
@@ -2325,6 +2340,21 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 
 <div class="toasts" id="toasts"></div>
 
+<!-- ══ BARRA DE NAVEGACIÓN INFERIOR (≤1024px, ver js/bottom-nav.js) ══ -->
+<nav class="bottom-nav" id="bottomNav" hidden aria-label="Navegación principal">
+  <button class="bn-tab" id="bnHome" onclick="goHome()"><span class="bn-ico">🏠</span><span class="bn-lbl">Inicio</span></button>
+  <button class="bn-tab" id="bnSearch" onclick="bnOpenSearch()"><span class="bn-ico">🔍</span><span class="bn-lbl">Buscar</span></button>
+  <button class="bn-tab bn-tab-main" id="bnAdd" onclick="openAddChoiceModal()"><span class="bn-ico">＋</span><span class="bn-lbl">Añadir</span></button>
+  <button class="bn-tab" id="bnLoan" onclick="openPrestarPicker()"><span class="bn-ico">⌛<span class="bn-badge" id="bnLoanBadge" hidden>0</span></span><span class="bn-lbl">Prestar</span></button>
+  <button class="bn-tab" id="bnMore" onclick="bnToggleMore()"><span class="bn-ico">☰</span><span class="bn-lbl">Más</span></button>
+</nav>
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-label="Buscar">
+  <div class="search-overlay-head">
+    <strong>🔍 Buscar</strong>
+    <button class="mx" onclick="bnCloseSearch()" aria-label="Cerrar búsqueda">✕</button>
+  </div>
+  <div class="search-overlay-body" id="searchOverlayBody"></div>
+</div>
 <script defer src="js/config.js"></script>
 <script defer src="js/state.js"></script>
 <script defer src="js/ui-helpers.js"></script>
@@ -2346,6 +2376,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/modo-clase.js"></script>
 <script defer src="js/import.js"></script>
 <script defer src="js/nav.js"></script>
+<script defer src="js/bottom-nav.js"></script>
 <script defer src="js/docs-dpto.js"></script>
 <script defer src="js/pwa.js"></script>
 <script defer src="js/profile.js"></script>

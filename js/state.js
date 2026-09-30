@@ -67,6 +67,7 @@ function show(id){
   document.getElementById(id).classList.add('active');
   const fab=document.getElementById('fabNuevo');
   if(fab && id!=='pS') fab.style.display='none';
+  if(typeof bnOnPageChange === 'function') bnOnPageChange();
 }
 
 function needsMaintenance(item){

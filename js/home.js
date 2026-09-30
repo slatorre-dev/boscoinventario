@@ -156,6 +156,7 @@ async function _checkAtencionHoyProfesor(){
 }
 
 function renderHome(){
+  if(typeof bnSync === 'function') bnSync(); // badge de vencidos al llegar los préstamos
   let masGuardado = false;
   try{ masGuardado = localStorage.getItem('home_quick_mas') === '1'; }catch(e){}
   toggleHomeQuickMore(masGuardado);

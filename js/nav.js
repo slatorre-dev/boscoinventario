@@ -281,9 +281,11 @@ window.addEventListener('popstate', function(){
 // ─── MENÚ MÓVIL ───────────────────────────────────────────
 function toggleMobMenu(){
   document.getElementById('topbarBtns').classList.toggle('open');
+  if(typeof bnSync === 'function') bnSync();
 }
 function closeMobMenu(){
   document.getElementById('topbarBtns').classList.remove('open');
+  if(typeof bnSync === 'function') bnSync();
 }
 
 // Ancla real para el hint flotante de "Mis Cursos/Aulas": en escritorio el
@@ -295,11 +297,14 @@ function _misCursosHintTarget(){
   if (btn && btn.offsetParent !== null) return btn;
   const mob = document.getElementById('mobMenuBtn');
   if (mob && mob.offsetParent !== null) return mob;
+  // Móvil con barra inferior: el ⋮ está oculto, el menú vive en "☰ Más".
+  const bnMore = document.getElementById('bnMore');
+  if (bnMore && bnMore.offsetParent !== null) return bnMore;
   return null;
 }
 
 document.addEventListener('click', function(e){
-  if(!e.target.closest('#topbarBtns') && !e.target.closest('#mobMenuBtn'))
+  if(!e.target.closest('#topbarBtns') && !e.target.closest('#mobMenuBtn') && !e.target.closest('#bnMore'))
     closeMobMenu();
   if(!e.target.closest('#deptMenuWrap'))
     closeDeptMenu();

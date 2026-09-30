@@ -5135,6 +5135,46 @@ Solo ≤1024px, escritorio verificado sin cambios (Playwright 390/1400px):
 
 `sw.js` → v661.
 
+### 30/09/2026 (v662): Barra de navegación inferior en móvil/tablet
+
+Spec: `docs/superpowers/specs/2026-09-30-barra-navegacion-inferior-design.md`
+· Plan: `docs/superpowers/plans/2026-09-30-barra-navegacion-inferior.md`
+(ejecutado inline, en un solo commit en vez de uno por tarea).
+
+Solo ≤1024px y con sesión (nunca en login/cambio de contraseña/
+selecciones). Pestañas 🏠 Inicio · 🔍 Buscar · ＋ Añadir · ⌛ Prestar ·
+☰ Más; Añadir (`items.write`) y Prestar (`loans.write`) se ocultan por
+permiso sin dejar hueco (Consulta ve 3). Toda la lógica en
+`js/bottom-nav.js` (nuevo); enganches de una línea en `show()`
+(`js/state.js`), `applyRoleUI()` (`js/roles.js`), `renderHome()`
+(`js/home.js`) y el menú móvil de `js/nav.js`. No se tocaron
+`search.js`/`prestamos.js`/`agente-widget.js`.
+
+- **Buscar**: capa a pantalla completa que **mueve** `#gsWrap` (el
+  buscador real de Inicio) y lo devuelve al cerrar — `search.js` sigue
+  igual. Abre con `pushState('#buscar')`; ✕/Esc/"atrás" la cierran;
+  cualquier `show()` (elegir un resultado que navega) la cierra también.
+  `#buscar` por URL directa cae en el `goHome()` por defecto.
+- **Añadir**: modal `#mAddChoice` (🎥 cámara → `openCamaraUnificada()`,
+  ✍️ manual → `openModal()`).
+- **Prestar**: `openPrestarPicker()` directo + badge de
+  `getVencidosParaUsuario()`.
+- **Más**: el mismo `#topbarBtns` presentado como hoja inferior; ⋮ oculto
+  con barra. Bug encontrado al verificar: con `max-height` el
+  `flex-wrap:wrap` heredado mandaba ⚙️ Departamento a una segunda columna
+  invisible → `flex-wrap:nowrap`.
+- Volt y toasts suben por encima de la barra; `body` con `padding-bottom`.
+- Verificado con Playwright (HTML estático, sesión simulada) a 390/768/
+  1400px con Jefe/a, Profesor/a y Consulta. Gotcha de verificación: el
+  Service Worker de sesiones anteriores servía `state.js`/`roles.js`/
+  `nav.js`/`styles.css` viejos en localhost — desregistrarlo y vaciar
+  `caches` antes de probar.
+- Limitación conocida (preexistente): si se redimensiona la ventana de
+  móvil a escritorio sin recargar, `agente-widget.js` fija la posición de
+  Volt en el sitio de móvil.
+
+`sw.js` → v662.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo

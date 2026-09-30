@@ -2779,3 +2779,70 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
 /* FIELD ERROR (validación inline modal ítem) */
 .field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(220,38,38,.12)}
 .field-error-msg{color:var(--red);font-size:12px;font-weight:600;margin-top:4px;display:block}
+
+/* ══ Barra de navegación inferior (≤1024px) — js/bottom-nav.js ══
+   Spec: docs/superpowers/specs/2026-09-30-barra-navegacion-inferior-design.md
+   z-index 400: por debajo de los modales (.mbg, 500) y de la capa de
+   búsqueda (450). [hidden] con !important porque .bottom-nav/.bn-tab
+   declaran display. ☰ Más reutiliza #topbarBtns como hoja inferior
+   (body.has-bottom-nav sube la especificidad sobre las reglas previas del
+   menú móvil). */
+.bottom-nav{display:none}
+.search-overlay{display:none}
+.bottom-nav[hidden],.bn-tab[hidden],.bn-badge[hidden]{display:none!important}
+@media (max-width:1024px){
+  .bottom-nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:400;
+    display:grid;grid-auto-flow:column;grid-auto-columns:1fr;
+    height:calc(60px + env(safe-area-inset-bottom));
+    padding-bottom:env(safe-area-inset-bottom);
+    background:var(--white);border-top:1px solid var(--border);
+    box-shadow:0 -4px 18px rgba(15,23,42,.08);
+  }
+  .bn-tab{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    background:none;border:none;color:var(--muted);font-family:var(--font);
+    font-size:11px;font-weight:700;cursor:pointer;min-width:0;padding:4px 0;
+  }
+  .bn-ico{position:relative;font-size:20px;line-height:1}
+  .bn-tab.active{color:var(--accent)}
+  .bn-tab.active .bn-ico{transform:scale(1.08)}
+  .bn-tab-main .bn-ico{
+    width:40px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--accent),#1d4ed8);color:#fff;font-size:20px;
+  }
+  .bn-badge{
+    position:absolute;top:-6px;right:-10px;min-width:17px;height:17px;padding:0 4px;
+    border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+  }
+  body.has-bottom-nav{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  body.has-bottom-nav .toasts{bottom:calc(72px + env(safe-area-inset-bottom));right:12px;left:12px;align-items:flex-end}
+  body.has-bottom-nav #agente-fab{bottom:calc(72px + env(safe-area-inset-bottom))}
+
+  /* Termina encima de la barra (que sigue visible y marca 🔍 activa). */
+  .search-overlay.open{
+    position:fixed;top:0;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));z-index:450;background:var(--bg);
+    display:flex;flex-direction:column;gap:12px;
+    padding:12px 16px;
+  }
+  .search-overlay-head{display:flex;align-items:center;justify-content:space-between;font-size:16px}
+  .search-overlay-body{flex:1;min-height:0;display:flex;flex-direction:column}
+  #searchOverlay .gsearch-wrap{margin:0!important;max-width:none;box-shadow:none}
+  #searchOverlay .gsr{position:static;max-height:calc(100dvh - 210px);margin-top:10px;overflow-y:auto}
+  /* Con los resultados en flujo, #gsWrap crece: icono y ✕ se anclan a la
+     altura del campo, no al centro del contenedor. */
+  #searchOverlay .gsearch-ico,#searchOverlay .gsearch-clear{top:28px}
+
+  body.has-bottom-nav .mob-menu-btn{display:none!important}
+  body.has-bottom-nav .topbar-btns{
+    position:fixed!important;top:auto!important;left:0!important;right:0!important;
+    bottom:calc(60px + env(safe-area-inset-bottom))!important;
+    max-height:70vh;overflow-y:auto!important;overflow-x:hidden!important;min-width:0!important;
+    flex-wrap:nowrap!important; /* con max-height, wrap mandaba ⚙️ Departamento a una 2ª columna invisible */
+    border-radius:18px 18px 0 0!important;border:1px solid var(--border)!important;border-bottom:none!important;
+    border-top:3px solid var(--accent)!important;
+    padding:12px 12px 8px!important;
+    box-shadow:0 -12px 32px rgba(15,23,42,.18)!important;
+  }
+}

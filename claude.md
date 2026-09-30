@@ -1,6 +1,6 @@
 # Nota de Trabajo - Bosco Inventario
 
-**Estado:** v661 | 30/09/2026 | Inicio móvil más limpio: sin título, buscador con texto corto, sin botones de gestión en las secciones (siguen en ⚙️ Departamento), sin badge de versión, Volt como círculo abajo a la derecha. v660 | Alta de usuario con nombre ya existente ya no da "HTTP 500" (aviso claro, front+back) y ❓ de ayuda compacto junto a la cámara en Inicio. v659 | Inicio simplificado en móvil/tablet
+**Estado:** v662 | 30/09/2026 | Barra de navegación inferior en móvil/tablet (🏠 Inicio · 🔍 Buscar a pantalla completa · ＋ Añadir cámara/manual · ⌛ Prestar con badge de vencidos · ☰ Más = el menú de siempre como hoja inferior), lógica en `js/bottom-nav.js`. v661 | Inicio móvil más limpio: sin título, buscador con texto corto, sin botones de gestión en las secciones (siguen en ⚙️ Departamento), sin badge de versión, Volt como círculo abajo a la derecha. v660 | Alta de usuario con nombre ya existente ya no da "HTTP 500" (aviso claro, front+back) y ❓ de ayuda compacto junto a la cámara en Inicio. v659 | Inicio simplificado en móvil/tablet
 (≤1024px): 4 acciones principales con texto (Añadir, Préstamo, Práctica,
 Stock) + "⋯ Más acciones", cabecera mínima, bloque "Hoy" solo con alertas
 no nulas (incluye préstamos vencidos) y categorías/ciclos plegados.

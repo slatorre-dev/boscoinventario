@@ -165,6 +165,7 @@ function applyRoleUI(){
   // Botón Departamento solo para Jefes/Admin
   const deptWrap = document.getElementById('deptMenuWrap');
   if(deptWrap) deptWrap.style.display = can('config.manage') ? 'flex' : 'none';
+  if(typeof bnSync === 'function') bnSync();
 }
 
 function canAccessHistorial() {
