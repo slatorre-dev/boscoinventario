@@ -242,6 +242,13 @@ export async function onRequestPost({ request, env, data }) {
 
   if (action === 'userAdd') {
     const u = body.usuario;
+    // `usuario` es PRIMARY KEY: sin esta comprobación un duplicado revienta
+    // el INSERT y el frontend solo ve "HTTP 500". Sin distinguir mayúsculas
+    // para no crear "seba" al lado de "Seba" (confuso al hacer login).
+    const existente = await env.DB.prepare('SELECT usuario FROM usuarios WHERE lower(usuario)=lower(?)').bind(String(u.usuario || '').trim()).first();
+    if (existente) {
+      return Response.json({ ok: false, error: `El usuario "${existente.usuario}" ya existe. Elige otro nombre de usuario.` });
+    }
     const nuevoDept = superadmin ? (u.departamento || dept || '') : dept;
     // Onboarding de módulos/aulas pendiente para cualquier profesor nuevo,
     // sin importar si ya se le asigna departamento aquí mismo — antes solo

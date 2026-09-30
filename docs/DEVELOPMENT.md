@@ -5100,6 +5100,21 @@ Cambios (solo ≤1024px, escritorio intacto — verificado con Playwright a
 
 `sw.js` → v659.
 
+### 30/09/2026 (v660): usuario duplicado daba "HTTP 500" + ayuda compacta en Inicio
+
+- **Bug:** dar de alta en 🔐 Usuarios un nombre de usuario ya existente
+  (caso real: `Seba`, que ya es superadmin) hacía fallar el `INSERT`
+  (`usuario` es PRIMARY KEY) y el frontend solo mostraba "Error: HTTP 500".
+  `userAdd` (`functions/api/usuarios.js`) ahora comprueba antes, sin
+  distinguir mayúsculas, y devuelve "El usuario "X" ya existe"; `saveUsuarios()`
+  (`js/prestamos.js`) valida duplicados en la lista antes de enviar nada.
+- **Inicio:** botón ❓ de ayuda solo con icono (`aria-label` conservado),
+  en la misma línea que "Buscar o añadir con cámara" (más compacto
+  ≤1024px). Además, ≤360px las 4 acciones principales reducen icono/texto
+  para no cortarse (detectado a 320px con Playwright).
+
+`sw.js` → v660.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo

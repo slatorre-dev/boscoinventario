@@ -612,6 +612,11 @@ body.dark .home-quick-btn.rose{border-color:rgba(244,114,182,.35);background:lin
 @media (max-width:640px){
   .home-quick-btn small{display:none}
 }
+@media (max-width:360px){
+  .home-quick-btn{padding:10px 8px;gap:7px}
+  .home-quick-ico{width:28px;height:28px;font-size:15px;border-radius:10px}
+  .home-quick-btn strong{font-size:12.5px}
+}
 
 /* "Add" card */
 .ccard.add-new{border:2px dashed var(--border);background:transparent;color:var(--muted)}
@@ -1483,6 +1488,12 @@ textarea.fi-w{resize:vertical;min-height:60px}
 .gsearch-extra-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:2px solid var(--accent);color:var(--accent);cursor:pointer;padding:8px 16px;border-radius:10px;font-family:var(--font);font-size:13px;font-weight:600;transition:all .2s}
 .gsearch-extra-btn:hover{background:var(--accent);color:var(--white);border-color:var(--accent)}
 .gsearch-extra-btn svg{width:18px;height:18px;display:block}
+.gsearch-extra-btns{flex-wrap:nowrap}
+.gsearch-extra-btn-ico{padding:8px 11px;justify-content:center}
+@media (max-width:1024px){
+  .gsearch-extra-btn{padding:7px 12px;font-size:12.5px;white-space:nowrap}
+  .gsearch-extra-btn-ico{padding:7px 10px}
+}
 .camara-hint{margin:10px 0 0;max-width:620px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid #bfdbfe;color:#1e3a8a;border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
 
 @media (max-width:1200px){

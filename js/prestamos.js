@@ -1438,6 +1438,14 @@ async function saveUsuarios(){
     if(!u.nombre.trim() || !u.usuario.trim()){ toast('Nombre y usuario son obligatorios en todos los usuarios','err'); return; }
     if(u._nuevo && !u._resetPass.trim()){ toast(`Indica una contraseña para "${u.nombre||u.usuario}"`, 'err'); return; }
   }
+  // Usuario duplicado (sin distinguir mayúsculas): el backend también lo
+  // rechaza, pero avisar aquí evita guardar a medias.
+  const vistos = new Set();
+  for(const u of _usuariosEditing){
+    const k = u.usuario.trim().toLowerCase();
+    if(vistos.has(k)){ toast(`El usuario "${u.usuario.trim()}" ya existe. Elige otro nombre de usuario.`, 'err'); return; }
+    vistos.add(k);
+  }
 
   const btn = document.querySelector('#mUsuarios .btn-p');
   btn.disabled = true; btn.textContent = '⏳ Guardando...';
