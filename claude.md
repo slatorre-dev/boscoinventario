@@ -1,5 +1,10 @@
 # Nota de Trabajo - Bosco Inventario
 
+**Estado:** v659 | 30/09/2026 | Inicio simplificado en móvil/tablet
+(≤1024px): 4 acciones principales con texto (Añadir, Préstamo, Práctica,
+Stock) + "⋯ Más acciones", cabecera mínima, bloque "Hoy" solo con alertas
+no nulas (incluye préstamos vencidos) y categorías/ciclos plegados.
+Escritorio sin cambios. Detalle en `docs/DEVELOPMENT.md` 30/09/2026.
 **Nota (30/08/2026):** fix de scoping — `profesor`/`Profesor/a` había dejado
 de ver los ítems del departamento compartido `iesjuanbosco` (pizarras/
 pantallas de las aulas genéricas, etc.) en el listado de un aula, mientras

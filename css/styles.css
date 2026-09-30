@@ -577,6 +577,42 @@ body.dark .home-quick-btn.rose{border-color:rgba(244,114,182,.35);background:lin
   .home-quick-ico{width:28px;height:28px;font-size:15px;border-radius:10px}
 }
 
+/* Inicio móvil/tablet (≤1024px): en vez de 11 iconos sin texto, 4
+   acciones principales grandes con texto (.home-quick-primary) + "⋯ Más
+   acciones" que despliega el resto (.mas-abierto, recordado en
+   localStorage por toggleHomeQuickMore() en js/home.js). Cabecera sin
+   kicker/subtítulo/párrafo, y la tira de stats pasa a bloque "Hoy" con
+   solo las alertas no nulas. Va después de los bloques 1024/720/640 de
+   arriba a propósito, para ganarles por orden de cascada. !important en
+   el ocultado de secundarios: applyPermissions() (js/roles.js) pone
+   style.display='flex' inline en todo botón con data-perm. */
+.home-quick-more,.home-hoy-label,.scard-hoy-only,.scard-ok{display:none}
+@media (max-width:1024px){
+  .home-hero-kicker,.home-hero h2,.home-hero-main>p{display:none}
+  .home-hero h1{font-size:22px;margin-bottom:12px}
+  .home-quick-head{display:none}
+  .home-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .home-quick-btn{padding:12px;min-height:56px;aspect-ratio:auto;align-items:center;justify-content:flex-start;border-radius:14px}
+  .home-quick-btn span:not(.home-quick-ico){display:flex}
+  .home-quick-btn strong{font-size:14px}
+  .home-quick-ico{width:34px;height:34px;font-size:18px;border-radius:12px}
+  .home-quick-btn.home-quick-primary{order:-1}
+  #btnQuickStock{order:0}
+  .home-quick-panel:not(.mas-abierto) .home-quick-btn:not(.home-quick-primary){display:none!important}
+  .home-quick-more{display:block;width:100%;margin-top:8px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer}
+  .home-hoy-label{display:flex}
+  .stats-strip .scard-info,.stats-strip .scard-zero{display:none!important}
+  .stats-strip .scard-hoy-only{display:flex}
+  .stats-strip .scard-ok{display:flex;flex:1 1 auto;justify-content:center;color:var(--green);font-weight:700;font-size:13px}
+  .stats-strip .scard .scard-lbl{display:block!important}
+  .stats-strip{display:flex!important;flex-wrap:wrap!important;overflow-x:visible!important}
+  .stats-strip .scard{flex:0 1 auto!important;flex-direction:row!important;gap:8px!important;padding:8px 12px!important}
+  .stats-strip .scard.scard-ok{flex:1 1 auto!important}
+}
+@media (max-width:640px){
+  .home-quick-btn small{display:none}
+}
+
 /* "Add" card */
 .ccard.add-new{border:2px dashed var(--border);background:transparent;color:var(--muted)}
 .ccard.add-new:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l)}

@@ -2,12 +2,10 @@
 // HOME RENDER
 // ═════════════════════════════════════════════════════════
 
-// La rejilla de "Acciones rápidas" ya lleva título+subtítulo en el propio
-// botón (ver index.html) — en móvil el CSS los oculta para no empujar la
-// rejilla de aulas más abajo (.home-quick-btn span:not(.home-quick-ico)).
-// En vez de reintroducir texto fijo, se enseña una vez con flecha apuntando
-// a cada icono real (mismo mecanismo que "Mis Cursos/Aulas", generalizado
-// en showPointerTourOnce) y no vuelve a ocupar espacio después.
+// Recorrido con flecha por los iconos de "Acciones rápidas" cuando su texto
+// está oculto. Desde v659 el Inicio móvil ya muestra el texto (4 acciones
+// principales + "⋯ Más acciones"), así que en la práctica ya no se dispara;
+// se conserva como red de seguridad por si algún ancho vuelve a ocultarlo.
 function _showAccionesRapidasTourIfNarrow(){
   if(typeof showPointerTourOnce !== 'function') return;
   const grid = document.querySelector('.home-quick-grid');
@@ -158,6 +156,9 @@ async function _checkAtencionHoyProfesor(){
 }
 
 function renderHome(){
+  let masGuardado = false;
+  try{ masGuardado = localStorage.getItem('home_quick_mas') === '1'; }catch(e){}
+  toggleHomeQuickMore(masGuardado);
   // Banner de préstamos
   renderLoanBanner();
   renderFavoritos();
@@ -193,8 +194,16 @@ function renderHome(){
   const units=items.reduce((a,x)=>a+(Number(x.qty)||0),0);
   const oc = (typeof can==='function' && can('visibility.manage')) ? items.filter(x=>x.oculto==1).length : 0;
   const ocCard = (typeof can==='function' && can('visibility.manage'))
-    ? `<div class="scard" onclick="goOcultos()" style="cursor:pointer"><div class="scard-icon">🙈</div><div class="scard-copy"><div class="scard-num">${oc}</div><div class="scard-lbl">Ocultos</div></div></div>`
+    ? `<div class="scard scard-info" onclick="goOcultos()" style="cursor:pointer"><div class="scard-icon">🙈</div><div class="scard-copy"><div class="scard-num">${oc}</div><div class="scard-lbl">Ocultos</div></div></div>`
     : '';
+  // Solo móvil/tablet (bloque "Hoy", ver css/styles.css): préstamos
+  // vencidos propios (o todos si admin/jefe) y "Todo en orden" si no hay
+  // ninguna alerta — en escritorio ambas tarjetas quedan ocultas por CSS.
+  const venc = typeof getVencidosParaUsuario === 'function' ? getVencidosParaUsuario().length : 0;
+  const vencCard = venc
+    ? `<div class="scard scard-alert scard-hoy-only" onclick="goPrestamos('activos')" style="cursor:pointer"><div class="scard-icon">🔴</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${venc}</div><div class="scard-lbl">Préstamos vencidos</div></div></div>`
+    : '';
+  const okCard = (!venc && !low && !mant) ? `<div class="scard scard-ok">✅ Todo en orden</div>` : '';
   const lblStockBajo = filtrarPorMisAulas ? 'Stock bajo <span class="scard-lbl-sub">(tus aulas)</span>' : 'Stock bajo';
   const lblMant = filtrarPorMisAulas ? 'Mantenimiento <span class="scard-lbl-sub">(tus aulas)</span>' : 'Mantenimiento';
   document.getElementById('hStats').innerHTML= loading
@@ -202,10 +211,10 @@ function renderHome(){
        <div class="scard scard-loading"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Unidades</div></div></div>
        <div class="scard scard-loading"><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Stock bajo</div></div></div>
        <div class="scard scard-loading"><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Mantenimiento</div></div></div>`
-    : `<div class="scard"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num">${total}</div><div class="scard-lbl">Ítems</div></div></div>
-    <div class="scard"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num">${units.toLocaleString()}</div><div class="scard-lbl">Unidades</div></div></div>
-    <div class="scard${low?' scard-alert':''}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
-    <div class="scard${mant?' scard-alert':''}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">${lblMant}</div></div></div>${ocCard}`;
+    : `<div class="scard scard-info"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num">${total}</div><div class="scard-lbl">Ítems</div></div></div>
+    <div class="scard scard-info"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num">${units.toLocaleString()}</div><div class="scard-lbl">Unidades</div></div></div>
+    ${vencCard}<div class="scard${low?' scard-alert':' scard-zero'}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
+    <div class="scard${mant?' scard-alert':' scard-zero'}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">${lblMant}</div></div></div>${ocCard}${okCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
   // Con el filtro "solo mis aulas" activo se muestran TODAS las aulas que
   // el profesor eligió en "Mis Cursos/Aulas", tengan ítems o no — si no,
@@ -274,7 +283,27 @@ function toggleVerTodasAulas(){
 function homeSectionOpenState(key, count){
   const stored = localStorage.getItem('home_sec_'+key);
   if(stored !== null) return stored === '1';
+  // Móvil/tablet: plegadas de entrada para que "tus aulas" quede a mano.
+  if(window.matchMedia('(max-width:1024px)').matches) return false;
   return count <= 8;
+}
+
+// "⋯ Más acciones" (solo ≤1024px, ver css/styles.css): muestra/oculta las
+// acciones rápidas secundarias. Recordado por navegador.
+function toggleHomeQuickMore(forzar){
+  const panel = document.querySelector('.home-quick-panel');
+  const btn = document.getElementById('homeQuickMore');
+  if(!panel || !btn) return;
+  let abierto = forzar;
+  if(typeof abierto !== 'boolean'){
+    abierto = !panel.classList.contains('mas-abierto');
+    try{ localStorage.setItem('home_quick_mas', abierto ? '1' : '0'); }catch(e){}
+  }
+  panel.classList.toggle('mas-abierto', abierto);
+  btn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  const n = [...panel.querySelectorAll('.home-quick-btn:not(.home-quick-primary)')]
+    .filter(b => b.style.display !== 'none').length;
+  btn.textContent = abierto ? '▴ Menos acciones' : `⋯ Más acciones (${n})`;
 }
 
 function onHomeSecToggle(el, key){

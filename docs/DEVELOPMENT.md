@@ -5068,6 +5068,38 @@ ciclos, coste obligatorio del cierre preventivo.
 
 `sw.js` → v650.
 
+### 30/09/2026 (v659): Inicio simplificado en móvil/tablet
+
+Petición del usuario: al abrir la app en móvil había demasiados botones.
+Antes, por debajo de 1024px, "Acciones rápidas" eran 11 iconos sin texto
+(hacía falta el recorrido con flecha de v634 para entenderlos) y la
+cabecera ocupaba casi toda la primera pantalla.
+
+Cambios (solo ≤1024px, escritorio intacto — verificado con Playwright a
+390/768/1400px sobre HTML estático con datos simulados):
+- Cabecera: se ocultan kicker, `h2` y párrafo; quedan título, buscador y
+  cámara.
+- 4 acciones principales con texto, rejilla 2×2 (clase
+  `.home-quick-primary` en `index.html`): Añadir ítem, Nuevo préstamo,
+  Planificar práctica, Stock — elegidas con el usuario (Mantenimiento ya
+  sale en "Hoy"; Dar de baja fuera de primera fila por riesgo de toque
+  accidental). El resto tras "⋯ Más acciones (N)"
+  (`toggleHomeQuickMore()` en `js/home.js`, estado en `localStorage`
+  `home_quick_mas`). El ocultado usa `!important` porque
+  `applyPermissions()` pone `style.display='flex'` inline en todo
+  `data-perm`.
+- Tira de stats → bloque "Hoy": oculta Ítems/Unidades/Ocultos
+  (`.scard-info`) y alertas a cero (`.scard-zero`), añade préstamos
+  vencidos (`getVencidosParaUsuario()`, solo móvil) y "✅ Todo en orden"
+  si no hay ninguna alerta.
+- "Por categoría"/"Por ciclo" plegados por defecto en móvil
+  (`homeSectionOpenState()`), salvo preferencia guardada.
+- El recorrido de iconos (`_showAccionesRapidasTourIfNarrow`) deja de
+  dispararse solo (el texto ya es visible); se conserva como red de
+  seguridad.
+
+`sw.js` → v659.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
