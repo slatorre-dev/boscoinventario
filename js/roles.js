@@ -164,7 +164,14 @@ function applyRoleUI(){
   });
   // Botón Departamento solo para Jefes/Admin
   const deptWrap = document.getElementById('deptMenuWrap');
-  if(deptWrap) deptWrap.style.display = can('config.manage') ? 'flex' : 'none';
+  if(deptWrap){
+    deptWrap.style.display = can('config.manage') ? 'flex' : 'none';
+    // El menú móvil fuerza .dept-menu-wrap{display:flex!important} (css/
+    // styles.css, bloques ≤640/≤1200) y anulaba el display:none de arriba:
+    // Profesor/a y Consulta veían todo ⚙️ Departamento. [hidden] tiene su
+    // propia regla !important más específica.
+    deptWrap.hidden = !can('config.manage');
+  }
   if(typeof bnSync === 'function') bnSync();
 }
 

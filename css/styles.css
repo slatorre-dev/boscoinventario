@@ -2846,3 +2846,7 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
     box-shadow:0 -12px 32px rgba(15,23,42,.18)!important;
   }
 }
+
+/* Menús de topbar ocultos por permiso (applyRoleUI pone [hidden]): gana a
+   los .dept-menu-wrap{display:flex!important} del menú móvil. */
+.dept-menu-wrap[hidden]{display:none!important}

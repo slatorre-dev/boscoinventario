@@ -5206,6 +5206,20 @@ listaban todo mezclado, sin tener en cuenta "📌 Mis Cursos/Aulas".
 
 `sw.js` → v664.
 
+### 01/10/2026 (v665): menú ⚙️ Departamento visible sin permiso en móvil
+
+Bug: en móvil/tablet, Profesor/a y Consulta veían todo ⚙️ Departamento
+(Gestionar usuarios, aulas, importar/exportar…) dentro del menú ☰. Causa:
+`applyRoleUI()` lo ocultaba con `style.display='none'`, pero
+`.dept-menu-wrap{display:flex!important}` (menú móvil, `css/styles.css`
+bloques ≤640/≤1200) lo anulaba. Fix: `applyRoleUI()` pone además
+`[hidden]` y `.dept-menu-wrap[hidden]{display:none!important}` (más
+específica). Verificado con Playwright: Profesor/a 19→9 opciones,
+Consulta 16→6, Jefe/a sin cambios. El backend ya rechazaba esas acciones
+por permiso; era ruido/confusión de UI, no un agujero de seguridad.
+
+`sw.js` → v665.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
