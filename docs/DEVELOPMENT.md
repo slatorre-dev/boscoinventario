@@ -5311,6 +5311,21 @@ fuera de Drive); los tests buscan columnas por `indexOf`, no por posición.
 
 `sw.js` → v671.
 
+### 01/10/2026 (v672): Inicio y ☰ Más más limpios en móvil
+
+Solo ≤1024px con barra inferior (`body.has-bottom-nav`):
+- Aulas de Inicio: máximo 3 por fila (`#gAulas`; el usuario prefirió no
+  pasar a lista/2 columnas para no tener que desplazarse más).
+- ☰ Más sin duplicados: fuera `＋ Nuevo ítem` (está en la barra) y
+  `📦 Stock` (está en Inicio). `⌛ Préstamos` se queda (la barra abre
+  "Nuevo préstamo", no la lista).
+- "Por categoría"/"Por ciclo" fuera de Inicio; se llega desde
+  "🗂️ Explorar por categoría / ciclo" en ☰ Más (`bnExplorar()` en
+  `js/bottom-nav.js`: vuelve a Inicio con `#pH.explorar`, las despliega y
+  hace scroll; la clase se quita en la siguiente navegación).
+
+`sw.js` → v672.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo

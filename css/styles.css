@@ -2874,3 +2874,19 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
 /* Aula sin ítems en Inicio (v669): visible pero atenuada, invita a dar de alta. */
 .ccard.ccard-vacia{opacity:.62;border-style:dashed}
 .ccard.ccard-vacia:hover{opacity:1}
+
+/* Móvil/tablet con barra inferior (v672):
+   - Aulas de Inicio: máximo 3 por fila (#gAulas, ID para ganar a los
+     .choice-grid{repeat(4…)!important} de bloques anteriores).
+   - ☰ Más sin duplicados de la barra/Inicio: ＋ Nuevo ítem y 📦 Stock
+     (!important: applyRoleUI pone display inline).
+   - "Por categoría"/"Por ciclo" fuera de Inicio salvo desde
+     "🗂️ Explorar" (#pH.explorar, js/bottom-nav.js). */
+#btnExplorar{display:none!important}
+@media (max-width:1024px){
+  #gAulas.choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  body.has-bottom-nav #btnN,body.has-bottom-nav #btnStock{display:none!important}
+  body.has-bottom-nav #btnExplorar{display:flex!important}
+  body.has-bottom-nav #pH:not(.explorar) #homeSecCats,
+  body.has-bottom-nav #pH:not(.explorar) #homeSecCiclos{display:none!important}
+}

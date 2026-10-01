@@ -53,6 +53,7 @@ function _bnAjustarVolt(){
 // Llamada desde show() (js/state.js) en cada cambio de página: si la capa
 // de búsqueda estaba abierta (se eligió un resultado, o "atrás"), se cierra.
 function bnOnPageChange(){
+  document.getElementById('pH')?.classList.remove('explorar');
   _bnRestaurarBuscador();
   bnSync();
 }
@@ -63,6 +64,21 @@ function openAddChoiceModal(){
 }
 function closeAddChoiceModal(){
   document.getElementById('mAddChoice').classList.remove('open');
+}
+
+// ─── 🗂️ Explorar por categoría / ciclo ───────────────────────
+// En móvil "Por categoría" y "Por ciclo" no se muestran en Inicio (ocupaban
+// sitio y el buscador cubre ese uso). Esta opción de ☰ Más vuelve a Inicio
+// con las dos secciones visibles y desplegadas (#pH.explorar), hasta la
+// siguiente navegación (bnOnPageChange la quita).
+function bnExplorar(){
+  closeMobMenu();
+  goHome(); // show() → bnOnPageChange() quita .explorar; se pone después
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.getElementById('pH')?.classList.add('explorar');
+    ['homeSecCats','homeSecCiclos'].forEach(id => { const d = document.getElementById(id); if(d) d.open = true; });
+    document.getElementById('homeSecCats')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  }));
 }
 
 // ─── ☰ Más ──────────────────────────────────────────────────
