@@ -5220,6 +5220,16 @@ por permiso; era ruido/confusión de UI, no un agujero de seguridad.
 
 `sw.js` → v665.
 
+### 01/10/2026 (v666): chips de "Hoy" compactos en móvil
+
+A petición del usuario (tarjetas de alertas demasiado grandes): ≤1024px
+pasan a chips de una línea (~32px vs ~60px), sin mayúsculas, que saltan
+de línea si no caben. Gotcha: `.stats-strip{flex-wrap:nowrap!important}`
+de un bloque móvil posterior (`css/styles.css` ~1175) ganaba por orden →
+se usa `#hStats` (ID) para ganarle por especificidad.
+
+`sw.js` → v666.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
