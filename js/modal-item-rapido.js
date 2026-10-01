@@ -2,7 +2,7 @@
 // ALTA RÁPIDA DE ÍTEM
 // En un alta nueva en blanco (openModal sin id ni src →
 // _isBlankNewItemSession) la ficha muestra solo lo imprescindible: Nombre,
-// Aula, Fotos y Cantidad/Mínimo/Tipo. El resto (ref, fecha, ubicación,
+// Aula, Ubicación, Fotos y Cantidad/Mínimo/Tipo. El resto (ref, fecha,
 // categoría, tags, estado, secciones plegables) queda tras
 // "⚙️ Más detalles". Editar, duplicar o venir de la cámara con datos →
 // ficha completa. Ocultar no borra valores: lo preseleccionado se guarda.

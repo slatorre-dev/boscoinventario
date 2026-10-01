@@ -2863,7 +2863,7 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
 .dept-menu-wrap[hidden]{display:none!important}
 
 /* Alta rápida de ítem (js/modal-item-rapido.js): en un alta nueva en
-   blanco solo se ven Nombre, Aula, Fotos y Cantidad/Mínimo/Tipo; el resto
+   blanco solo se ven Nombre, Aula, Ubicación, Fotos y Cantidad/Mínimo/Tipo; el resto
    tras "⚙️ Más detalles". Ciclo/Módulo se oculta solo si viene
    preseleccionado (.mr-auto). */
 .mr-mas{display:none}

@@ -5288,6 +5288,8 @@ con varios departamentos (tabla nueva + backend), por si se repite el caso.
 
 `sw.js` → v669.
 
+**v670:** a petición del usuario, la Ubicación también se ve en el alta rápida (junto al Aula).
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
