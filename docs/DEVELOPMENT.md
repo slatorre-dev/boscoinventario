@@ -5253,6 +5253,13 @@ fabricacionmecanica) en cada N-01..N-05. Gotcha de entorno: wrangler
 estaba logueado con la cuenta `inventarioelec@iesjuanbosco.es` (D1 no
 encontrada, código 7404) — hay que entrar con `slatorre@iesjuanbosco.es`.
 
+Decisión del usuario sobre las N-XX: N-01..N-05 son de Mecanizado y
+N-06..N-11 de Electricidad, pero **N-04 y N-05 se comparten**. Como un
+aula solo admite un departamento, `migrations/0043_aulas_n04_n05_centro.sql`
+(aplicada) las pasa a aulas del centro (`departamento=''`) y renombra
+"N-8" → "N-08". Alternativa descartada por ahora: soporte real de aulas
+con varios departamentos (tabla nueva + backend), por si se repite el caso.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
