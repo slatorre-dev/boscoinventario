@@ -719,13 +719,13 @@
       <div class="m-section">
         <div class="m-section-title">📝 IDENTIFICACIÓN</div>
         <div class="ref-nombre-row full">
-          <div><label class="fl">Ref.</label><input class="fi-w" id="f_ref" placeholder="R-10K"></div>
+          <div class="mr-extra"><label class="fl">Ref.</label><input class="fi-w" id="f_ref" placeholder="R-10K"></div>
           <div><label class="fl">Nombre del ítem *</label><input class="fi-w" id="f_item" placeholder="Nombre del material o equipo"></div>
-          <div><label class="fl">Fecha adquisición</label><input class="fi-w" id="f_fechaAdquisicion" type="date"></div>
+          <div class="mr-extra"><label class="fl">Fecha adquisición</label><input class="fi-w" id="f_fechaAdquisicion" type="date"></div>
         </div>
         <div class="aula-loc-row full">
           <div><label class="fl">Aula</label><select class="fi-w" id="f_aula"></select></div>
-          <div>
+          <div class="mr-extra">
             <label class="fl">Ubicación</label>
             <input class="fi-w" id="f_loc" list="locList" placeholder="ej. Estantería A3" autocomplete="off">
             <datalist id="locList"></datalist>
@@ -744,7 +744,7 @@
       </div>
 
       <!-- 🏷️ CLASIFICACIÓN -->
-      <div class="m-section">
+      <div class="m-section mr-extra">
         <div class="m-section-title">🏷️ CLASIFICACIÓN</div>
         <div><label class="fl">Categoría</label>
           <select class="fi-w" id="f_cat" onchange="handleCatSelectChange()"></select>
@@ -792,6 +792,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Alta rápida (js/modal-item-rapido.js): solo visible en modo rápido -->
+      <button type="button" class="btn mr-mas" onclick="mostrarFichaCompleta()">⚙️ Más detalles <small>(categoría, ubicación, tags, ref…)</small></button>
 
       <!-- 📦 CONTENEDOR / CAJA -->
       <details class="m-section-details" id="mSecContenedor">
@@ -2366,6 +2369,7 @@ departamentoelectricidadelectronica,Circuitos electrónicos analógicos</pre>
 <script defer src="js/inventory.js"></script>
 <script defer src="js/modal-item-selects.js"></script>
 <script defer src="js/modal-item-tags.js"></script>
+<script defer src="js/modal-item-rapido.js"></script>
 <script defer src="js/modal-item.js"></script>
 <script defer src="js/modal-aulas.js"></script>
 <script defer src="js/modal-ubicaciones.js"></script>

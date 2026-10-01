@@ -206,6 +206,14 @@ function renderHome(){
   const vencCard = venc
     ? `<div class="scard scard-alert scard-hoy-only" onclick="goPrestamos('activos')" style="cursor:pointer" title="${venc} préstamos vencidos" aria-label="${venc} préstamos vencidos"><div class="scard-icon">🔴</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${venc}</div><div class="scard-lbl">Préstamos vencidos</div></div></div>`
     : '';
+  // Lo que el usuario tiene prestado ahora mismo (a su nombre), para
+  // recordar devolverlo antes de que venza. Solo móvil, como venc.
+  const miNombre = String(SESSION?.nombre || '').toLowerCase().trim();
+  const misPrest = (miNombre && typeof getPrestamosActivos === 'function')
+    ? getPrestamosActivos().filter(p => String(p.profesorNombre||'').toLowerCase().trim() === miNombre).length : 0;
+  const misPrestCard = misPrest
+    ? `<div class="scard scard-hoy-only" onclick="goPrestamos('activos')" style="cursor:pointer" title="Tienes ${misPrest} préstamo(s) a tu nombre" aria-label="Tienes ${misPrest} préstamos a tu nombre"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num">${misPrest}</div><div class="scard-lbl">Tengo prestado</div></div></div>`
+    : '';
   const okCard = (!venc && !low && !mant) ? `<div class="scard scard-ok">✅ Todo en orden</div>` : '';
   const lblStockBajo = filtrarPorMisAulas ? 'Stock bajo <span class="scard-lbl-sub">(tus aulas)</span>' : 'Stock bajo';
   const lblMant = filtrarPorMisAulas ? 'Mantenimiento <span class="scard-lbl-sub">(tus aulas)</span>' : 'Mantenimiento';
@@ -216,7 +224,7 @@ function renderHome(){
        <div class="scard scard-loading"><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Mantenimiento</div></div></div>`
     : `<div class="scard scard-info"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num">${total}</div><div class="scard-lbl">Ítems</div></div></div>
     <div class="scard scard-info"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num">${units.toLocaleString()}</div><div class="scard-lbl">Unidades</div></div></div>
-    ${vencCard}<div class="scard${low?' scard-alert':' scard-zero'}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''} title="${low} con stock bajo" aria-label="${low} con stock bajo"><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
+    ${vencCard}${misPrestCard}<div class="scard${low?' scard-alert':' scard-zero'}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''} title="${low} con stock bajo" aria-label="${low} con stock bajo"><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
     <div class="scard${mant?' scard-alert':' scard-zero'}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''} title="${mant} con mantenimiento pendiente" aria-label="${mant} con mantenimiento pendiente"><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">${lblMant}</div></div></div>${ocCard}${okCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
   // Con el filtro "solo mis aulas" activo se muestran TODAS las aulas que
@@ -226,9 +234,15 @@ function renderHome(){
   // pero suyas). Sin el filtro (vista global/"Ver todas las aulas") se
   // mantiene el criterio de siempre: solo aulas con ítems, para no llenar
   // Inicio de tarjetas vacías en departamentos grandes.
+  // Aulas del propio departamento aunque estén vacías (v669): si no, un
+  // aula recién creada o sin material "no existe" en Inicio (caso N-01..05).
+  // Superadmin: las del departamento activo del selector, si hay uno.
+  const esSuper = String(SESSION?.rol||'').trim().toLowerCase() === 'superadmin';
+  const deptPropio = esSuper ? (typeof deptActivo !== 'undefined' ? deptActivo : '') : (SESSION?.departamento || '');
+  const aulaConItems = a => items.some(x=>x.aula===a.id);
   let aulaEntries = loading ? AULAS
     : filtrarPorMisAulas ? AULAS.filter(a=>MIS_AULAS.includes(a.id))
-    : AULAS.filter(a=>items.some(x=>x.aula===a.id));
+    : AULAS.filter(a=>aulaConItems(a) || (deptPropio && a.departamento === deptPropio));
   const misAulasToggleWrap = document.getElementById('misAulasToggleWrap');
   if(misAulasToggleWrap){
     misAulasToggleWrap.style.display = tieneMisAulas ? 'inline' : 'none';
@@ -239,12 +253,13 @@ function renderHome(){
     ? aulaEntries.map(a=>{
     const n=items.filter(x=>x.aula===a.id).length;
     const w=loading ? 0 : items.filter(x=>x.aula===a.id&&isLowStock(x)).length;
-    return`<div class="ccard ${a.th}" style="--ch:#2563eb" role="button" tabindex="0" aria-label="Abrir ${escHtml(a.name)}" onclick="goAula('${a.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goAula('${a.id}')}" >
-      ${loading ? `<span class="ccard-count skel skel-count"></span>` : `<span class="ccard-count">${n} ítems</span>`}
+    const vacia = !loading && n === 0;
+    return`<div class="ccard ${a.th}${vacia?' ccard-vacia':''}" style="--ch:#2563eb" role="button" tabindex="0" aria-label="Abrir ${escHtml(a.name)}" onclick="goAula('${a.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goAula('${a.id}')}" >
+      ${loading ? `<span class="ccard-count skel skel-count"></span>` : vacia ? `<span class="ccard-count">vacía</span>` : `<span class="ccard-count">${n} ítems</span>`}
       <button class="ccard-edit" onclick="event.stopPropagation();openAulasModal()" title="Editar aulas">✏️</button>
       <div class="ccard-icon">${a.departamento ? escHtml(a.icon) : '<img src="icons/iconoaula.png" alt="" loading="lazy">'}</div>
       <div class="ccard-title">${escHtml(a.name)}</div>
-      <div class="ccard-desc">${escHtml(a.desc)}${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
+      <div class="ccard-desc">${vacia ? '＋ Añadir el primer ítem' : escHtml(a.desc)}${w?`<div class="ccard-warn">⚠ ${w} stock bajo</div>`:''}</div>
     </div>`;
   }).join('')
     : `<div class="empty" style="grid-column:1/-1;padding:32px;text-align:center;color:var(--muted);font-size:13px">No hay ítems clasificados por aula aún.</div>`;

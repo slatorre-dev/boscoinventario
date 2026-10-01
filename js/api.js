@@ -29,6 +29,32 @@ function urlWithAuth(endpoint, params={}){
   return url;
 }
 
+// Errores legibles (v669). 401 = sesión no válida (token caducado o
+// rotado desde otra pestaña): un único aviso claro y vuelta al login, en
+// vez de un toast "No autorizado" en cada petición (Pendiente #23). El
+// login usa fetch directo (js/auth.js), así que un 401 aquí nunca es una
+// contraseña mal escrita. 5xx sin mensaje y fallos de red → texto claro.
+let _sesionCaducadaAvisada = false;
+function _errorApi(status, data){
+  if(status === 401 && typeof SESSION !== 'undefined' && SESSION){
+    if(!_sesionCaducadaAvisada){
+      _sesionCaducadaAvisada = true;
+      if(typeof toast === 'function') toast('Tu sesión ha caducado. Vuelve a entrar.', 'err');
+      if(typeof logout === 'function') logout(false);
+    }
+    return new Error('Tu sesión ha caducado. Vuelve a entrar.');
+  }
+  if(status === 401) return new Error('Tu sesión ha caducado. Vuelve a entrar.');
+  const msg = data?.error || data?.message;
+  if(msg) return new Error(msg);
+  if(status >= 500) return new Error('El servidor ha tenido un problema. Inténtalo de nuevo en un momento.');
+  return new Error('Error inesperado (código ' + status + ').');
+}
+async function _fetchApi(url, opts){
+  try { return await fetch(url, opts); }
+  catch(e){ throw new Error('Sin conexión con el servidor. Revisa tu conexión a internet.'); }
+}
+
 async function apiGet(endpoint, params={}){
   if (typeof endpoint === 'object') {
     const obj = endpoint;
@@ -36,10 +62,10 @@ async function apiGet(endpoint, params={}){
     params = {...obj};
     delete params.action;
   }
-  const r = await fetch(urlWithAuth(endpoint, params));
+  const r = await _fetchApi(urlWithAuth(endpoint, params));
   let data = null;
   try { data = await r.json(); } catch(e) {}
-  if(!r.ok) throw new Error(data?.error || 'HTTP '+r.status);
+  if(!r.ok) throw _errorApi(r.status, data);
   return data;
 }
 
@@ -49,13 +75,13 @@ async function apiPost(payload){
   }
   const endpoint = ENDPOINT_MAP[payload.action] || payload.action;
   const url = urlWithAuth(endpoint);
-  const r = await fetch(url, {
+  const r = await _fetchApi(url, {
     method:'POST',
     body: JSON.stringify(payload),
     headers: {'Content-Type':'application/json'},
   });
   let data = null;
   try { data = await r.json(); } catch(e) {}
-  if(!r.ok) throw new Error(data?.error || data?.message || 'HTTP '+r.status);
+  if(!r.ok) throw _errorApi(r.status, data);
   return data || {};
 }

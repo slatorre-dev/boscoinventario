@@ -5262,6 +5262,34 @@ con varios departamentos (tabla nueva + backend), por si se repite el caso.
 
 ---
 
+### 01/10/2026 (v668-v669): 4 mejoras de uso + 2ª extracción de modal-item.js
+
+- **v668 (refactor aparte):** autocompletado de tags de `modal-item.js` →
+  `js/modal-item-tags.js` (script clásico, mismo criterio que
+  `modal-item-selects.js`).
+- **Alta rápida** (`js/modal-item-rapido.js`, clase `#mItem.rapido`): en
+  un alta nueva en blanco (`_isBlankNewItemSession`) solo se ven Nombre,
+  Aula, Fotos y Cantidad/Mínimo/Tipo (esta fila se queda: si no, todo
+  alta saldría "consumible, mínimo 5" y dispararía stock bajo); Ciclo/
+  Módulo se oculta solo si viene preseleccionado (si no, el aviso "sin
+  ciclo" de `saveItem()` saltaría sin poder elegirlo). "⚙️ Más detalles"
+  muestra la ficha completa. Editar/duplicar/cámara → ficha completa.
+- **Aulas vacías en Inicio**: las del propio departamento (superadmin:
+  las del departamento activo) se muestran aunque no tengan ítems,
+  atenuadas (`.ccard-vacia`) con "＋ Añadir el primer ítem".
+- **"📦 Tengo prestado"** en "Hoy" (móvil): préstamos activos a nombre del
+  usuario (`profesorNombre` = `SESSION.nombre`).
+- **Errores legibles** (`js/api.js`, cierra Pendiente #23): 401 → "Tu
+  sesión ha caducado. Vuelve a entrar." + `logout(false)` (cierre sin
+  confirmación, una sola vez); 5xx sin mensaje → texto claro; fallo de
+  red → "Sin conexión con el servidor". El login usa `fetch` directo, así
+  que un 401 en apiGet/apiPost nunca es una contraseña mal escrita.
+- Verificado con Playwright (HTML estático, sesión simulada).
+
+`sw.js` → v669.
+
+---
+
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
 implementado completo (v650: plan por ítem, responsables por categoría
 autoservicio+admin, vista/contadores/aviso mezclando correctivo y

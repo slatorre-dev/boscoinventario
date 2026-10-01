@@ -375,8 +375,9 @@ function _startInactivityWatch(){
   _resetInactivityTimer();
 }
 
-async function logout(){
-  if(!await confirmDialog({message:'¿Cerrar sesión?'})) return;
+// confirmar=false: cierre forzado sin preguntar (sesión caducada, js/api.js).
+async function logout(confirmar){
+  if(confirmar !== false && !await confirmDialog({message:'¿Cerrar sesión?'})) return;
   localStorage.removeItem('inv_session');
   SESSION = null;
   items = [];
@@ -395,6 +396,7 @@ async function logout(){
   setConn('', 'Sin sesión');
   // Permite que el botón de Google vuelva a disparar el callback tras logout
   if(typeof google !== 'undefined' && google.accounts?.id) google.accounts.id.disableAutoSelect();
+  if(typeof _sesionCaducadaAvisada !== 'undefined') _sesionCaducadaAvisada = false;
   show('pLogin');
 }
 

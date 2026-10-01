@@ -2861,3 +2861,16 @@ mark.srch-hl { background: none; color: inherit; font-weight: 700; text-decorati
 /* Menús de topbar ocultos por permiso (applyRoleUI pone [hidden]): gana a
    los .dept-menu-wrap{display:flex!important} del menú móvil. */
 .dept-menu-wrap[hidden]{display:none!important}
+
+/* Alta rápida de ítem (js/modal-item-rapido.js): en un alta nueva en
+   blanco solo se ven Nombre, Aula, Fotos y Cantidad/Mínimo/Tipo; el resto
+   tras "⚙️ Más detalles". Ciclo/Módulo se oculta solo si viene
+   preseleccionado (.mr-auto). */
+.mr-mas{display:none}
+#mItem.rapido .mr-extra,#mItem.rapido .m-section-details,#mItem.rapido #mCompletion,#mItem.rapido .ciclo-mod-row.mr-auto{display:none!important}
+#mItem.rapido .mr-mas{display:block;grid-column:1/-1;width:100%;margin-top:4px;padding:12px;border:1px dashed var(--accent);color:var(--accent);background:transparent;font-weight:700}
+#mItem.rapido .mr-mas small{font-weight:400;color:var(--muted)}
+
+/* Aula sin ítems en Inicio (v669): visible pero atenuada, invita a dar de alta. */
+.ccard.ccard-vacia{opacity:.62;border-style:dashed}
+.ccard.ccard-vacia:hover{opacity:1}

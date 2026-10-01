@@ -990,6 +990,7 @@ function openModal(id=null, src=null){
   setItemModalReadonly(readonly);
   const btnH = document.getElementById('btnHistorial');
   if (btnH) btnH.style.display = existing ? '' : 'none';
+  if(typeof aplicarModoRapido === 'function') aplicarModoRapido(_isBlankNewItemSession);
   document.getElementById('mItem').classList.add('open');
   document.body.style.overflow = 'hidden';
   document.body.dataset.scrollY = window.scrollY;
