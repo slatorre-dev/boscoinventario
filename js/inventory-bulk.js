@@ -42,7 +42,9 @@ function renderBulkActionControl(){
   const action = document.getElementById('bulkAction')?.value || '';
   const box = document.getElementById('bulkActionControl');
   if(!box) return;
-  if(action === 'loc'){
+  if(action === 'aula'){
+    box.innerHTML = `<select id="bulkAula">${renderAulaOptions()}</select>`;
+  } else if(action === 'loc'){
     box.innerHTML = '<input id="bulkLoc" list="locList" placeholder="Nueva ubicacion">';
   } else if(action === 'cat'){
     box.innerHTML = `<select id="bulkCat">${sortedCatNames().map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('')}</select>`;
@@ -176,7 +178,12 @@ async function applyBulkAction(){
   const action = document.getElementById('bulkAction').value;
   if(action === 'delete'){ bulkDeleteWithCountdown(selected); return; }
   let patch = null;
-  if(action === 'loc') patch = { loc: document.getElementById('bulkLoc').value.trim() };
+  if(action === 'aula') {
+    const aula = document.getElementById('bulkAula').value;
+    if(!aula){ toast('Elige un aula','err'); return; }
+    patch = { aula };
+  }
+  else if(action === 'loc') patch = { loc: document.getElementById('bulkLoc').value.trim() };
   else if(action === 'cat') patch = { cat: document.getElementById('bulkCat').value };
   else if(action === 'mod') patch = { mod: document.getElementById('bulkMod').value };
   else if(action === 'tipo') patch = { tipo_material: document.getElementById('bulkTipo').value };

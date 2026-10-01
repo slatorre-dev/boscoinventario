@@ -5338,3 +5338,9 @@ Auditoría/CSV de Volt solo para superadmin (v648), + 4 pendientes menores
 cerrados en v647 (#7 permiso `items.read`, #9 migración
 `ia_deteccion_ejemplos`, #18 ideas volcadas a IDEAS.md, #20 scoping "tus
 aulas" en Stock bajo/Mantenimiento)
+
+
+## 01/10/2026 — v673-v674: acción en lote "Cambiar aula"
+
+- v673 (refactor, Pendiente #26): bloque de acciones en lote (`bulkSelected`, `renderBulkBar`, `applyBulkAction`, exportar/imprimir selección) movido de `js/inventory.js` a `js/inventory-bulk.js`, script clásico cargado justo después; sin cambio de comportamiento.
+- v674: nueva opción "Cambiar aula" en el desplegable de acción en lote (`index.html`), con selector de aulas reutilizando `renderAulaOptions()` ("📌 Mis aulas" primero). Aplica `aula` vía `update` ítem a ítem, igual que el resto de acciones (el backend ya escribe la columna `aula`).
