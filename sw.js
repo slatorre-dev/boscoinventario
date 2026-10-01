@@ -7,7 +7,7 @@
 // Para forzar a los clientes a coger version nueva basta con subir VERSION.
 // ═════════════════════════════════════════════════════════
 
-const VERSION = 'v672';
+const VERSION = 'v673';
 const CACHE_SHELL   = 'inventario-ies-juan-bosco-shell-' + VERSION;
 const CACHE_RUNTIME = 'inventario-ies-juan-bosco-runtime-' + VERSION;
 
@@ -26,6 +26,7 @@ const SHELL = [
   './js/search.js',
   './js/home.js',
   './js/inventory.js',
+  './js/inventory-bulk.js',
   './js/modal-item.js',
   './js/modal-aulas.js',
   './js/modal-ubicaciones.js',
