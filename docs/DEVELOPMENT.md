@@ -5230,6 +5230,14 @@ se usa `#hStats` (ID) para ganarle por especificidad.
 
 `sw.js` → v666.
 
+### 01/10/2026 (v667): chips de "Hoy" solo icono + número en móvil
+
+El texto ("Stock bajo (tus aulas)"…) seguía partiendo los chips en dos
+líneas. ≤1024px se oculta `.scard-lbl`; el significado pasa a
+`title`/`aria-label` de cada tarjeta (`js/home.js`). Escritorio sin cambios.
+
+`sw.js` → v667.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo

@@ -204,7 +204,7 @@ function renderHome(){
   // ninguna alerta — en escritorio ambas tarjetas quedan ocultas por CSS.
   const venc = typeof getVencidosParaUsuario === 'function' ? getVencidosParaUsuario().length : 0;
   const vencCard = venc
-    ? `<div class="scard scard-alert scard-hoy-only" onclick="goPrestamos('activos')" style="cursor:pointer"><div class="scard-icon">🔴</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${venc}</div><div class="scard-lbl">Préstamos vencidos</div></div></div>`
+    ? `<div class="scard scard-alert scard-hoy-only" onclick="goPrestamos('activos')" style="cursor:pointer" title="${venc} préstamos vencidos" aria-label="${venc} préstamos vencidos"><div class="scard-icon">🔴</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${venc}</div><div class="scard-lbl">Préstamos vencidos</div></div></div>`
     : '';
   const okCard = (!venc && !low && !mant) ? `<div class="scard scard-ok">✅ Todo en orden</div>` : '';
   const lblStockBajo = filtrarPorMisAulas ? 'Stock bajo <span class="scard-lbl-sub">(tus aulas)</span>' : 'Stock bajo';
@@ -216,8 +216,8 @@ function renderHome(){
        <div class="scard scard-loading"><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num skel"></div><div class="scard-lbl">Mantenimiento</div></div></div>`
     : `<div class="scard scard-info"><div class="scard-icon">📦</div><div class="scard-copy"><div class="scard-num">${total}</div><div class="scard-lbl">Ítems</div></div></div>
     <div class="scard scard-info"><div class="scard-icon">🔢</div><div class="scard-copy"><div class="scard-num">${units.toLocaleString()}</div><div class="scard-lbl">Unidades</div></div></div>
-    ${vencCard}<div class="scard${low?' scard-alert':' scard-zero'}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''}><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
-    <div class="scard${mant?' scard-alert':' scard-zero'}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''}><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">${lblMant}</div></div></div>${ocCard}${okCard}`;
+    ${vencCard}<div class="scard${low?' scard-alert':' scard-zero'}" ${low?'onclick="goLowStock()" style="cursor:pointer"':''} title="${low} con stock bajo" aria-label="${low} con stock bajo"><div class="scard-icon">⚠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--red)">${low}</div><div class="scard-lbl">${lblStockBajo}</div></div></div>
+    <div class="scard${mant?' scard-alert':' scard-zero'}" ${mant?'onclick="goMaintenance()" style="cursor:pointer"':''} title="${mant} con mantenimiento pendiente" aria-label="${mant} con mantenimiento pendiente"><div class="scard-icon">🛠️</div><div class="scard-copy"><div class="scard-num" style="color:var(--amber)">${mant}</div><div class="scard-lbl">${lblMant}</div></div></div>${ocCard}${okCard}`;
   const countHtml = loading ? `<span class="ccard-count skel skel-count"></span>` : null;
   // Con el filtro "solo mis aulas" activo se muestran TODAS las aulas que
   // el profesor eligió en "Mis Cursos/Aulas", tengan ítems o no — si no,

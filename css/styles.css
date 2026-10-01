@@ -604,7 +604,6 @@ body.dark .home-quick-btn.rose{border-color:rgba(244,114,182,.35);background:lin
   .stats-strip .scard-info,.stats-strip .scard-zero{display:none!important}
   .stats-strip .scard-hoy-only{display:flex}
   .stats-strip .scard-ok{display:flex;flex:1 1 auto;justify-content:center;color:var(--green);font-weight:700;font-size:13px}
-  .stats-strip .scard .scard-lbl{display:block!important}
   /* #hStats (ID) para ganar a .stats-strip{flex-wrap:nowrap!important} de un bloque móvil posterior */
   .stats-strip,#hStats{display:flex!important;flex-wrap:wrap!important;overflow-x:visible!important}
   .stats-strip .scard{flex:0 1 auto!important;flex-direction:row!important;gap:8px!important;padding:8px 12px!important}
@@ -614,7 +613,10 @@ body.dark .home-quick-btn.rose{border-color:rgba(244,114,182,.35);background:lin
   .stats-strip .scard-copy{flex-direction:row!important;align-items:baseline!important;gap:5px}
   .stats-strip .scard .scard-num{font-size:14px!important;margin-left:0}
   .stats-strip .scard{flex:0 0 auto!important}
-  .stats-strip .scard .scard-lbl{font-size:11px!important;margin-top:0;letter-spacing:0;text-transform:none!important;white-space:nowrap}
+  /* Solo icono + número (v667): el texto ("Stock bajo (tus aulas)"…) partía
+     los chips en dos líneas. El significado va en title/aria-label (home.js). */
+  .stats-strip .scard .scard-lbl{display:none!important}
+  .stats-strip .scard-copy{gap:0}
   .stats-strip .scard-alert::after{top:-3px;right:-3px;width:7px;height:7px}
   .stats-strip .scard.scard-ok{flex:1 1 auto!important}
 }
