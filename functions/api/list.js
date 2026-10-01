@@ -272,7 +272,13 @@ export async function onRequestGet({ request, env, data }) {
 
   // Compresión: items como array de arrays
   const itemRows = items.results || [];
-  const itemsC = itemRows.map(it => HEADERS_INV.map(h => it[h] ?? ''));
+  // `departamento` va solo en la RESPUESTA (no en HEADERS_INV, que debe
+  // seguir idéntico al de item.js: allí los INSERT ya añaden departamento
+  // aparte y FIELDS_UPD dejaría al cliente cambiarlo). El frontend lo usa
+  // para no contar en Inicio las ~63 aulas del centro que solo tienen
+  // pantallas/pizarras del compartido iesjuanbosco.
+  const HEADERS_RESP = [...HEADERS_INV, 'departamento'];
+  const itemsC = itemRows.map(it => HEADERS_RESP.map(h => it[h] ?? ''));
 
   // Reservas de práctica: anidar líneas ya cargadas junto a las reservas filtradas por departamento
   const reservas = (reservasRows.results || []).map(r => ({
@@ -282,7 +288,7 @@ export async function onRequestGet({ request, env, data }) {
 
   return Response.json({
     ok: true,
-    itemsH: HEADERS_INV,
+    itemsH: HEADERS_RESP,
     itemsC,
     profesores: mergeProfesores(profesores.results, usuarios.results),
     prestamos: prestamos.results,

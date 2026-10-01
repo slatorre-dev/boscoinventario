@@ -5292,6 +5292,27 @@ con varios departamentos (tabla nueva + backend), por si se repite el caso.
 
 ---
 
+### 01/10/2026 (v671): Inicio mostraba ~63 aulas del centro a todo el mundo
+
+Bug reportado por el usuario ("me muestra todas las aulas"). Causa: las
+pantallas/pizarras del compartido `iesjuanbosco` están en 63 aulas del
+centro, y desde `47d36bb` (30/08) cualquier profesor/jefe las recibe en
+`list.js`; Inicio mostraba toda aula con algún ítem visible → las 63.
+Fix: en Inicio "aula con ítems" cuenta solo ítems del propio
+departamento (superadmin: del departamento activo, o todos sin
+selección). Para ello `list.js` añade `departamento` **solo a la
+respuesta** (`HEADERS_RESP = [...HEADERS_INV, 'departamento']`), sin
+tocar `HEADERS_INV`: en `item.js` los INSERT ya añaden `departamento`
+aparte (quedaría duplicado) y `FIELDS_UPD` dejaría al cliente cambiarlo.
+Efecto colateral bueno: `home.js:102` (desglose por departamento del
+mantenimiento para superadmin en 🔔) usaba `x.departamento`, que hasta
+ahora llegaba siempre vacío. `npm test` no ejecutado (requiere worktree
+fuera de Drive); los tests buscan columnas por `indexOf`, no por posición.
+
+`sw.js` → v671.
+
+---
+
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
 implementado completo (v650: plan por ítem, responsables por categoría
 autoservicio+admin, vista/contadores/aviso mezclando correctivo y

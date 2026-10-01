@@ -239,7 +239,11 @@ function renderHome(){
   // Superadmin: las del departamento activo del selector, si hay uno.
   const esSuper = String(SESSION?.rol||'').trim().toLowerCase() === 'superadmin';
   const deptPropio = esSuper ? (typeof deptActivo !== 'undefined' ? deptActivo : '') : (SESSION?.departamento || '');
-  const aulaConItems = a => items.some(x=>x.aula===a.id);
+  // Solo cuentan los ítems del propio departamento: las pantallas/pizarras
+  // del compartido iesjuanbosco están en ~63 aulas del centro y, al ser
+  // visibles para todos (list.js), metían todas esas aulas en Inicio.
+  // Superadmin sin departamento activo: cualquier ítem (vista global).
+  const aulaConItems = a => items.some(x=>x.aula===a.id && (!deptPropio || x.departamento === deptPropio));
   let aulaEntries = loading ? AULAS
     : filtrarPorMisAulas ? AULAS.filter(a=>MIS_AULAS.includes(a.id))
     : AULAS.filter(a=>aulaConItems(a) || (deptPropio && a.departamento === deptPropio));
