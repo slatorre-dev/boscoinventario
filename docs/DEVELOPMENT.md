@@ -5175,6 +5175,37 @@ permiso sin dejar hueco (Consulta ve 3). Toda la lógica en
 
 `sw.js` → v662.
 
+### 01/10/2026 (v663-v664): "lo mío primero" en la ficha de ítem + primera extracción de modal-item.js
+
+**Petición:** al añadir un ítem como profesor, Aula y Ciclo/Módulo
+listaban todo mezclado, sin tener en cuenta "📌 Mis Cursos/Aulas".
+
+- **v663 (refactor, commit aparte):** `renderAulaOptions`,
+  `fillModalSelects`, `updateModSelect`, `syncCicloLabels` movidas tal
+  cual de `js/modal-item.js` a `js/modal-item-selects.js` (Pendiente #26,
+  modularización oportunista). **Desviación deliberada de la spec de
+  modularización:** script clásico, no `type="module"` — convertir
+  `modal-item.js` a módulo sacaría del ámbito global las decenas de
+  funciones que usan otros 7 archivos y los `onclick=`. Lección para las
+  próximas extracciones de archivos muy acoplados: el enfoque módulo de
+  la spec solo es viable si el archivo ORIGINAL puede pasar a módulo, y
+  eso exige `window.fn` para TODAS sus funciones públicas, no solo las
+  movidas.
+- **v664 (feature):** con `MIS_AULAS`/`MIS_MODULOS`, los desplegables
+  muestran primero "📌 Mis aulas" / "📌 Mis ciclos/asignaturas" /
+  "📌 Mis módulos/asignaturas" y debajo "Otras aulas…"/"Otros" (no se
+  ocultan: a veces hay que dar de alta o prestar en otra aula). Como
+  `renderAulaOptions` es compartida, el mismo orden aplica en Préstamos,
+  Planificar práctica y "Añadir varios". Alta nueva: aula por defecto =
+  primera propia (si no hay reciente), ciclo preseleccionado si hay uno
+  solo propio, y módulo si en ese ciclo imparte uno solo.
+- Verificado con Playwright (profesor simulado con 2 aulas y 1 módulo, y
+  sin elección → igual que antes). Gotcha repetido: el Service Worker
+  cachea en cada carga; hay que desregistrarlo y vaciar `caches`
+  **después** de editar y antes de recargar.
+
+`sw.js` → v664.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo

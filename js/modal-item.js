@@ -1023,7 +1023,7 @@ function openModal(id=null, src=null){
   document.getElementById('f_serie').value = id ? (m?.serie||'') : '';
   const aulaReciente = localStorage.getItem('cam_last_aula') || '';
   const miAulaUnica = (Array.isArray(MIS_AULAS) && MIS_AULAS.length === 1) ? MIS_AULAS[0] : '';
-  document.getElementById('f_aula').value = m?.aula || (cf?.type==='aula' ? cf.id : (aulaReciente || miAulaUnica || AULAS[0]?.id));
+  document.getElementById('f_aula').value = m?.aula || (cf?.type==='aula' ? cf.id : (aulaReciente || miAulaUnica || (Array.isArray(MIS_AULAS) && AULAS.find(x=>MIS_AULAS.includes(x.id))?.id) || AULAS[0]?.id));
   document.getElementById('f_item').value=m?.item||'';
   document.getElementById('f_fechaAdquisicion').value = id ? (m?.fecha_adquisicion || '') : new Date().toISOString().slice(0,10);
   renderMainPhoto(m?.foto||'');
@@ -1052,11 +1052,16 @@ function openModal(id=null, src=null){
   const itemCiclo = m?.mod ? m.mod.split('__')[0]
     : cf?.type==='mod' ? cf.ciclo.id
     : (!existing && !src && ownCiclos.length===1) ? ownCiclos[0].id
+    : (!existing && !src && typeof _misCiclosIds==='function' && _misCiclosIds().length===1) ? _misCiclosIds()[0]
     : '';
   document.getElementById('f_ciclo').value = itemCiclo;
   syncCicloLabels();
   updateModSelect();
-  document.getElementById('f_mod').value = m?.mod || (cf?.type==='mod'?cf.id:'');
+  // Alta nueva: si en el ciclo preseleccionado el usuario imparte un solo
+  // módulo (📌 Mis Cursos), se preselecciona también.
+  const misModsCiclo = (!existing && !src && itemCiclo && Array.isArray(MIS_MODULOS))
+    ? MIS_MODULOS.filter(id=>String(id).startsWith(itemCiclo+'__')) : [];
+  document.getElementById('f_mod').value = m?.mod || (cf?.type==='mod'?cf.id:'') || (misModsCiclo.length===1 ? misModsCiclo[0] : '');
   document.getElementById('f_loc').value = m?.loc || (!existing ? (localStorage.getItem('cam_last_loc') || '') : '');
   document.getElementById('f_est').value=m?.est||'Bueno';
   document.getElementById('f_util').value=m?.util||'';
