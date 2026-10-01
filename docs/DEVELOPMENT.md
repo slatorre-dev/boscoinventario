@@ -5238,6 +5238,21 @@ líneas. ≤1024px se oculta `.scard-lbl`; el significado pasa a
 
 `sw.js` → v667.
 
+### 01/10/2026: aulas N-XX — diagnóstico + migración 0042
+
+Diagnóstico (consulta a D1 remota): N-01..N-05 son de
+`fabricacionmecanica` con 0 ítems (Inicio solo muestra aulas con ≥1
+ítem); N-06..N-11 son de `electricidadelectronica`. Ninguna es del
+centro (`departamento=''`) ni de `iesjuanbosco`, así que una cuenta de
+IES Juan Bosco no-superadmin no las recibe. "N-8" con nombre
+inconsistente (debería ser "N-08"). Pendiente decisión del usuario:
+convertirlas en aulas del centro o dejarlas por departamento.
+`migrations/0042_mesa_profesor_n01_n05.sql` (aplicada en remoto): una
+"Mesa del profesor" (IB-01431..01435, categoría Mobiliario, creada para
+fabricacionmecanica) en cada N-01..N-05. Gotcha de entorno: wrangler
+estaba logueado con la cuenta `inventarioelec@iesjuanbosco.es` (D1 no
+encontrada, código 7404) — hay que entrar con `slatorre@iesjuanbosco.es`.
+
 ---
 
 **Última actualización:** 29/08/2026 — Mantenimiento preventivo
